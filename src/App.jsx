@@ -506,6 +506,7 @@ function App() {
       <PomodoroTimer 
         isOpen={isPomodoroOpen}
         onClose={() => setIsPomodoroOpen(false)}
+        exams={exams}
       />
     </div>
   );

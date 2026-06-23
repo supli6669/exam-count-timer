@@ -16,8 +16,21 @@
 - [x] Tích hợp trình phát nhạc Spotify Embed (Trạng thái: Đã xong)
 - [x] Mục tiêu định kỳ Rule of 3 (Hàng ngày, Hàng tuần, Hàng tháng, Hàng năm) kèm reset thông minh & hiển thị mốc thời gian (Trạng thái: Đã xong)
 - [x] Tái thiết kế nút đóng Pomodoro thành nút nổi cố định ở góc trên bên phải (Trạng thái: Đã xong)
+- [x] Khởi chạy tự động cùng Windows (Startup script & shortcut) (Trạng thái: Đã xong)
+- [x] Thống kê thời gian học tập chi tiết theo ngày & môn thi (Trạng thái: Đã xong)
+- [x] 5 chủ đề nghệ thuật (Art Themes) cho Pomodoro (Trạng thái: Đã xong)
 
 ## 2. Chi Tiết Các Phần Đã Triển Khai Gần Đây (So với lần cuối)
+- **Tự động khởi động cùng hệ thống**:
+  - Cấu hình server chạy mặc định ở cổng `5174` và tự kích hoạt trình duyệt khi khởi chạy (`server: { port: 5174, open: true }`).
+  - Đặt shortcut khởi chạy `start-timer.lnk` vào thư mục Startup của Windows (`%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup`), khởi chạy server Vite thu nhỏ (minimized) mỗi khi máy tính bật.
+- **Thống kê thời gian học tập**:
+  - Cho phép người dùng chọn môn thi đang tập trung ôn luyện từ danh sách các môn thi thực tế.
+  - Ghi nhận thời gian học chính xác đến từng giây vào `localStorage` mỗi khi hoàn thành phiên, ấn reset, skip phiên hoặc tắt bảng điều khiển Pomodoro.
+  - Hiển thị tab Thống kê mới trong bảng Pomodoro với biểu đồ cột 7 ngày qua cực đẹp, tổng số giờ/phút/phiên học và biểu đồ tiến độ phần trăm phân tích riêng cho từng môn.
+- **Chủ đề Nghệ thuật (Art Themes)**:
+  - Bổ sung 5 chủ đề nghệ thuật: **Lofi Café, Cyberpunk Alley, Sakura Library, Space Odyssey, Nature Cabin**.
+  - Các theme thay đổi ảnh nền, màu sắc vòng đếm ngược, màu nút bấm và hiệu ứng glow neon lấp lánh tương ứng với mỗi không gian học tập.
 - **src/components/SpotifyPlayer.jsx**:
   - [NEW] Component phát nhạc Spotify Embed với 4 preset focus (Lofi, Classical, Ambient, Nature).
   - Tích hợp ô dán link thông minh tự động trích xuất ID để convert các link chia sẻ Spotify (Playlist, Album, Track) thành dạng nhúng.
@@ -35,8 +48,8 @@
 - **src/index.css**:
   - Thêm CSS responsive cho Spotify Player, Mục tiêu định kỳ (bố cục 4 cột) và hiệu ứng tương tác cao cấp cho nút thoát Pomodoro nổi.
 
-## 3. Trạng Thái Git Hiện Tại
-- Mã SHA commit / Message gần nhất: `feat: integrate Spotify player, Recurring Tasks tracker (Rule of 3), and improve Pomodoro UI`
+## 3. Trạng Thế Git Hiện Tại
+- Mã SHA commit / Message gần nhất: `feat: add study statistics, custom art themes for Pomodoro, and auto-startup on Windows`
 - Tên Branch hiện tại: `main`
 - GitHub Remote: `https://github.com/supli6669/exam-count-timer.git`
 
