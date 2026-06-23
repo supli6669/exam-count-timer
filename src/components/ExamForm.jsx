@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import DatePicker from './DatePicker';
 
 function ExamForm({ exam, onSave, onClose }) {
   const [subject, setSubject] = useState('');
@@ -36,6 +37,13 @@ function ExamForm({ exam, onSave, onClose }) {
     const selectedDate = new Date(datetime);
     if (isNaN(selectedDate.getTime())) {
       setError('Ngày giờ thi không hợp lệ!');
+      return;
+    }
+
+    // Validate year (2020-2100)
+    const year = selectedDate.getFullYear();
+    if (year < 2020 || year > 2100) {
+      setError('Năm phải từ 2020 đến 2100!');
       return;
     }
 
@@ -91,14 +99,8 @@ function ExamForm({ exam, onSave, onClose }) {
           </div>
 
           <div className="form-group">
-            <label className="form-label" htmlFor="datetime-input">Ngày & Giờ thi</label>
-            <input
-              id="datetime-input"
-              type="datetime-local"
-              className="form-input"
-              value={datetime}
-              onChange={(e) => setDatetime(e.target.value)}
-            />
+            <label className="form-label">Ngày & Giờ thi</label>
+            <DatePicker value={datetime} onChange={setDatetime} />
           </div>
 
           <div className="modal-footer">
