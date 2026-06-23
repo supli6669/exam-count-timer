@@ -53,7 +53,7 @@
 - **Trình phân tích & Cảnh báo ôn thi (Smart Study Insights)**:
   - Tự động đối chiếu logs học tập thực tế và ngày thi của các môn sắp tới để hiển thị cảnh báo đỏ (`🚨 CẦN ÔN THI GẤP!`) hoặc vàng (`⚠️ Ít học bài`) trực quan trên trang chính dashboard.
   - Gợi ý cụ thể số phút khuyên học mỗi ngày cho từng môn thi để đạt mục tiêu ôn luyện tương ứng.
-  - Mục tiêu học tập được đề xuất tự động dựa trên phân loại môn thi (Cuối kỳ: 10 giờ, Giữa kỳ: 6 giờ, Bài tập lớn: 4 giờ, Kiểm tra: 2 giờ, Khác: 3 giờ) và cho phép người dùng tùy ý chỉnh sửa số giờ học mục tiêu cụ thể cho từng môn thông qua biểu mẫu thêm/sửa môn thi.
+  - Mục tiêu ôn thi được tự động ước tính dựa trên số tín chỉ môn học nhân với hệ số thời gian theo phân loại kỳ thi (Cuối kỳ: 180 phút/tín, Giữa kỳ: 120 phút/tín, Bài tập lớn: 90 phút/tín, Kiểm tra: 45 phút/tín, Khác: 60 phút/tín). Bạn có thể chỉnh sửa số tín chỉ này trực tiếp trong biểu mẫu thêm/sửa môn thi.
   - Phân tích và động viên người dùng bằng biểu đồ so sánh xu hướng thời gian học hôm nay so với ngày hôm qua.
 - **src/components/ThemeParticles.jsx**:
   - [NEW] Component Canvas vẽ hạt bay tự động theo chủ đề.
@@ -74,6 +74,10 @@
   - Nhúng `<SpotifyPlayer />` và `<AmbientSoundboard />` động chỉ khi mở sidebar (tự động ngắt nhạc khi đóng).
   - Đưa nút đóng Pomodoro thành nút nổi cố định ở góc trên bên phải màn hình (pomodoro-close-btn) đi kèm hiệu ứng hover xoay 90 độ và glow màu đỏ neon.
   - Nhúng lớp nền `<ThemeParticles />` chạy dưới giao diện tập trung.
+- **src/components/ExamCard.jsx**:
+  - [MODIFY] Hiển thị thẻ số lượng tín chỉ bên cạnh thẻ phân loại môn học trên giao diện Dashboard chính.
+- **src/components/ExamForm.jsx**:
+  - [MODIFY] Thêm trường nhập số tín chỉ môn học (mặc định bằng 3) khi tạo/chỉnh sửa thông tin kỳ thi.
 - **src/App.jsx**:
   - Tích hợp và hiển thị `<RecurringTasks />` và `<SmartInsights />` trên trang chính dashboard.
 - **src/index.css**:

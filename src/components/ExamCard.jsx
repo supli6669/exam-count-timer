@@ -139,6 +139,17 @@ function ExamCard({ exam, onEdit, onDelete, onAddTask, onToggleTask, onDeleteTas
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.25rem' }}>
             <h3 className="exam-title" style={{ margin: 0 }}>{exam.subject}</h3>
             <span className={`category-tag ${catInfo.class}`}>{catInfo.name}</span>
+            <span className="credits-tag" style={{
+              fontSize: '0.7rem',
+              fontWeight: 600,
+              padding: '0.15rem 0.4rem',
+              background: 'rgba(255, 255, 255, 0.05)',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              color: 'var(--text-secondary)',
+              borderRadius: '6px'
+            }}>
+              {exam.credits || 3} tín chỉ
+            </span>
           </div>
           <span className="exam-datetime">
             <svg viewBox="0 0 24 24">
