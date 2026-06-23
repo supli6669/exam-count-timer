@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import SpotifyPlayer from './SpotifyPlayer';
+import ThemeParticles from './ThemeParticles';
+import AmbientSoundboard from './AmbientSoundboard';
 import { incrementContribution } from '../utils/contributions';
 
 function PomodoroTimer({ isOpen, onClose, exams = [] }) {
@@ -114,6 +116,7 @@ function PomodoroTimer({ isOpen, onClose, exams = [] }) {
     const updatedLogs = [...studyLogs, newLog];
     setStudyLogs(updatedLogs);
     localStorage.setItem('pomodoro_study_logs', JSON.stringify(updatedLogs));
+    window.dispatchEvent(new Event('studyLogsUpdated'));
     
     // Reset ref counter
     secondsStudiedRef.current = 0;
@@ -564,6 +567,9 @@ function PomodoroTimer({ isOpen, onClose, exams = [] }) {
         />
       )}
       
+      {/* Canvas particle effect overlay */}
+      <ThemeParticles theme={activeTheme} />
+      
       {/* Dark overlay for contrast */}
       <div className="pomodoro-tint-overlay" />
 
@@ -789,6 +795,7 @@ function PomodoroTimer({ isOpen, onClose, exams = [] }) {
           </div>
 
           {isOpen && <SpotifyPlayer />}
+          {isOpen && <AmbientSoundboard />}
 
           {/* Collapsible Settings Area */}
           <div className="pomodoro-settings-section">

@@ -6,6 +6,7 @@ import CalendarView from './components/CalendarView';
 import { CATEGORIES } from './constants';
 import PomodoroTimer from './components/PomodoroTimer';
 import RecurringTasks from './components/RecurringTasks';
+import SmartInsights from './components/SmartInsights';
 import ContributionGraph from './components/ContributionGraph';
 import { incrementContribution, decrementContribution } from './utils/contributions';
 
@@ -371,6 +372,9 @@ function App() {
 
       {/* Mục Tiêu Định Kỳ (Rule of 3) */}
       <RecurringTasks />
+
+      {/* Trình Phân Tích & Cảnh Báo Học Tập Thông Minh */}
+      <SmartInsights exams={exams} />
 
       {/* Lịch Sử Đóng Góp Học Tập (GitHub-style Commit Graph) */}
       <ContributionGraph />
