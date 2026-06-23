@@ -13,9 +13,18 @@ function ExamForm({ exam, onSave, onClose }) {
     return '';
   };
 
+  const DEFAULT_HOURS = {
+    final: 10,
+    midterm: 6,
+    assignment: 4,
+    quiz: 2,
+    other: 3
+  };
+
   const [subject, setSubject] = useState(exam ? (exam.subject || '') : '');
   const [datetime, setDatetime] = useState(getInitialDateTime);
   const [category, setCategory] = useState(exam ? (exam.category || 'other') : 'other');
+  const [targetHours, setTargetHours] = useState(exam ? (exam.targetHours || DEFAULT_HOURS[exam.category || 'other'] || 5) : 5);
   const [error, setError] = useState('');
   const [prevExam, setPrevExam] = useState(exam);
 
@@ -24,6 +33,7 @@ function ExamForm({ exam, onSave, onClose }) {
     if (exam) {
       setSubject(exam.subject || '');
       setCategory(exam.category || 'other');
+      setTargetHours(exam.targetHours || DEFAULT_HOURS[exam.category || 'other'] || 5);
       if (exam.datetime) {
         const date = new Date(exam.datetime);
         if (!isNaN(date.getTime())) {
@@ -40,6 +50,7 @@ function ExamForm({ exam, onSave, onClose }) {
       setSubject('');
       setDatetime('');
       setCategory('other');
+      setTargetHours(5);
     }
     setError('');
   }
@@ -75,6 +86,7 @@ function ExamForm({ exam, onSave, onClose }) {
       subject: subject.trim(),
       datetime: selectedDate.toISOString(),
       category: category,
+      targetHours: parseFloat(targetHours) || DEFAULT_HOURS[category] || 5,
     });
   };
 
@@ -128,7 +140,11 @@ function ExamForm({ exam, onSave, onClose }) {
               id="category-select"
               className="form-input"
               value={category}
-              onChange={(e) => setCategory(e.target.value)}
+              onChange={(e) => {
+                const cat = e.target.value;
+                setCategory(cat);
+                setTargetHours(DEFAULT_HOURS[cat] || 3);
+              }}
               style={{
                 background: 'var(--bg-secondary)',
                 border: '1px solid var(--border-glass)',
@@ -140,6 +156,20 @@ function ExamForm({ exam, onSave, onClose }) {
                 <option key={key} value={key}>{val.name}</option>
               ))}
             </select>
+          </div>
+
+          <div className="form-group">
+            <label className="form-label" htmlFor="target-hours-input">Mục tiêu ôn tập (Số giờ học)</label>
+            <input
+              id="target-hours-input"
+              type="number"
+              min="1"
+              max="100"
+              className="form-input"
+              placeholder="Ví dụ: 10"
+              value={targetHours}
+              onChange={(e) => setTargetHours(e.target.value)}
+            />
           </div>
 
           <div className="form-group">

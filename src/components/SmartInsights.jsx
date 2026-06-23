@@ -46,8 +46,18 @@ function SmartInsights({ exams = [] }) {
     return Math.round(totalSeconds / 60);
   };
 
-  // Target base minutes for preparation: 300 minutes (5 hours)
-  const TARGET_PREP_MINUTES = 300;
+  const DEFAULT_HOURS = {
+    final: 10,
+    midterm: 6,
+    assignment: 4,
+    quiz: 2,
+    other: 3
+  };
+
+  const getTargetPrepMinutes = (exam) => {
+    const hours = exam.targetHours || DEFAULT_HOURS[exam.category || 'other'] || 5;
+    return hours * 60;
+  };
 
   const now = new Date();
 
@@ -59,13 +69,14 @@ function SmartInsights({ exams = [] }) {
       const diffMs = examDate - now;
       const daysLeft = diffMs / (1000 * 60 * 60 * 24);
       const accumulatedMins = getSubjectStudyMinutes(exam.id);
+      const targetPrepMinutes = getTargetPrepMinutes(exam);
 
       // Warning assessment
       let alertLevel = 'safe'; // 'safe' | 'warning' | 'danger'
       let alertText = 'Tiến độ bình thường';
 
       if (daysLeft < 3) {
-        if (accumulatedMins < 180) {
+        if (accumulatedMins < targetPrepMinutes * 0.6) {
           alertLevel = 'danger';
           alertText = '🚨 CẦN ÔN THI GẤP!';
         } else {
@@ -73,7 +84,7 @@ function SmartInsights({ exams = [] }) {
           alertText = '✅ Sẵn sàng thi';
         }
       } else if (daysLeft < 7) {
-        if (accumulatedMins < 90) {
+        if (accumulatedMins < targetPrepMinutes * 0.3) {
           alertLevel = 'warning';
           alertText = '⚠️ Ít học bài';
         } else {
@@ -83,17 +94,18 @@ function SmartInsights({ exams = [] }) {
       }
 
       // Recommended daily minutes to reach target
-      const remainingMins = Math.max(0, TARGET_PREP_MINUTES - accumulatedMins);
+      const remainingMins = Math.max(0, targetPrepMinutes - accumulatedMins);
       const dailyRecommended = daysLeft > 0 ? Math.ceil(remainingMins / daysLeft) : 0;
 
       return {
         ...exam,
         daysLeft,
         accumulatedMins,
+        targetPrepMinutes,
         alertLevel,
         alertText,
         dailyRecommended,
-        progressPercent: Math.min(100, Math.round((accumulatedMins / TARGET_PREP_MINUTES) * 100))
+        progressPercent: Math.min(100, Math.round((accumulatedMins / targetPrepMinutes) * 100))
       };
     })
     .sort((a, b) => a.daysLeft - b.daysLeft); // Order by closest exam date
@@ -194,7 +206,7 @@ function SmartInsights({ exams = [] }) {
                 <div className="insights-progress-section">
                   <div className="insights-progress-labels">
                     <span>Đã học: <strong>{item.accumulatedMins} phút</strong></span>
-                    <span>Mục tiêu: {TARGET_PREP_MINUTES} phút</span>
+                    <span>Mục tiêu: {item.targetPrepMinutes} phút ({item.targetHours || Math.round(item.targetPrepMinutes / 60)}h)</span>
                   </div>
                   <div className="insights-progress-bar">
                     <div 
@@ -212,7 +224,7 @@ function SmartInsights({ exams = [] }) {
                     </>
                   ) : (
                     <>
-                      🎉 Đã tích lũy đủ 5 giờ ôn luyện tiêu chuẩn cho môn này!
+                      🎉 Đã tích lũy đủ mục tiêu ôn tập ({item.targetHours || Math.round(item.targetPrepMinutes / 60)} giờ) cho môn này!
                     </>
                   )}
                 </div>
