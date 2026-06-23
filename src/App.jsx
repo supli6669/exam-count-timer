@@ -4,6 +4,7 @@ import ExamForm from './components/ExamForm';
 import NotificationSettings from './components/NotificationSettings';
 import CalendarView from './components/CalendarView';
 import { CATEGORIES } from './constants';
+import PomodoroTimer from './components/PomodoroTimer';
 
 // Initial mock data set relative to current date (June 2026)
 const getInitialMockData = () => {
@@ -51,6 +52,7 @@ function App() {
     return localStorage.getItem('notifications_enabled') === 'true';
   });
   const [viewMode, setViewMode] = useState('card'); // 'card' or 'calendar'
+  const [isPomodoroOpen, setIsPomodoroOpen] = useState(false);
 
   // Save to LocalStorage
   useEffect(() => {
@@ -205,6 +207,14 @@ function App() {
             enabled={notificationsEnabled} 
             onToggle={setNotificationsEnabled} 
           />
+          <button
+            className={`btn-icon ${isPomodoroOpen ? 'active' : ''}`}
+            onClick={() => setIsPomodoroOpen(!isPomodoroOpen)}
+            title="Đồng hồ Pomodoro"
+            aria-label="Đồng hồ Pomodoro"
+          >
+            <span style={{ fontSize: '1.2rem', display: 'flex', alignItems: 'center' }}>🍅</span>
+          </button>
           <button 
             className={`btn-icon ${viewMode === 'calendar' ? 'active' : ''}`} 
             onClick={() => setViewMode(viewMode === 'card' ? 'calendar' : 'card')}
@@ -434,6 +444,12 @@ function App() {
           onClose={() => setIsModalOpen(false)}
         />
       )}
+
+      {/* Pomodoro Timer Sidebar */}
+      <PomodoroTimer 
+        isOpen={isPomodoroOpen}
+        onClose={() => setIsPomodoroOpen(false)}
+      />
     </div>
   );
 }
