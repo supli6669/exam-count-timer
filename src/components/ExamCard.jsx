@@ -28,6 +28,13 @@ function ExamCard({ exam, onEdit, onDelete }) {
     return timeLeft;
   }
 
+  // Get day of week in Vietnamese
+  const getDayOfWeek = (dateStr) => {
+    const days = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
+    const date = new Date(dateStr);
+    return days[date.getDay()];
+  };
+
   useEffect(() => {
     // Initial calculation
     setTimeLeft(calculateTimeLeft());
@@ -69,7 +76,8 @@ function ExamCard({ exam, onEdit, onDelete }) {
     const year = date.getFullYear();
     const hours = String(date.getHours()).padStart(2, '0');
     const minutes = String(date.getMinutes()).padStart(2, '0');
-    return `${hours}:${minutes} - ${day}/${month}/${year}`;
+    const dayOfWeek = getDayOfWeek(dateStr);
+    return `${dayOfWeek}, ${hours}:${minutes} - ${day}/${month}/${year}`;
   };
 
   return (

@@ -70,6 +70,13 @@ function DatePicker({ value, onChange }) {
     onChange(newDate.toISOString());
   };
 
+  // Get day of week in Vietnamese
+  const getDayOfWeek = (y, m, d) => {
+    const days = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
+    const date = new Date(y, m, d);
+    return days[date.getDay()];
+  };
+
   // Generate year options (2020-2100)
   const yearOptions = [];
   for (let y = 2020; y <= 2100; y++) {
@@ -166,7 +173,7 @@ function DatePicker({ value, onChange }) {
       </div>
 
       <div className="date-preview">
-        {String(day).padStart(2, '0')}/{String(month + 1).padStart(2, '0')}/{year} - {String(hour).padStart(2, '0')}:{String(minute).padStart(2, '0')}
+        {getDayOfWeek(year, month, day)}, {String(day).padStart(2, '0')}/{String(month + 1).padStart(2, '0')}/{year} - {String(hour).padStart(2, '0')}:{String(minute).padStart(2, '0')}
       </div>
     </div>
   );

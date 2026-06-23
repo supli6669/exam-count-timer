@@ -8,18 +8,19 @@
 - [x] Kiểm thử & Hoàn thiện cơ bản (Trạng thái: Đã xong)
 - [x] Tính năng Nhắc nhở Browser Notifications (Trạng thái: Đã xong)
 - [x] Custom DatePicker với dropdown select + validation năm (Trạng thái: Đã xong)
+- [x] Hiển thị thứ trong ngày (ExamCard & DatePicker) (Trạng thái: Đã xong)
 
 ## 2. Chi Tiết Các Phần Đã Triển Khai Gần Recently
 - **index.html**: Tích hợp các thẻ SEO (meta, title tiếng Việt), favicon emoji đồng hồ và cấu hình theme color.
 - **src/index.css**: Hệ thống màu sắc Dark Premium, Glassmorphism, animations và layout responsive cho dashboard. Thêm CSS cho NotificationSettings và DatePicker dropdown.
-- **src/components/ExamCard.jsx**: Hiển thị chi tiết môn thi, đồng hồ đếm ngược thời gian thực (ngày, giờ, phút, giây) tự động cập nhật mỗi giây, logic màu sắc cảnh báo khẩn cấp (Đỏ < 2 ngày, Vàng < 7 ngày, Xanh còn lại).
+- **src/components/ExamCard.jsx**: Hiển thị chi tiết môn thi, đồng hồ đếm ngược thời gian thực (ngày, giờ, phút, giây) tự động cập nhật mỗi giây, logic màu sắc cảnh báo khẩn cấp (Đỏ < 2 ngày, Vàng < 7 ngày, Xanh còn lại). Hiển thị thứ trong ngày (tiếng Việt).
 - **src/components/ExamForm.jsx**: Form dạng modal mờ ảo (glassmorphism) cho thêm và sửa thông tin lịch thi, validation năm (2020-2100), tích hợp DatePicker custom.
 - **src/components/NotificationSettings.jsx**: Component toggle bật/tắt thông báo trình duyệt, kiểm tra quyền Notification API.
-- **src/components/DatePicker.jsx**: Custom DatePicker với dropdown select cho năm, tháng, ngày, giờ, phút. Tự động điều chỉnh số ngày theo tháng/năm.
+- **src/components/DatePicker.jsx**: Custom DatePicker với dropdown select cho năm, tháng, ngày, giờ, phút. Tự động điều chỉnh số ngày theo tháng/năm. Hiển thị thứ trong preview.
 - **src/App.jsx**: Điều khiển toàn bộ logic CRUD (Thêm, Sửa, Xóa), liên kết LocalStorage, tính toán các chỉ số thống kê, tích hợp chức năng tìm kiếm/sắp xếp, và logic gửi thông báo tự động khi môn thi còn < 24 giờ.
 
 ## 3. Trạng Thái Git Hiện Tại
-- Mã SHA commit / Message gần nhất: `da4ca11 feat: add browser notification feature for exam reminders`
+- Mã SHA commit / Message gần nhất: `59d9657 fix: add custom DatePicker with dropdown select and year validation`
 - Tên Branch hiện tại: `main`
 - GitHub Remote: `https://github.com/supli6669/exam-count-timer.git` (Đã kết nối và push)
 
