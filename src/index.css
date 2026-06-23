@@ -1168,16 +1168,50 @@ body {
   background: rgba(8, 11, 19, 0.95); /* Deepest dark glass overlay for high focus */
   backdrop-filter: blur(35px);
   -webkit-backdrop-filter: blur(35px);
-  padding: 3rem 2rem;
+  padding: 4rem 1.5rem 2rem 1.5rem;
   display: flex;
   flex-direction: column;
-  align-items: center; /* Center column contents horizontally */
-  justify-content: center; /* Center column contents vertically */
-  gap: 2rem;
+  align-items: center;
+  justify-content: flex-start;
   z-index: 1000;
   transform: translateY(100%); /* Slide up transition for full screen tab feel */
-  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.5s ease;
+  overflow: hidden;
+}
+
+.pomodoro-sidebar-content {
+  position: relative;
+  z-index: 3;
+  width: 100%;
+  max-width: 480px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.75rem;
   overflow-y: auto;
+  padding: 0 0.5rem 2rem 0.5rem;
+}
+
+/* Scrollbar styling for content */
+.pomodoro-sidebar-content::-webkit-scrollbar {
+  width: 6px;
+}
+.pomodoro-sidebar-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+.pomodoro-sidebar-content::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+}
+
+/* Semi-transparent backgrounds for active themes */
+.pomodoro-sidebar.theme-lofi-cafe,
+.pomodoro-sidebar.theme-cyberpunk-alley,
+.pomodoro-sidebar.theme-sakura-library,
+.pomodoro-sidebar.theme-space-odyssey,
+.pomodoro-sidebar.theme-nature-cabin {
+  background: rgba(8, 11, 19, 0.5); /* Let background image shine through */
 }
 
 .pomodoro-sidebar.open {
@@ -1469,9 +1503,9 @@ body {
   height: 100%;
   background-size: cover;
   background-position: center;
-  z-index: -2;
-  opacity: 0.35; /* Soft background blend */
-  filter: blur(4px) brightness(0.7);
+  z-index: 1;
+  opacity: 0.45; /* Slightly increased opacity for richer art visuals */
+  filter: blur(4px) brightness(0.65);
   transition: background-image 0.5s ease, filter 0.5s ease;
 }
 
@@ -1481,8 +1515,8 @@ body {
   left: 0;
   width: 100%;
   height: 100%;
-  background: radial-gradient(circle at center, rgba(10, 14, 23, 0.2) 0%, rgba(8, 11, 19, 0.8) 100%);
-  z-index: -1;
+  background: radial-gradient(circle at center, rgba(10, 14, 23, 0.3) 0%, rgba(8, 11, 19, 0.85) 100%);
+  z-index: 2;
   pointer-events: none;
 }
 

@@ -397,7 +397,8 @@ function PomodoroTimer({ isOpen, onClose, exams = [] }) {
         </svg>
       </button>
 
-      {/* Sidebar Header */}
+      <div className="pomodoro-sidebar-content">
+        {/* Sidebar Header */}
       <div className="pomodoro-header">
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           <span style={{ fontSize: '1.25rem' }}>🍅</span>
@@ -775,6 +776,7 @@ function PomodoroTimer({ isOpen, onClose, exams = [] }) {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }
