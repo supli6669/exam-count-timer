@@ -139,6 +139,56 @@ function App() {
     }
   };
 
+  // Handle adding a sub-task for an exam
+  const handleAddTask = (examId, text, deadline) => {
+    setExams(exams.map(exam => {
+      if (exam.id === examId) {
+        const newTask = {
+          id: `task-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+          text,
+          completed: false,
+          deadline: deadline || ''
+        };
+        return {
+          ...exam,
+          tasks: [...(exam.tasks || []), newTask]
+        };
+      }
+      return exam;
+    }));
+  };
+
+  // Handle toggling sub-task completed status
+  const handleToggleTask = (examId, taskId) => {
+    setExams(exams.map(exam => {
+      if (exam.id === examId) {
+        return {
+          ...exam,
+          tasks: (exam.tasks || []).map(task => {
+            if (task.id === taskId) {
+              return { ...task, completed: !task.completed };
+            }
+            return task;
+          })
+        };
+      }
+      return exam;
+    }));
+  };
+
+  // Handle deleting a sub-task
+  const handleDeleteTask = (examId, taskId) => {
+    setExams(exams.map(exam => {
+      if (exam.id === examId) {
+        return {
+          ...exam,
+          tasks: (exam.tasks || []).filter(task => task.id !== taskId)
+        };
+      }
+      return exam;
+    }));
+  };
+
   // Dynamic status counts
   const getStats = () => {
     let urgent = 0;
@@ -402,6 +452,9 @@ function App() {
                 exam={exam}
                 onEdit={handleEditOpen}
                 onDelete={handleDeleteExam}
+                onAddTask={handleAddTask}
+                onToggleTask={handleToggleTask}
+                onDeleteTask={handleDeleteTask}
               />
             ))
           ) : (

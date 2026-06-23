@@ -26,9 +26,12 @@ function calculateTimeLeft(datetime) {
   return timeLeft;
 }
 
-function ExamCard({ exam, onEdit, onDelete }) {
+function ExamCard({ exam, onEdit, onDelete, onAddTask, onToggleTask, onDeleteTask }) {
   const [timeLeft, setTimeLeft] = useState(() => calculateTimeLeft(exam.datetime));
   const [prevDatetime, setPrevDatetime] = useState(exam.datetime);
+  const [isTasksExpanded, setIsTasksExpanded] = useState(false);
+  const [newTaskText, setNewTaskText] = useState('');
+  const [newTaskDeadline, setNewTaskDeadline] = useState('');
 
   if (exam.datetime !== prevDatetime) {
     setPrevDatetime(exam.datetime);
@@ -84,8 +87,50 @@ function ExamCard({ exam, onEdit, onDelete }) {
     return `${dayOfWeek}, ${hours}:${minutes} - ${day}/${month}/${year}`;
   };
 
+  // Format task deadline beautifully
+  const formatTaskDeadline = (deadlineStr) => {
+    if (!deadlineStr) return '';
+    const d = new Date(deadlineStr);
+    const now = new Date();
+    
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const hours = String(d.getHours()).padStart(2, '0');
+    const minutes = String(d.getMinutes()).padStart(2, '0');
+
+    const isSameDay = d.toDateString() === now.toDateString();
+    const tomorrow = new Date(now);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const isTomorrow = d.toDateString() === tomorrow.toDateString();
+
+    if (d < now && !isSameDay) {
+      return `Trễ: ${day}/${month} ${hours}:${minutes}`;
+    }
+    if (isSameDay) {
+      const label = d < now ? 'Trễ hôm nay' : 'Hôm nay';
+      return `${label}, ${hours}:${minutes}`;
+    }
+    if (isTomorrow) {
+      return `Ngày mai, ${hours}:${minutes}`;
+    }
+    return `${day}/${month} ${hours}:${minutes}`;
+  };
+
+  const handleAddTaskSubmit = (e) => {
+    e.preventDefault();
+    if (!newTaskText.trim()) return;
+    onAddTask(exam.id, newTaskText.trim(), newTaskDeadline);
+    setNewTaskText('');
+    setNewTaskDeadline('');
+  };
+
   const catKey = exam.category || 'other';
   const catInfo = CATEGORIES[catKey] || CATEGORIES.other;
+
+  const tasks = exam.tasks || [];
+  const completedTasksCount = tasks.filter(t => t.completed).length;
+  const totalTasksCount = tasks.length;
+  const progressPercent = totalTasksCount > 0 ? Math.round((completedTasksCount / totalTasksCount) * 100) : 0;
 
   return (
     <div className={`exam-card ${statusClass}`}>
@@ -132,7 +177,98 @@ function ExamCard({ exam, onEdit, onDelete }) {
         </div>
       </div>
 
+      {/* Task Progress Bar (only if there are tasks) */}
+      {totalTasksCount > 0 && (
+        <div className="exam-tasks-progress-container">
+          <div className="tasks-progress-header">
+            <span>Tiến độ ôn tập</span>
+            <span>{completedTasksCount}/{totalTasksCount} việc ({progressPercent}%)</span>
+          </div>
+          <div className="tasks-progress-track">
+            <div className="tasks-progress-fill" style={{ width: `${progressPercent}%` }}></div>
+          </div>
+        </div>
+      )}
+
+      {/* Collapsible Tasks Section */}
+      {isTasksExpanded && (
+        <div className="exam-tasks-section">
+          <h4 className="tasks-section-title">📋 Các việc cần chuẩn bị:</h4>
+          
+          {totalTasksCount > 0 ? (
+            <div className="tasks-list">
+              {tasks.map(task => {
+                const isOverdue = task.deadline && new Date(task.deadline) < new Date() && !task.completed;
+                const formattedDeadline = task.deadline ? formatTaskDeadline(task.deadline) : '';
+                return (
+                  <div key={task.id} className={`task-item ${task.completed ? 'completed' : ''}`}>
+                    <label className="task-item-left">
+                      <input 
+                        type="checkbox" 
+                        checked={task.completed} 
+                        onChange={() => onToggleTask(exam.id, task.id)}
+                        className="task-checkbox"
+                      />
+                      <span className="task-text">{task.text}</span>
+                    </label>
+                    <div className="task-item-right">
+                      {task.deadline && (
+                        <span className={`task-deadline-badge ${isOverdue ? 'overdue' : ''}`}>
+                          {formattedDeadline}
+                        </span>
+                      )}
+                      <button 
+                        className="btn-delete-task" 
+                        onClick={() => onDeleteTask(exam.id, task.id)}
+                        title="Xóa việc này"
+                        aria-label="Xóa việc cần làm"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="tasks-empty-text">Chưa có nhiệm vụ nào được thêm.</div>
+          )}
+
+          <form className="task-add-form" onSubmit={handleAddTaskSubmit}>
+            <input 
+              type="text" 
+              placeholder="Nhập việc cần làm..." 
+              value={newTaskText}
+              onChange={(e) => setNewTaskText(e.target.value)}
+              className="task-input-text"
+              required
+            />
+            <div className="task-add-form-row">
+              <input 
+                type="datetime-local" 
+                value={newTaskDeadline}
+                onChange={(e) => setNewTaskDeadline(e.target.value)}
+                className="task-input-date"
+                title="Hạn chót"
+              />
+              <button type="submit" className="btn btn-primary btn-add-task">
+                Thêm việc
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
       <div className="exam-card-actions">
+        <button 
+          className={`btn btn-secondary btn-tasks-toggle-text ${isTasksExpanded ? 'active' : ''}`}
+          onClick={() => setIsTasksExpanded(!isTasksExpanded)}
+          title="Xem danh sách việc cần làm"
+          style={{ flex: 1, padding: '0.45rem 0.75rem', fontSize: '0.8rem', justifyContent: 'center' }}
+        >
+          📋 {totalTasksCount > 0 ? `Nhiệm vụ (${completedTasksCount}/${totalTasksCount})` : 'Việc cần làm'}
+        </button>
+        
         <button 
           className="btn-icon edit" 
           onClick={() => onEdit(exam)} 
