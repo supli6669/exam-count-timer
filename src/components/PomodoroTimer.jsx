@@ -26,6 +26,8 @@ function PomodoroTimer({ isOpen, onClose, exams = [] }) {
 
   // Active Tab: 'timer' | 'stats'
   const [activeTab, setActiveTab] = useState('timer');
+  const [statsMode, setStatsMode] = useState('week'); // 'week' | 'month' | 'year'
+  const [statsDateOffset, setStatsDateOffset] = useState(0); // 0 = current, -1 = previous, etc.
 
   // Active Theme: 'default' | 'lofi-cafe' | 'cyberpunk-alley' | 'sakura-library' | 'space-odyssey' | 'nature-cabin'
   const [activeTheme, setActiveTheme] = useState(() => {
@@ -298,35 +300,122 @@ function PomodoroTimer({ isOpen, onClose, exams = [] }) {
     return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
   };
 
-  // Stats Calculations
-  const getLast7DaysStats = () => {
-    const stats = [];
+  // Range calculation functions
+  const getWeekRange = (offset) => {
     const today = new Date();
-    
-    for (let i = 6; i >= 0; i--) {
-      const d = new Date(today);
-      d.setDate(today.getDate() - i);
-      const dateStr = d.toISOString().split('T')[0];
-      
-      const dayLogs = studyLogs.filter(log => log.date === dateStr);
-      const totalSeconds = dayLogs.reduce((sum, log) => sum + log.seconds, 0);
-      const totalMinutes = Math.round(totalSeconds / 60);
-      
-      const dayNames = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
-      const dayName = dayNames[d.getDay()];
-      
-      stats.push({
-        date: dateStr,
-        dayName,
-        minutes: totalMinutes
-      });
-    }
-    return stats;
+    const dayOfWeek = today.getDay(); // 0 is Sun
+    const start = new Date(today);
+    start.setDate(today.getDate() - dayOfWeek + (offset * 7));
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(start);
+    end.setDate(start.getDate() + 6);
+    end.setHours(23, 59, 59, 999);
+    return { start, end };
   };
 
-  const getSubjectStats = () => {
+  const getMonthRange = (offset) => {
+    const today = new Date();
+    const d = new Date(today.getFullYear(), today.getMonth() + offset, 1);
+    const start = new Date(d.getFullYear(), d.getMonth(), 1, 0, 0, 0, 0);
+    const end = new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59, 999);
+    return { start, end, year: d.getFullYear(), month: d.getMonth() };
+  };
+
+  const getYearRange = (offset) => {
+    const today = new Date();
+    const targetYear = today.getFullYear() + offset;
+    const start = new Date(targetYear, 0, 1, 0, 0, 0, 0);
+    const end = new Date(targetYear, 11, 31, 23, 59, 59, 999);
+    return { start, end, year: targetYear };
+  };
+
+  // Nav Label
+  const getNavigationLabel = () => {
+    if (statsMode === 'week') {
+      if (statsDateOffset === 0) return 'Tuần này';
+      if (statsDateOffset === -1) return 'Tuần trước';
+      const range = getWeekRange(statsDateOffset);
+      const formatNum = (num) => String(num).padStart(2, '0');
+      return `${formatNum(range.start.getDate())}/${formatNum(range.start.getMonth() + 1)} - ${formatNum(range.end.getDate())}/${formatNum(range.end.getMonth() + 1)}`;
+    }
+    
+    if (statsMode === 'month') {
+      if (statsDateOffset === 0) return 'Tháng này';
+      if (statsDateOffset === -1) return 'Tháng trước';
+      const range = getMonthRange(statsDateOffset);
+      return `Tháng ${range.month + 1}, ${range.year}`;
+    }
+    
+    // Year
+    if (statsDateOffset === 0) return 'Năm nay';
+    if (statsDateOffset === -1) return 'Năm ngoái';
+    const range = getYearRange(statsDateOffset);
+    return `Năm ${range.year}`;
+  };
+
+  // Helper to sum seconds in range
+  const getRangeTotalMinutes = (range) => {
+    const rangeLogs = studyLogs.filter(log => {
+      const logTime = new Date(log.timestamp);
+      return logTime >= range.start && logTime <= range.end;
+    });
+    return Math.round(rangeLogs.reduce((sum, log) => sum + log.seconds, 0) / 60);
+  };
+
+  // Calculate comparison values
+  const getComparisonData = () => {
+    let currRange, prevRange;
+    if (statsMode === 'week') {
+      currRange = getWeekRange(statsDateOffset);
+      prevRange = getWeekRange(statsDateOffset - 1);
+    } else if (statsMode === 'month') {
+      currRange = getMonthRange(statsDateOffset);
+      prevRange = getMonthRange(statsDateOffset - 1);
+    } else {
+      currRange = getYearRange(statsDateOffset);
+      prevRange = getYearRange(statsDateOffset - 1);
+    }
+    
+    const currTotal = getRangeTotalMinutes(currRange);
+    const prevTotal = getRangeTotalMinutes(prevRange);
+    
+    let pctChange = 0;
+    if (prevTotal > 0) {
+      pctChange = Math.round(((currTotal - prevTotal) / prevTotal) * 100);
+    } else if (currTotal > 0) {
+      pctChange = 100;
+    }
+    return { currTotal, prevTotal, pctChange };
+  };
+
+  const comparison = getComparisonData();
+
+  // Summary and logs for selected period
+  const getSelectedPeriodSummary = () => {
+    let range;
+    if (statsMode === 'week') range = getWeekRange(statsDateOffset);
+    else if (statsMode === 'month') range = getMonthRange(statsDateOffset);
+    else range = getYearRange(statsDateOffset);
+    
+    const logs = studyLogs.filter(log => {
+      const logTime = new Date(log.timestamp);
+      return logTime >= range.start && logTime <= range.end;
+    });
+    
+    const seconds = logs.reduce((sum, log) => sum + log.seconds, 0);
+    const minutes = Math.round(seconds / 60);
+    const hours = (seconds / 3600).toFixed(1);
+    const sessions = logs.length;
+    
+    return { minutes, hours, sessions, logs };
+  };
+
+  const periodSummary = getSelectedPeriodSummary();
+
+  // Subject breakdown for selected period
+  const getSelectedPeriodSubjectStats = (periodLogs) => {
     const subjectMap = {};
-    studyLogs.forEach(log => {
+    periodLogs.forEach(log => {
       if (!subjectMap[log.subjectId]) {
         subjectMap[log.subjectId] = {
           subjectName: log.subjectName,
@@ -343,12 +432,98 @@ function PomodoroTimer({ isOpen, onClose, exams = [] }) {
     })).sort((a, b) => b.minutes - a.minutes);
   };
 
-  const weeklyStats = getLast7DaysStats();
-  const maxMinutes = Math.max(...weeklyStats.map(s => s.minutes), 30); // default scaling min to 30 mins
-  const totalFocusSeconds = studyLogs.reduce((sum, log) => sum + log.seconds, 0);
-  const totalFocusMinutes = Math.round(totalFocusSeconds / 60);
-  const totalFocusHours = (totalFocusSeconds / 3600).toFixed(1);
-  const subjectBreakdown = getSubjectStats();
+  const subjectBreakdown = getSelectedPeriodSubjectStats(periodSummary.logs);
+
+  // Group data for the chart based on selected mode
+  const getChartData = () => {
+    if (statsMode === 'week') {
+      const days = [];
+      const dayNames = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+      const range = getWeekRange(statsDateOffset);
+      
+      for (let i = 0; i < 7; i++) {
+        const d = new Date(range.start);
+        d.setDate(range.start.getDate() + i);
+        const dateStr = d.toISOString().split('T')[0];
+        
+        const dayLogs = studyLogs.filter(log => log.date === dateStr);
+        const totalMinutes = Math.round(dayLogs.reduce((sum, log) => sum + log.seconds, 0) / 60);
+        
+        days.push({
+          label: dayNames[d.getDay()],
+          subLabel: `${d.getDate()}/${d.getMonth() + 1}`,
+          minutes: totalMinutes
+        });
+      }
+      return days;
+    }
+    
+    if (statsMode === 'month') {
+      const range = getMonthRange(statsDateOffset);
+      const weeks = [
+        { label: 'T1', subLabel: '1-7', startDay: 1, endDay: 7, minutes: 0 },
+        { label: 'T2', subLabel: '8-14', startDay: 8, endDay: 14, minutes: 0 },
+        { label: 'T3', subLabel: '15-21', startDay: 15, endDay: 21, minutes: 0 },
+        { label: 'T4', subLabel: '22-28', startDay: 22, endDay: 28, minutes: 0 },
+        { label: 'T5', subLabel: '29+', startDay: 29, endDay: 31, minutes: 0 }
+      ];
+      
+      const logs = studyLogs.filter(log => {
+        const logTime = new Date(log.timestamp);
+        return logTime >= range.start && logTime <= range.end;
+      });
+      
+      logs.forEach(log => {
+        const logDate = new Date(log.timestamp);
+        const day = logDate.getDate();
+        const mins = log.seconds / 60;
+        const targetWeek = weeks.find(w => day >= w.startDay && day <= w.endDay);
+        if (targetWeek) targetWeek.minutes += mins;
+      });
+      
+      weeks.forEach(w => {
+        w.minutes = Math.round(w.minutes);
+      });
+      return weeks;
+    }
+    
+    // Year Mode: 12 months
+    const range = getYearRange(statsDateOffset);
+    const months = [
+      { label: 'T1', subLabel: 'Jan', monthIndex: 0, minutes: 0 },
+      { label: 'T2', subLabel: 'Feb', monthIndex: 1, minutes: 0 },
+      { label: 'T3', subLabel: 'Mar', monthIndex: 2, minutes: 0 },
+      { label: 'T4', subLabel: 'Apr', monthIndex: 3, minutes: 0 },
+      { label: 'T5', subLabel: 'May', monthIndex: 4, minutes: 0 },
+      { label: 'T6', subLabel: 'Jun', monthIndex: 5, minutes: 0 },
+      { label: 'T7', subLabel: 'Jul', monthIndex: 6, minutes: 0 },
+      { label: 'T8', subLabel: 'Aug', monthIndex: 7, minutes: 0 },
+      { label: 'T9', subLabel: 'Sep', monthIndex: 8, minutes: 0 },
+      { label: 'T10', subLabel: 'Oct', monthIndex: 9, minutes: 0 },
+      { label: 'T11', subLabel: 'Nov', monthIndex: 10, minutes: 0 },
+      { label: 'T12', subLabel: 'Dec', monthIndex: 11, minutes: 0 }
+    ];
+    
+    const logs = studyLogs.filter(log => {
+      const logTime = new Date(log.timestamp);
+      return logTime >= range.start && logTime <= range.end;
+    });
+    
+    logs.forEach(log => {
+      const logDate = new Date(log.timestamp);
+      const m = logDate.getMonth();
+      const mins = log.seconds / 60;
+      months[m].minutes += mins;
+    });
+    
+    months.forEach(m => {
+      m.minutes = Math.round(m.minutes);
+    });
+    return months;
+  };
+
+  const chartData = getChartData();
+  const maxMinutes = Math.max(...chartData.map(s => s.minutes), 30);
 
   // Circular Progress Circular Ring parameters
   const totalSeconds = getTotalSeconds();
@@ -687,12 +862,59 @@ function PomodoroTimer({ isOpen, onClose, exams = [] }) {
       ) : (
         /* STATS TAB CONTENTS */
         <div className="pomodoro-stats-tab">
-          <h3 className="stats-tab-title">📊 Thời gian học tập 7 ngày qua</h3>
+          {/* Period Selector & Navigation */}
+          <div className="stats-tab-header">
+            <div className="stats-period-selector">
+              {['week', 'month', 'year'].map(modeOpt => (
+                <button
+                  key={modeOpt}
+                  className={`period-btn ${statsMode === modeOpt ? 'active' : ''}`}
+                  onClick={() => { setStatsMode(modeOpt); setStatsDateOffset(0); }}
+                  style={{ 
+                    borderColor: statsMode === modeOpt ? getThemeColor() : '',
+                    boxShadow: statsMode === modeOpt ? `0 0 8px ${getThemeColor()}30` : ''
+                  }}
+                >
+                  {modeOpt === 'week' ? 'Tuần' : modeOpt === 'month' ? 'Tháng' : 'Năm'}
+                </button>
+              ))}
+            </div>
+
+            <div className="stats-navigation">
+              <button className="nav-btn" onClick={() => setStatsDateOffset(prev => prev - 1)}>
+                ◀
+              </button>
+              <span className="nav-current-label">
+                {getNavigationLabel()}
+              </span>
+              <button 
+                className="nav-btn" 
+                onClick={() => setStatsDateOffset(prev => prev + 1)} 
+                disabled={statsDateOffset >= 0}
+              >
+                ▶
+              </button>
+            </div>
+
+            {/* Performance Comparison Indicator */}
+            <div className="stats-comparison">
+              <span className="comparison-title">Thời lượng học: </span>
+              <span className={`comparison-badge ${comparison.pctChange >= 0 ? 'increase' : 'decrease'}`} style={{
+                color: comparison.pctChange >= 0 ? '#10b981' : '#f87171',
+                background: comparison.pctChange >= 0 ? 'rgba(16, 185, 129, 0.1)' : 'rgba(248, 113, 113, 0.1)'
+              }}>
+                {comparison.pctChange >= 0 ? `↑ ${comparison.pctChange}%` : `↓ ${Math.abs(comparison.pctChange)}%`}
+              </span>
+              <span className="comparison-text">
+                {statsMode === 'week' ? 'so với tuần trước' : statsMode === 'month' ? 'so với tháng trước' : 'so với năm trước'}
+              </span>
+            </div>
+          </div>
           
-          {/* Weekly Bar Chart */}
+          {/* Dynamic Bar Chart */}
           <div className="stats-chart-wrapper">
-            <div className="stats-chart">
-              {weeklyStats.map((day, idx) => {
+            <div className={`stats-chart col-count-${chartData.length}`}>
+              {chartData.map((day, idx) => {
                 const heightPercent = (day.minutes / maxMinutes) * 100;
                 return (
                   <div key={idx} className="chart-column">
@@ -709,7 +931,8 @@ function PomodoroTimer({ isOpen, onClose, exams = [] }) {
                         {day.minutes > 0 && <span className="bar-value">{day.minutes}m</span>}
                       </div>
                     </div>
-                    <span className="chart-label">{day.dayName}</span>
+                    <span className="chart-label">{day.label}</span>
+                    <span className="chart-sublabel">{day.subLabel}</span>
                   </div>
                 );
               })}
@@ -720,19 +943,19 @@ function PomodoroTimer({ isOpen, onClose, exams = [] }) {
           <div className="stats-summary-grid">
             <div className="stats-summary-card">
               <span className="summary-value" style={{ color: getThemeColor() }}>
-                {totalFocusHours}h
+                {periodSummary.hours}h
               </span>
               <span className="summary-label">Tổng giờ học</span>
             </div>
             <div className="stats-summary-card">
               <span className="summary-value" style={{ color: getThemeColor() }}>
-                {totalFocusMinutes}
+                {periodSummary.minutes}
               </span>
               <span className="summary-label">Tổng số phút</span>
             </div>
             <div className="stats-summary-card">
               <span className="summary-value" style={{ color: getThemeColor() }}>
-                {studyLogs.length}
+                {periodSummary.sessions}
               </span>
               <span className="summary-label">Số phiên đã lưu</span>
             </div>
@@ -767,7 +990,7 @@ function PomodoroTimer({ isOpen, onClose, exams = [] }) {
                 })}
               </div>
             ) : (
-              <p className="breakdown-empty-text">Chưa có dữ liệu học tập theo môn học.</p>
+              <p className="breakdown-empty-text">Chưa có dữ liệu học tập cho chu kỳ này.</p>
             )}
           </div>
           

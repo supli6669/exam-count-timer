@@ -31,10 +31,13 @@
 - **Tự động khởi động cùng hệ thống**:
   - Cấu hình server chạy mặc định ở cổng `5174` và tự kích hoạt trình duyệt khi khởi chạy (`server: { port: 5174, open: true }`).
   - Đặt shortcut khởi chạy `start-timer.lnk` vào thư mục Startup của Windows (`%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup`), khởi chạy server Vite thu nhỏ (minimized) mỗi khi máy tính bật.
-- **Thống kê thời gian học tập**:
-  - Cho phép người dùng chọn môn thi đang tập trung ôn luyện từ danh sách các môn thi thực tế.
-  - Ghi nhận thời gian học chính xác đến từng giây vào `localStorage` mỗi khi hoàn thành phiên, ấn reset, skip phiên hoặc tắt bảng điều khiển Pomodoro.
-  - Hiển thị tab Thống kê mới trong bảng Pomodoro với biểu đồ cột 7 ngày qua cực đẹp, tổng số giờ/phút/phiên học và biểu đồ tiến độ phần trăm phân tích riêng cho từng môn.
+- **Thống kê thời gian học tập nâng cao**:
+  - Hỗ trợ xem thống kê thời gian học tập linh hoạt theo 3 chu kỳ: **Tuần**, **Tháng**, và **Năm**.
+  - Tích hợp thanh điều hướng thời gian (`◀` và `▶`) cho phép xem lại dữ liệu của tuần trước, tháng trước, năm ngoái một cách trực quan.
+  - Tự động so sánh tổng thời lượng học của chu kỳ hiện tại với chu kỳ trước đó để đưa ra **tỷ lệ phần trăm tăng/giảm (%)** (Ví dụ: `↑ 15% so với tuần trước`).
+  - Biểu đồ cột tự động thích ứng với số lượng cột hiển thị (7 cột đối với Tuần, 5 cột đối với các tuần trong Tháng, và 12 cột đối với các tháng trong Năm) và tự căn chỉnh kích thước cột (responsive).
+  - Tự động cập nhật bảng tổng kết (số giờ, số phút, số phiên học) và phân bố thời gian theo môn học tương thích chính xác với khoảng thời gian đang chọn.
+  - Cho phép người dùng chọn môn thi đang tập trung ôn luyện để ghi nhận chính xác thời gian học từng môn vào `localStorage` (bảo toàn dữ liệu khi reset, skip phiên, hoặc đóng panel).
 - **Chủ đề Nghệ thuật (Art Themes)**:
   - Bổ sung 5 chủ đề nghệ thuật: **Lofi Café, Cyberpunk Alley, Sakura Library, Space Odyssey, Nature Cabin**.
   - Các theme thay đổi ảnh nền, màu sắc vòng đếm ngược, màu nút bấm và hiệu ứng glow neon lấp lánh tương ứng với mỗi không gian học tập.
