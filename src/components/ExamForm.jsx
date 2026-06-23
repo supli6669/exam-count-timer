@@ -6,6 +6,7 @@ function ExamForm({ exam, onSave, onClose }) {
   const getInitialDateTime = () => {
     if (exam && exam.datetime) {
       const date = new Date(exam.datetime);
+      if (isNaN(date.getTime())) return '';
       const tzOffset = date.getTimezoneOffset() * 60000;
       return new Date(date - tzOffset).toISOString().slice(0, 16);
     }
@@ -25,9 +26,13 @@ function ExamForm({ exam, onSave, onClose }) {
       setCategory(exam.category || 'other');
       if (exam.datetime) {
         const date = new Date(exam.datetime);
-        const tzOffset = date.getTimezoneOffset() * 60000;
-        const localISOTime = new Date(date - tzOffset).toISOString().slice(0, 16);
-        setDatetime(localISOTime);
+        if (!isNaN(date.getTime())) {
+          const tzOffset = date.getTimezoneOffset() * 60000;
+          const localISOTime = new Date(date - tzOffset).toISOString().slice(0, 16);
+          setDatetime(localISOTime);
+        } else {
+          setDatetime('');
+        }
       } else {
         setDatetime('');
       }

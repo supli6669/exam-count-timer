@@ -99,9 +99,8 @@ function App() {
     return () => clearInterval(interval);
   }, [exams, notificationsEnabled]);
 
-  // Handle open modal for creating
   const handleCreateOpen = (defaultDate = null) => {
-    if (defaultDate) {
+    if (defaultDate && typeof defaultDate === 'string') {
       setEditingExam({
         id: '',
         subject: '',
