@@ -6,6 +6,8 @@ import CalendarView from './components/CalendarView';
 import { CATEGORIES } from './constants';
 import PomodoroTimer from './components/PomodoroTimer';
 import RecurringTasks from './components/RecurringTasks';
+import ContributionGraph from './components/ContributionGraph';
+import { incrementContribution, decrementContribution } from './utils/contributions';
 
 // Initial mock data set relative to current date (June 2026)
 const getInitialMockData = () => {
@@ -161,6 +163,18 @@ function App() {
 
   // Handle toggling sub-task completed status
   const handleToggleTask = (examId, taskId) => {
+    const exam = exams.find(e => e.id === examId);
+    if (exam) {
+      const task = (exam.tasks || []).find(t => t.id === taskId);
+      if (task) {
+        if (!task.completed) {
+          incrementContribution();
+        } else {
+          decrementContribution();
+        }
+      }
+    }
+
     setExams(exams.map(exam => {
       if (exam.id === examId) {
         return {
@@ -357,6 +371,9 @@ function App() {
 
       {/* Mục Tiêu Định Kỳ (Rule of 3) */}
       <RecurringTasks />
+
+      {/* Lịch Sử Đóng Góp Học Tập (GitHub-style Commit Graph) */}
+      <ContributionGraph />
 
       {/* Search & Sort Panel */}
       <section 

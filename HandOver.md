@@ -19,8 +19,15 @@
 - [x] Khởi chạy tự động cùng Windows (Startup script & shortcut) (Trạng thái: Đã xong)
 - [x] Thống kê thời gian học tập chi tiết theo ngày & môn thi (Trạng thái: Đã xong)
 - [x] 5 chủ đề nghệ thuật (Art Themes) cho Pomodoro (Trạng thái: Đã xong)
+- [x] Bản đồ đóng góp học tập kiểu GitHub (Study Commits Map) (Trạng thái: Đã xong)
 
 ## 2. Chi Tiết Các Phần Đã Triển Khai Gần Đây (So với lần cuối)
+- **Bản đồ đóng góp học tập (GitHub-style Study Commits Map)**:
+  - Tích hợp biểu đồ đóng đóng góp 53 tuần (1 năm) kiểu GitHub (Contribution Graph) trực quan ngay trên trang chính dashboard.
+  - Các ô lịch tự động chuyển sang màu xanh lục đậm dần tùy theo năng suất (số lượng task hoàn thành) của bạn trong ngày.
+  - Tự động cộng "commit" khi check hoàn thành sub-task của môn thi, check hoàn thành mục tiêu Rule of 3 hoặc hoàn thành một phiên Pomodoro.
+  - Tự động trừ đóng góp tương ứng khi bạn bỏ check (uncheck) nhiệm vụ.
+  - Hiển thị tổng số đóng góp trong năm cùng chuỗi ngày học liên tục (Streak) ở góc bảng điều khiển.
 - **Tự động khởi động cùng hệ thống**:
   - Cấu hình server chạy mặc định ở cổng `5174` và tự kích hoạt trình duyệt khi khởi chạy (`server: { port: 5174, open: true }`).
   - Đặt shortcut khởi chạy `start-timer.lnk` vào thư mục Startup của Windows (`%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup`), khởi chạy server Vite thu nhỏ (minimized) mỗi khi máy tính bật.
@@ -49,7 +56,7 @@
   - Thêm CSS responsive cho Spotify Player, Mục tiêu định kỳ (bố cục 4 cột) và hiệu ứng tương tác cao cấp cho nút thoát Pomodoro nổi.
 
 ## 3. Trạng Thế Git Hiện Tại
-- Mã SHA commit / Message gần nhất: `feat: add study statistics, custom art themes for Pomodoro, and auto-startup on Windows`
+- Mã SHA commit / Message gần nhất: `feat: add study stats, Pomodoro art themes, Windows auto-start, and GitHub-style contribution graph`
 - Tên Branch hiện tại: `main`
 - GitHub Remote: `https://github.com/supli6669/exam-count-timer.git`
 

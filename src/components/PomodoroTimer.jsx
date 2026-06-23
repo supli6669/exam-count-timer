@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import SpotifyPlayer from './SpotifyPlayer';
+import { incrementContribution } from '../utils/contributions';
 
 function PomodoroTimer({ isOpen, onClose, exams = [] }) {
   // Load custom time settings (in minutes) or default values
@@ -90,6 +91,8 @@ function PomodoroTimer({ isOpen, onClose, exams = [] }) {
       secondsStudiedRef.current = 0;
       return; // Ignore logs less than 5 seconds to avoid noise
     }
+
+    incrementContribution();
 
     const today = new Date().toISOString().split('T')[0];
     let subjectName = 'Học tập chung';

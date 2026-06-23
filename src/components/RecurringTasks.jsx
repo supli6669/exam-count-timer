@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { incrementContribution, decrementContribution } from '../utils/contributions';
 
 // Helpers to get period identifiers
 const getWeekNumber = (date) => {
@@ -180,6 +181,15 @@ function RecurringTasks() {
   }, []);
 
   const handleToggleTask = (category, taskId) => {
+    const task = data[category].tasks.find(t => t.id === taskId);
+    if (task) {
+      if (!task.completed) {
+        incrementContribution();
+      } else {
+        decrementContribution();
+      }
+    }
+
     setData(prev => {
       const updatedCategory = {
         ...prev[category],
