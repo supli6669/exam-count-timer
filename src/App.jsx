@@ -1,0 +1,317 @@
+import { useState, useEffect } from 'react';
+import ExamCard from './components/ExamCard';
+import ExamForm from './components/ExamForm';
+
+// Initial mock data set relative to current date (June 2026)
+const getInitialMockData = () => {
+  const now = Date.now();
+  return [
+    {
+      id: 'mock-1',
+      subject: 'Cơ sở dữ liệu',
+      datetime: new Date(now + 1.25 * 24 * 60 * 60 * 1000).toISOString(), // ~30 hours from now (Urgent)
+    },
+    {
+      id: 'mock-2',
+      subject: 'Cấu trúc dữ liệu & Giải thuật',
+      datetime: new Date(now + 4.5 * 24 * 60 * 60 * 1000).toISOString(), // ~4.5 days from now (Warning)
+    },
+    {
+      id: 'mock-3',
+      subject: 'Mạng máy tính',
+      datetime: new Date(now + 10 * 24 * 60 * 60 * 1000).toISOString(), // 10 days from now (Safe)
+    },
+    {
+      id: 'mock-4',
+      subject: 'Nhập môn Trí tuệ nhân tạo',
+      datetime: new Date(now + 15 * 24 * 60 * 60 * 1000).toISOString(), // 15 days from now (Safe)
+    }
+  ];
+};
+
+function App() {
+  const [exams, setExams] = useState(() => {
+    const saved = localStorage.getItem('exams_countdown_list');
+    return saved ? JSON.parse(saved) : getInitialMockData();
+  });
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingExam, setEditingExam] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState('date-asc'); // date-asc, date-desc, name-asc
+
+  // Save to LocalStorage
+  useEffect(() => {
+    localStorage.setItem('exams_countdown_list', JSON.stringify(exams));
+  }, [exams]);
+
+  // Handle open modal for creating
+  const handleCreateOpen = () => {
+    setEditingExam(null);
+    setIsModalOpen(true);
+  };
+
+  // Handle open modal for editing
+  const handleEditOpen = (exam) => {
+    setEditingExam(exam);
+    setIsModalOpen(true);
+  };
+
+  // Handle saving new/edited exam
+  const handleSaveExam = (savedExam) => {
+    if (editingExam) {
+      setExams(exams.map(e => e.id === savedExam.id ? savedExam : e));
+    } else {
+      setExams([...exams, savedExam]);
+    }
+    setIsModalOpen(false);
+    setEditingExam(null);
+  };
+
+  // Handle delete
+  const handleDeleteExam = (id) => {
+    if (window.confirm('Bạn có chắc chắn muốn xóa lịch thi này không?')) {
+      setExams(exams.filter(e => e.id !== id));
+    }
+  };
+
+  // Dynamic status counts
+  const getStats = () => {
+    let urgent = 0;
+    let warning = 0;
+    let safe = 0;
+    let passed = 0;
+
+    const now = new Date();
+
+    exams.forEach(exam => {
+      const diff = new Date(exam.datetime) - now;
+      if (diff <= 0) {
+        passed++;
+      } else {
+        const days = diff / (1000 * 60 * 60 * 24);
+        if (days < 2) {
+          urgent++;
+        } else if (days < 7) {
+          warning++;
+        } else {
+          safe++;
+        }
+      }
+    });
+
+    return { total: exams.length, urgent, warning, safe, passed };
+  };
+
+  const stats = getStats();
+
+  // Filter & Sort logic
+  const filteredExams = exams.filter(exam => 
+    exam.subject.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const sortedExams = [...filteredExams].sort((a, b) => {
+    if (sortBy === 'date-asc') {
+      return new Date(a.datetime) - new Date(b.datetime);
+    } else if (sortBy === 'date-desc') {
+      return new Date(b.datetime) - new Date(a.datetime);
+    } else if (sortBy === 'name-asc') {
+      return a.subject.localeCompare(b.subject, 'vi');
+    }
+    return 0;
+  });
+
+  return (
+    <div className="app-container">
+      {/* App Header */}
+      <header className="app-header">
+        <div className="brand-section">
+          <div className="brand-logo-container">
+            <svg viewBox="0 0 24 24">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.5-13H11v6l5.2 3.15.8-.13-4.5-2.7V7z" />
+            </svg>
+          </div>
+          <div>
+            <h1 className="brand-title">Đồng Hồ Lịch Thi</h1>
+            <div className="brand-subtitle">Exam Countdown Dashboard</div>
+          </div>
+        </div>
+        <div className="header-actions">
+          <button className="btn btn-primary" onClick={handleCreateOpen}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            Thêm môn thi
+          </button>
+        </div>
+      </header>
+
+      {/* Statistics Bar */}
+      <section className="stats-bar" aria-label="Thống kê lịch thi">
+        <div className="stat-card">
+          <div className="stat-icon primary">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+            </svg>
+          </div>
+          <div className="stat-details">
+            <span className="stat-value">{stats.total}</span>
+            <span className="stat-label">Tổng số môn</span>
+          </div>
+        </div>
+
+        <div className="stat-card">
+          <div className="stat-icon urgent">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="8" x2="12" y2="12"></line>
+              <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+          </div>
+          <div className="stat-details">
+            <span className="stat-value">{stats.urgent}</span>
+            <span className="stat-label">Khẩn cấp (&lt; 2 ngày)</span>
+          </div>
+        </div>
+
+        <div className="stat-card">
+          <div className="stat-icon warning">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+              <line x1="12" y1="9" x2="12" y2="13"></line>
+              <line x1="12" y1="17" x2="12.01" y2="17"></line>
+            </svg>
+          </div>
+          <div className="stat-details">
+            <span className="stat-value">{stats.warning}</span>
+            <span className="stat-label">Sắp diễn ra (&lt; 7 ngày)</span>
+          </div>
+        </div>
+
+        <div className="stat-card">
+          <div className="stat-icon safe">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+              <polyline points="22 4 12 14.01 9 11.01"></polyline>
+            </svg>
+          </div>
+          <div className="stat-details">
+            <span className="stat-value">{stats.safe}</span>
+            <span className="stat-label">Thời gian an toàn</span>
+          </div>
+        </div>
+      </section>
+
+      {/* Search & Sort Panel */}
+      <section 
+        className="filter-panel" 
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          gap: '1rem',
+          flexWrap: 'wrap',
+          background: 'var(--bg-glass)',
+          border: '1px solid var(--border-glass)',
+          padding: '1rem 1.5rem',
+          borderRadius: '16px',
+          backdropFilter: 'blur(10px)',
+          WebkitBackdropFilter: 'blur(10px)'
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flex: 1, minWidth: '260px' }}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <input
+            type="text"
+            placeholder="Tìm kiếm môn thi..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: '#fff',
+              fontSize: '0.95rem',
+              width: '100%',
+              outline: 'none'
+            }}
+            aria-label="Tìm kiếm môn thi"
+          />
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Sắp xếp:</span>
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+            style={{
+              background: 'var(--bg-secondary)',
+              border: '1px solid var(--border-glass)',
+              color: '#fff',
+              borderRadius: '8px',
+              padding: '0.4rem 0.8rem',
+              fontSize: '0.9rem',
+              outline: 'none',
+              cursor: 'pointer'
+            }}
+            aria-label="Tiêu chí sắp xếp"
+          >
+            <option value="date-asc">Thời gian thi (gần nhất)</option>
+            <option value="date-desc">Thời gian thi (xa nhất)</option>
+            <option value="name-asc">Tên môn thi (A-Z)</option>
+          </select>
+        </div>
+      </section>
+
+      {/* Main Grid View */}
+      <main className="exams-grid">
+        {sortedExams.length > 0 ? (
+          sortedExams.map(exam => (
+            <ExamCard
+              key={exam.id}
+              exam={exam}
+              onEdit={handleEditOpen}
+              onDelete={handleDeleteExam}
+            />
+          ))
+        ) : (
+          <div className="empty-state">
+            <div className="empty-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="8" x2="12" y2="12"></line>
+                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+              </svg>
+            </div>
+            <h2 className="empty-text">Không tìm thấy lịch thi nào</h2>
+            <p className="empty-subtext">
+              {searchQuery 
+                ? 'Hãy thử tìm kiếm với từ khóa khác hoặc xóa bộ lọc.' 
+                : 'Bắt đầu bằng cách thêm một môn thi mới vào danh sách theo dõi của bạn!'}
+            </p>
+            {!searchQuery && (
+              <button className="btn btn-primary" onClick={handleCreateOpen}>
+                Thêm môn thi đầu tiên
+              </button>
+            )}
+          </div>
+        )}
+      </main>
+
+      {/* Add / Edit Modal Form */}
+      {isModalOpen && (
+        <ExamForm
+          exam={editingExam}
+          onSave={handleSaveExam}
+          onClose={() => setIsModalOpen(false)}
+        />
+      )}
+    </div>
+  );
+}
+
+export default App;
