@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import ExamCard from './components/ExamCard';
 import ExamForm from './components/ExamForm';
+import NotificationSettings from './components/NotificationSettings';
 
 // Initial mock data set relative to current date (June 2026)
 const getInitialMockData = () => {
@@ -39,11 +40,56 @@ function App() {
   const [editingExam, setEditingExam] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('date-asc'); // date-asc, date-desc, name-asc
+  const [notificationsEnabled, setNotificationsEnabled] = useState(() => {
+    return localStorage.getItem('notifications_enabled') === 'true';
+  });
 
   // Save to LocalStorage
   useEffect(() => {
     localStorage.setItem('exams_countdown_list', JSON.stringify(exams));
   }, [exams]);
+
+  // Save notification setting
+  useEffect(() => {
+    localStorage.setItem('notifications_enabled', notificationsEnabled.toString());
+  }, [notificationsEnabled]);
+
+  // Check and send notifications
+  useEffect(() => {
+    if (!notificationsEnabled || !('Notification' in window) || Notification.permission !== 'granted') {
+      return;
+    }
+
+    const checkNotifications = () => {
+      const now = new Date();
+      exams.forEach(exam => {
+        const examDate = new Date(exam.datetime);
+        const diff = examDate - now;
+        const hours = diff / (1000 * 60 * 60);
+
+        // Notify if exam is within 24 hours and hasn't been notified yet
+        if (hours > 0 && hours <= 24) {
+          const notifiedKey = `notified_${exam.id}`;
+          const wasNotified = localStorage.getItem(notifiedKey);
+          
+          if (!wasNotified) {
+            new Notification('Nhắc nhở kỳ thi', {
+              body: `Môn "${exam.subject}" sẽ diễn ra vào ${hours < 1 ? 'sắp tới' : Math.floor(hours) + ' giờ nữa'}`,
+              icon: '⏰',
+              tag: exam.id
+            });
+            localStorage.setItem(notifiedKey, 'true');
+          }
+        }
+      });
+    };
+
+    // Check every minute
+    const interval = setInterval(checkNotifications, 60000);
+    checkNotifications(); // Initial check
+
+    return () => clearInterval(interval);
+  }, [exams, notificationsEnabled]);
 
   // Handle open modal for creating
   const handleCreateOpen = () => {
@@ -137,6 +183,10 @@ function App() {
           </div>
         </div>
         <div className="header-actions">
+          <NotificationSettings 
+            enabled={notificationsEnabled} 
+            onToggle={setNotificationsEnabled} 
+          />
           <button className="btn btn-primary" onClick={handleCreateOpen}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <line x1="12" y1="5" x2="12" y2="19"></line>
