@@ -15,8 +15,9 @@
 - **src/App.jsx**: Điều khiển toàn bộ logic CRUD (Thêm, Sửa, Xóa), liên kết LocalStorage, tính toán các chỉ số thống kê trên thanh điều khiển (Thống kê khẩn cấp, sắp diễn ra, an toàn), và tích hợp chức năng tìm kiếm (search), sắp xếp (sort) môn thi.
 
 ## 3. Trạng Thái Git Hiện Tại
-- Mã SHA commit / Message gần nhất: `b1d0dc2 feat: bootstrap React Vite app and implement basic dashboard UI`
+- Mã SHA commit / Message gần nhất: `cf83cd5 docs: update HandOver.md after implementing core logic`
 - Tên Branch hiện tại: `main`
+- GitHub Remote: `https://github.com/supli6669/exam-count-timer.git` (Đã kết nối và push)
 
 ## 4. Các Bước Tiếp Theo (Dành cho AI Agent kế tiếp)
 - 1. Chạy thử nghiệm trên trình duyệt bằng lệnh `npm run dev` để kiểm tra chức năng.
@@ -25,4 +26,4 @@
 - 4. Kiểm tra responsive giao diện trên thiết bị di động.
 
 ## 5. Lỗi Hiện Tại / Điểm Nghẽn / Khó Khăn Kỹ Thuật
-- Chưa kết nối với GitHub remote repository do chưa có link remote từ người dùng.
+- Không có lỗi hiện tại.
