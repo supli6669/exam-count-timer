@@ -5,7 +5,7 @@
 - [x] Khởi tạo Ứng dụng React + Vite (Trạng thái: Đã xong)
 - [x] Thiết kế Giao diện & Design System (Trạng thái: Đã xong)
 - [x] Xây dựng các Components & Logic Đếm Ngược (Trạng thái: Đã xong)
-- [ ] Kiểm thử & Hoàn thiện (Trạng thái: Đang làm)
+- [x] Kiểm thử & Hoàn thiện cơ bản (Trạng thái: Đã xong)
 
 ## 2. Chi Tiết Các Phần Đã Triển Khai Gần Recently
 - **index.html**: Tích hợp các thẻ SEO (meta, title tiếng Việt), favicon emoji đồng hồ và cấu hình theme color.
@@ -20,10 +20,11 @@
 - GitHub Remote: `https://github.com/supli6669/exam-count-timer.git` (Đã kết nối và push)
 
 ## 4. Các Bước Tiếp Theo (Dành cho AI Agent kế tiếp)
-- 1. Chạy thử nghiệm trên trình duyệt bằng lệnh `npm run dev` để kiểm tra chức năng.
-- 2. Thực hiện manual test cho quy trình CRUD: thêm, sửa, xóa, tìm kiếm và sắp xếp.
-- 3. Kiểm tra LocalStorage khi tải lại trang xem dữ liệu có được đồng bộ chính xác.
-- 4. Kiểm tra responsive giao diện trên thiết bị di động.
+- [x] Chạy thử nghiệm trên trình duyệt bằng lệnh `npm run dev` để kiểm tra chức năng.
+- [x] Thực hiện manual test cho quy trình CRUD: thêm, sửa, xóa, tìm kiếm và sắp xếp.
+- [x] Kiểm tra LocalStorage khi tải lại trang xem dữ liệu có được đồng bộ chính xác.
+- [x] Kiểm tra responsive giao diện trên thiết bị di động.
+- [ ] Phát triển thêm tính năng mới (đang chờ yêu cầu từ người dùng)
 
 ## 5. Lỗi Hiện Tại / Điểm Nghẽn / Khó Khăn Kỹ Thuật
 - Không có lỗi hiện tại.
