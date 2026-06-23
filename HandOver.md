@@ -13,32 +13,35 @@
 - [x] Sửa lỗi skip logic của Pomodoro chuyển tiếp về phiên Tập trung (Trạng thái: Đã xong)
 - [x] Tích hợp thêm các task cần làm (Todo checklist) cho từng môn thi cụ thể có deadline (Trạng thái: Đã xong)
 - [x] Giao diện Pomodoro toàn màn hình tập trung (như một tab mới) (Trạng thái: Đã xong)
+- [x] Tích hợp trình phát nhạc Spotify Embed (Trạng thái: Đã xong)
+- [x] Mục tiêu định kỳ Rule of 3 (Hàng ngày, Hàng tuần, Hàng tháng, Hàng năm) kèm reset thông minh & hiển thị mốc thời gian (Trạng thái: Đã xong)
+- [x] Tái thiết kế nút đóng Pomodoro thành nút nổi cố định ở góc trên bên phải (Trạng thái: Đã xong)
 
 ## 2. Chi Tiết Các Phần Đã Triển Khai Gần Đây (So với lần cuối)
-- **src/components/ExamCard.jsx**:
-  - Tích hợp cụm nhiệm vụ con (sub-tasks checklist) dạng collapsible có thanh hiển thị tiến trình (progress bar), checkbox tích chọn, hạn chót (deadline) riêng biệt hiển thị thông minh (đỏ nổi bật nếu quá hạn) và nút xóa nhiệm vụ con.
-  - Ô thêm nhanh nhiệm vụ có text input + datetime select.
-- **src/App.jsx**:
-  - Định nghĩa các state handler: `handleAddTask`, `handleToggleTask`, `handleDeleteTask` để lưu danh sách nhiệm vụ vào LocalStorage của từng môn thi.
+- **src/components/SpotifyPlayer.jsx**:
+  - [NEW] Component phát nhạc Spotify Embed với 4 preset focus (Lofi, Classical, Ambient, Nature).
+  - Tích hợp ô dán link thông minh tự động trích xuất ID để convert các link chia sẻ Spotify (Playlist, Album, Track) thành dạng nhúng.
+  - Lưu trạng thái ẩn/hiện và link nhạc đang phát vào LocalStorage.
+- **src/components/RecurringTasks.jsx**:
+  - [NEW] Component quản lý Mục tiêu định kỳ theo nguyên lý "Rule of 3" (đúng 3 nhiệm vụ cho mỗi chu kỳ).
+  - Tích hợp chỉnh sửa nội dung nhanh (Double-click/Pen icon) và tích chọn đi kèm thanh tiến trình phát sáng.
+  - Cơ chế tự động reset thông minh khi bước sang ngày mới, tuần mới, tháng mới hoặc năm mới.
+  - Hiển thị mốc thời gian / khoảng ngày thực tế chi tiết của chu kỳ ngay dưới tiêu đề.
 - **src/components/PomodoroTimer.jsx**:
-  - Tích hợp thêm state `completedWorkSessions` lưu số phiên làm việc đã hoàn thành vào `localStorage`.
-  - Hiển thị 3 dấu chấm tròn đỏ chỉ báo phiên làm việc và 1 dấu chấm kim cương nhấp nháy xanh dương (`pulse-blue`) báo hiệu phiên nghỉ dài tiếp theo.
-  - Hiển thị text động: **"Còn X lần Nghỉ ngắn nữa đến Nghỉ dài"** hoặc thông báo khi đợt nghỉ tiếp theo là Nghỉ dài.
-  - Sửa đổi hàm `handleSkip` để khi người dùng nhấn bỏ qua phiên Nghỉ ngắn/Nghỉ dài thì sẽ quay về phiên **Tập trung** thay vì chuyển tiếp sang break khác không hợp lệ.
+  - Nhúng `<SpotifyPlayer />` động chỉ khi mở sidebar (tự động ngắt nhạc khi đóng).
+  - Đưa nút đóng Pomodoro thành nút nổi cố định ở góc trên bên phải màn hình (pomodoro-close-btn) đi kèm hiệu ứng hover xoay 90 độ và glow màu đỏ neon.
+- **src/App.jsx**:
+  - Tích hợp và hiển thị `<RecurringTasks />` ngay dưới statistics bar trên trang chính.
 - **src/index.css**:
-  - Cập nhật `.pomodoro-sidebar` từ giao diện bảng bên phải thành **toàn màn hình (full screen)** phủ toàn bộ viewport (`100vw`, `100vh`, `z-index: 1000`) khi mở, mang lại không gian tập trung tuyệt đối.
-  - Căn giữa các khối chức năng Pomodoro (header, chế độ, đồng hồ tròn, nút điều khiển, cài đặt) trong màn hình lớn.
-  - Thêm CSS styling cho cụm nhiệm vụ con của từng môn thi đảm bảo đồng nhất thiết kế Dark Premium Glassmorphism.
-  - Thêm CSS định hình layout cho container dấu chấm chu kỳ Pomodoro (`.pomodoro-progress-dots-container`, `.pomodoro-dots-indicator`, `.indicator-dot`, v.v.).
-  - Thêm hiệu ứng động `@keyframes pulse-blue` để tạo nhịp đập cho chấm Nghỉ dài tiếp theo.
+  - Thêm CSS responsive cho Spotify Player, Mục tiêu định kỳ (bố cục 4 cột) và hiệu ứng tương tác cao cấp cho nút thoát Pomodoro nổi.
 
 ## 3. Trạng Thái Git Hiện Tại
-- Mã SHA commit / Message gần nhất: `18450ef feat: add exam sub-tasks support with individual deadlines, progress tracking, and collapsible lists` (Và chuẩn bị commit thêm phần Pomodoro toàn màn hình)
+- Mã SHA commit / Message gần nhất: `feat: integrate Spotify player, Recurring Tasks tracker (Rule of 3), and improve Pomodoro UI`
 - Tên Branch hiện tại: `main`
-- GitHub Remote: `https://github.com/supli6669/exam-count-timer.git` (Đã kết nối, commit và push thành công)
+- GitHub Remote: `https://github.com/supli6669/exam-count-timer.git`
 
 ## 4. Các Bước Tiếp Theo (Dành cho AI Agent)
-- [ ] Tích hợp trình phát nhạc Spotify Embed (theo kế hoạch triển khai đã được duyệt sơ bộ).
+- Hiện tại các tính năng đề ra đã hoàn thành đầy đủ và hoạt động ổn định.
 
 ## 5. Lỗi Hiện Tại / Điểm Nghẽn / Khó Khăn Kỹ Thuật
 - Không có lỗi hiện tại.

@@ -5,6 +5,7 @@ import NotificationSettings from './components/NotificationSettings';
 import CalendarView from './components/CalendarView';
 import { CATEGORIES } from './constants';
 import PomodoroTimer from './components/PomodoroTimer';
+import RecurringTasks from './components/RecurringTasks';
 
 // Initial mock data set relative to current date (June 2026)
 const getInitialMockData = () => {
@@ -353,6 +354,9 @@ function App() {
           </div>
         </div>
       </section>
+
+      {/* Mục Tiêu Định Kỳ (Rule of 3) */}
+      <RecurringTasks />
 
       {/* Search & Sort Panel */}
       <section 

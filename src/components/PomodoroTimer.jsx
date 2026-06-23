@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import SpotifyPlayer from './SpotifyPlayer';
 
 function PomodoroTimer({ isOpen, onClose }) {
   // Load custom time settings (in minutes) or default values
@@ -223,18 +224,20 @@ function PomodoroTimer({ isOpen, onClose }) {
 
   return (
     <div className={`pomodoro-sidebar ${isOpen ? 'open' : ''}`}>
+      {/* Floating Close Button */}
+      <button className="pomodoro-close-btn" onClick={onClose} aria-label="Đóng Pomodoro">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+
       {/* Sidebar Header */}
       <div className="pomodoro-header">
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           <span style={{ fontSize: '1.25rem' }}>🍅</span>
           <h2 className="pomodoro-title">Hẹn Giờ Pomodoro</h2>
         </div>
-        <button className="btn-icon" onClick={onClose} aria-label="Đóng Pomodoro">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="18" y1="6" x2="6" y2="18"></line>
-            <line x1="6" y1="6" x2="18" y2="18"></line>
-          </svg>
-        </button>
       </div>
 
       {/* Main Mode Toggle Buttons */}
@@ -355,6 +358,8 @@ function PomodoroTimer({ isOpen, onClose }) {
           </svg>
         </button>
       </div>
+
+      {isOpen && <SpotifyPlayer />}
 
       {/* Collapsible Settings Area */}
       <div className="pomodoro-settings-section">
