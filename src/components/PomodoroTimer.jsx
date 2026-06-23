@@ -17,7 +17,16 @@ function PomodoroTimer({ isOpen, onClose }) {
 
   const [mode, setMode] = useState('work'); // 'work' | 'shortBreak' | 'longBreak'
   const [isActive, setIsActive] = useState(false);
-  
+  const [completedWorkSessions, setCompletedWorkSessions] = useState(() => {
+    const saved = localStorage.getItem('pomodoro_completed_sessions');
+    return saved ? parseInt(saved, 10) : 0;
+  });
+
+  // Save completed sessions to LocalStorage
+  useEffect(() => {
+    localStorage.setItem('pomodoro_completed_sessions', completedWorkSessions.toString());
+  }, [completedWorkSessions]);
+
   // Time left in seconds
   const [timeLeft, setTimeLeft] = useState(() => workTime * 60);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -96,8 +105,16 @@ function PomodoroTimer({ isOpen, onClose }) {
     playAlarmSound();
 
     if (mode === 'work') {
-      sendPushNotification('Hết giờ tập trung!', 'Cơ thể bạn cần nghỉ ngơi. Hãy chuyển sang chế độ Nghỉ ngắn.');
-      setMode('shortBreak');
+      const nextCount = completedWorkSessions + 1;
+      if (nextCount >= 4) {
+        setCompletedWorkSessions(0);
+        sendPushNotification('Hết giờ tập trung!', 'Chúc mừng bạn đã hoàn thành 4 phiên! Hãy nghỉ ngơi dài hơn.');
+        setMode('longBreak');
+      } else {
+        setCompletedWorkSessions(nextCount);
+        sendPushNotification('Hết giờ tập trung!', 'Cơ thể bạn cần nghỉ ngơi. Hãy chuyển sang chế độ Nghỉ ngắn.');
+        setMode('shortBreak');
+      }
     } else {
       sendPushNotification('Hết giờ nghỉ ngơi!', 'Thời gian thư giãn đã hết. Sẵn sàng tập trung học bài nhé.');
       setMode('work');
@@ -143,9 +160,14 @@ function PomodoroTimer({ isOpen, onClose }) {
   const handleSkip = () => {
     setIsActive(false);
     if (mode === 'work') {
-      setMode('shortBreak');
-    } else if (mode === 'shortBreak') {
-      setMode('longBreak');
+      const nextCount = completedWorkSessions + 1;
+      if (nextCount >= 4) {
+        setCompletedWorkSessions(0);
+        setMode('longBreak');
+      } else {
+        setCompletedWorkSessions(nextCount);
+        setMode('shortBreak');
+      }
     } else {
       setMode('work');
     }
@@ -231,7 +253,7 @@ function PomodoroTimer({ isOpen, onClose }) {
         </button>
         <button 
           className={`pomodoro-mode-btn ${mode === 'longBreak' ? 'active' : ''}`}
-          onClick={() => { setIsActive(false); setMode('longBreak'); }}
+          onClick={() => { setIsActive(false); setMode('longBreak'); setCompletedWorkSessions(0); }}
         >
           Nghỉ dài
         </button>
@@ -269,6 +291,30 @@ function PomodoroTimer({ isOpen, onClose }) {
             <span className="pomodoro-timer-digits">{formatTime(timeLeft)}</span>
             <span className="pomodoro-timer-label">{getModeLabel()}</span>
           </div>
+        </div>
+      </div>
+
+      {/* Session Progress Dots */}
+      <div className="pomodoro-progress-dots-container">
+        <div className="pomodoro-dots-indicator">
+          {[0, 1, 2].map((idx) => (
+            <span 
+              key={idx} 
+              className={`indicator-dot ${idx < completedWorkSessions ? 'active' : ''}`}
+              title={`Phiên tập trung ${idx + 1}`}
+            ></span>
+          ))}
+          <span 
+            className={`indicator-dot long-break-dot ${completedWorkSessions === 3 ? 'next' : ''}`}
+            title="Nghỉ dài"
+          ></span>
+        </div>
+        <div className="pomodoro-remaining-text">
+          {completedWorkSessions < 3 ? (
+            <>Còn <strong>{3 - completedWorkSessions}</strong> lần Nghỉ ngắn nữa đến Nghỉ dài</>
+          ) : (
+            <>Đợt nghỉ tiếp theo sẽ là <strong>Nghỉ dài</strong>! ☕</>
+          )}
         </div>
       </div>
 

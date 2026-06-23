@@ -1384,3 +1384,69 @@ body {
     width: 100vw;
   }
 }
+
+/* Pomodoro session progress dots */
+.pomodoro-progress-dots-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: -0.5rem;
+}
+
+.pomodoro-dots-indicator {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.indicator-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid var(--border-glass);
+  transition: all 0.3s ease;
+}
+
+.indicator-dot.active {
+  background: #ef4444;
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.6);
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
+.indicator-dot.long-break-dot {
+  border-radius: 4px; /* diamond/square shape for long break indicator */
+  width: 12px;
+  height: 12px;
+}
+
+.indicator-dot.long-break-dot.next {
+  background: #3b82f6;
+  box-shadow: 0 0 8px rgba(59, 130, 246, 0.6);
+  border-color: rgba(59, 130, 246, 0.4);
+  animation: pulse-blue 2s infinite;
+}
+
+.pomodoro-remaining-text {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.pomodoro-remaining-text strong {
+  color: #fff;
+  font-weight: 700;
+}
+
+@keyframes pulse-blue {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 1;
+  }
+}
