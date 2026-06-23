@@ -46,17 +46,30 @@ function SmartInsights({ exams = [] }) {
     return Math.round(totalSeconds / 60);
   };
 
-  const DEFAULT_HOURS = {
-    final: 10,
-    midterm: 6,
-    assignment: 4,
-    quiz: 2,
-    other: 3
-  };
+  // Calculate historical study speed
+  const totalCompletedTasks = exams.reduce((sum, exam) => {
+    return sum + (exam.tasks ? exam.tasks.filter(t => t.completed).length : 0);
+  }, 0);
 
+  const totalStudyMinutes = Math.round(studyLogs.reduce((sum, log) => sum + log.seconds, 0) / 60);
+
+  // Speed factor: average minutes spent per completed task
+  const averageMinutesPerTask = totalCompletedTasks > 0 
+    ? Math.max(20, Math.min(90, Math.round(totalStudyMinutes / totalCompletedTasks))) 
+    : 40; // Default to 40 minutes per task
+
+  // Dynamic target calculation based on exam category base hours + task workload * speed factor
   const getTargetPrepMinutes = (exam) => {
-    const hours = exam.targetHours || DEFAULT_HOURS[exam.category || 'other'] || 5;
-    return hours * 60;
+    const BASE_MINUTES = {
+      final: 240,       // 4 hours base
+      midterm: 150,     // 2.5 hours base
+      assignment: 180,  // 3 hours base
+      quiz: 60,         // 1 hour base
+      other: 90         // 1.5 hours base
+    };
+    const base = BASE_MINUTES[exam.category || 'other'] || 120;
+    const taskCount = exam.tasks ? exam.tasks.length : 0;
+    return base + (taskCount * averageMinutesPerTask);
   };
 
   const now = new Date();
@@ -70,6 +83,16 @@ function SmartInsights({ exams = [] }) {
       const daysLeft = diffMs / (1000 * 60 * 60 * 24);
       const accumulatedMins = getSubjectStudyMinutes(exam.id);
       const targetPrepMinutes = getTargetPrepMinutes(exam);
+      
+      const baseMinutes = {
+        final: 240,
+        midterm: 150,
+        assignment: 180,
+        quiz: 60,
+        other: 90
+      }[exam.category || 'other'] || 120;
+      
+      const taskCount = exam.tasks ? exam.tasks.length : 0;
 
       // Warning assessment
       let alertLevel = 'safe'; // 'safe' | 'warning' | 'danger'
@@ -102,6 +125,8 @@ function SmartInsights({ exams = [] }) {
         daysLeft,
         accumulatedMins,
         targetPrepMinutes,
+        baseMinutes,
+        taskCount,
         alertLevel,
         alertText,
         dailyRecommended,
@@ -206,13 +231,16 @@ function SmartInsights({ exams = [] }) {
                 <div className="insights-progress-section">
                   <div className="insights-progress-labels">
                     <span>Đã học: <strong>{item.accumulatedMins} phút</strong></span>
-                    <span>Mục tiêu: {item.targetPrepMinutes} phút ({item.targetHours || Math.round(item.targetPrepMinutes / 60)}h)</span>
+                    <span>Mục tiêu: {item.targetPrepMinutes} phút ({(item.targetPrepMinutes / 60).toFixed(1)}h)</span>
                   </div>
                   <div className="insights-progress-bar">
                     <div 
                       className="insights-progress-fill" 
                       style={{ width: `${item.progressPercent}%` }}
                     />
+                  </div>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '0.2rem', fontStyle: 'italic' }}>
+                    📐 Ước tính: {(item.baseMinutes / 60).toFixed(1)}h (cơ bản) + {item.taskCount} task x {averageMinutesPerTask}m
                   </div>
                 </div>
 
@@ -224,7 +252,7 @@ function SmartInsights({ exams = [] }) {
                     </>
                   ) : (
                     <>
-                      🎉 Đã tích lũy đủ mục tiêu ôn tập ({item.targetHours || Math.round(item.targetPrepMinutes / 60)} giờ) cho môn này!
+                      🎉 Đã tích lũy đủ mục tiêu ôn tập ({(item.targetPrepMinutes / 60).toFixed(1)} giờ) cho môn này!
                     </>
                   )}
                 </div>
