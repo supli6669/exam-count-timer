@@ -1,25 +1,43 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import DatePicker from './DatePicker';
+import { CATEGORIES } from '../constants';
 
 function ExamForm({ exam, onSave, onClose }) {
-  const [subject, setSubject] = useState('');
-  const [datetime, setDatetime] = useState('');
-  const [error, setError] = useState('');
-
-  useEffect(() => {
-    if (exam) {
-      setSubject(exam.subject);
-      // Format to yyyy-MM-ddThh:mm for datetime-local input
+  const getInitialDateTime = () => {
+    if (exam && exam.datetime) {
       const date = new Date(exam.datetime);
-      const tzOffset = date.getTimezoneOffset() * 60000; // offset in milliseconds
-      const localISOTime = (new Date(date - tzOffset)).toISOString().slice(0, 16);
-      setDatetime(localISOTime);
+      const tzOffset = date.getTimezoneOffset() * 60000;
+      return new Date(date - tzOffset).toISOString().slice(0, 16);
+    }
+    return '';
+  };
+
+  const [subject, setSubject] = useState(exam ? (exam.subject || '') : '');
+  const [datetime, setDatetime] = useState(getInitialDateTime);
+  const [category, setCategory] = useState(exam ? (exam.category || 'other') : 'other');
+  const [error, setError] = useState('');
+  const [prevExam, setPrevExam] = useState(exam);
+
+  if (exam !== prevExam) {
+    setPrevExam(exam);
+    if (exam) {
+      setSubject(exam.subject || '');
+      setCategory(exam.category || 'other');
+      if (exam.datetime) {
+        const date = new Date(exam.datetime);
+        const tzOffset = date.getTimezoneOffset() * 60000;
+        const localISOTime = new Date(date - tzOffset).toISOString().slice(0, 16);
+        setDatetime(localISOTime);
+      } else {
+        setDatetime('');
+      }
     } else {
       setSubject('');
       setDatetime('');
+      setCategory('other');
     }
     setError('');
-  }, [exam]);
+  }
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -48,9 +66,10 @@ function ExamForm({ exam, onSave, onClose }) {
     }
 
     onSave({
-      id: exam ? exam.id : Date.now().toString(),
+      id: exam && exam.id ? exam.id : Date.now().toString(),
       subject: subject.trim(),
       datetime: selectedDate.toISOString(),
+      category: category,
     });
   };
 
@@ -96,6 +115,26 @@ function ExamForm({ exam, onSave, onClose }) {
               maxLength="50"
               autoFocus
             />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label" htmlFor="category-select">Phân loại môn thi</label>
+            <select
+              id="category-select"
+              className="form-input"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              style={{
+                background: 'var(--bg-secondary)',
+                border: '1px solid var(--border-glass)',
+                color: '#fff',
+                cursor: 'pointer'
+              }}
+            >
+              {Object.entries(CATEGORIES).map(([key, val]) => (
+                <option key={key} value={key}>{val.name}</option>
+              ))}
+            </select>
           </div>
 
           <div className="form-group">

@@ -1,31 +1,38 @@
 import { useState, useEffect } from 'react';
+import { CATEGORIES } from '../constants';
 
-function ExamCard({ exam, onEdit, onDelete }) {
-  const [timeLeft, setTimeLeft] = useState(calculateTimeLeft());
+function calculateTimeLeft(datetime) {
+  const difference = new Date(datetime) - new Date();
+  let timeLeft = {
+    days: 0,
+    hours: 0,
+    minutes: 0,
+    seconds: 0,
+    isPassed: true,
+    totalMs: difference
+  };
 
-  function calculateTimeLeft() {
-    const difference = new Date(exam.datetime) - new Date();
-    let timeLeft = {
-      days: 0,
-      hours: 0,
-      minutes: 0,
-      seconds: 0,
-      isPassed: true,
+  if (difference > 0) {
+    timeLeft = {
+      days: Math.floor(difference / (1000 * 60 * 60 * 24)),
+      hours: Math.floor((difference / (1000 * 60 * 60)) % 24),
+      minutes: Math.floor((difference / 1000 / 60) % 60),
+      seconds: Math.floor((difference / 1000) % 60),
+      isPassed: false,
       totalMs: difference
     };
+  }
 
-    if (difference > 0) {
-      timeLeft = {
-        days: Math.floor(difference / (1000 * 60 * 60 * 24)),
-        hours: Math.floor((difference / (1000 * 60 * 60)) % 24),
-        minutes: Math.floor((difference / 1000 / 60) % 60),
-        seconds: Math.floor((difference / 1000) % 60),
-        isPassed: false,
-        totalMs: difference
-      };
-    }
+  return timeLeft;
+}
 
-    return timeLeft;
+function ExamCard({ exam, onEdit, onDelete }) {
+  const [timeLeft, setTimeLeft] = useState(() => calculateTimeLeft(exam.datetime));
+  const [prevDatetime, setPrevDatetime] = useState(exam.datetime);
+
+  if (exam.datetime !== prevDatetime) {
+    setPrevDatetime(exam.datetime);
+    setTimeLeft(calculateTimeLeft(exam.datetime));
   }
 
   // Get day of week in Vietnamese
@@ -36,11 +43,8 @@ function ExamCard({ exam, onEdit, onDelete }) {
   };
 
   useEffect(() => {
-    // Initial calculation
-    setTimeLeft(calculateTimeLeft());
-
     const timer = setInterval(() => {
-      setTimeLeft(calculateTimeLeft());
+      setTimeLeft(calculateTimeLeft(exam.datetime));
     }, 1000);
 
     return () => clearInterval(timer);
@@ -80,11 +84,17 @@ function ExamCard({ exam, onEdit, onDelete }) {
     return `${dayOfWeek}, ${hours}:${minutes} - ${day}/${month}/${year}`;
   };
 
+  const catKey = exam.category || 'other';
+  const catInfo = CATEGORIES[catKey] || CATEGORIES.other;
+
   return (
     <div className={`exam-card ${statusClass}`}>
       <div className="exam-card-header">
         <div className="exam-info">
-          <h3 className="exam-title">{exam.subject}</h3>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.25rem' }}>
+            <h3 className="exam-title" style={{ margin: 0 }}>{exam.subject}</h3>
+            <span className={`category-tag ${catInfo.class}`}>{catInfo.name}</span>
+          </div>
           <span className="exam-datetime">
             <svg viewBox="0 0 24 24">
               <path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zm0-12H5V6h14v2zm-7 3H7v5h5v-5z"/>

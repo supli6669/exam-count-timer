@@ -1,13 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
 function NotificationSettings({ enabled, onToggle }) {
-  const [permission, setPermission] = useState('default');
-
-  useEffect(() => {
-    if ('Notification' in window) {
-      setPermission(Notification.permission);
+  const [permission, setPermission] = useState(() => {
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      return Notification.permission;
     }
-  }, []);
+    return 'default';
+  });
 
   const handleRequestPermission = async () => {
     if ('Notification' in window) {

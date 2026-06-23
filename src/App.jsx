@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import ExamCard from './components/ExamCard';
 import ExamForm from './components/ExamForm';
 import NotificationSettings from './components/NotificationSettings';
+import CalendarView from './components/CalendarView';
+import { CATEGORIES } from './constants';
 
 // Initial mock data set relative to current date (June 2026)
 const getInitialMockData = () => {
@@ -11,21 +13,25 @@ const getInitialMockData = () => {
       id: 'mock-1',
       subject: 'Cơ sở dữ liệu',
       datetime: new Date(now + 1.25 * 24 * 60 * 60 * 1000).toISOString(), // ~30 hours from now (Urgent)
+      category: 'midterm'
     },
     {
       id: 'mock-2',
       subject: 'Cấu trúc dữ liệu & Giải thuật',
       datetime: new Date(now + 4.5 * 24 * 60 * 60 * 1000).toISOString(), // ~4.5 days from now (Warning)
+      category: 'final'
     },
     {
       id: 'mock-3',
       subject: 'Mạng máy tính',
       datetime: new Date(now + 10 * 24 * 60 * 60 * 1000).toISOString(), // 10 days from now (Safe)
+      category: 'quiz'
     },
     {
       id: 'mock-4',
       subject: 'Nhập môn Trí tuệ nhân tạo',
       datetime: new Date(now + 15 * 24 * 60 * 60 * 1000).toISOString(), // 15 days from now (Safe)
+      category: 'assignment'
     }
   ];
 };
@@ -39,10 +45,12 @@ function App() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingExam, setEditingExam] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('all');
   const [sortBy, setSortBy] = useState('date-asc'); // date-asc, date-desc, name-asc
   const [notificationsEnabled, setNotificationsEnabled] = useState(() => {
     return localStorage.getItem('notifications_enabled') === 'true';
   });
+  const [viewMode, setViewMode] = useState('card'); // 'card' or 'calendar'
 
   // Save to LocalStorage
   useEffect(() => {
@@ -92,8 +100,17 @@ function App() {
   }, [exams, notificationsEnabled]);
 
   // Handle open modal for creating
-  const handleCreateOpen = () => {
-    setEditingExam(null);
+  const handleCreateOpen = (defaultDate = null) => {
+    if (defaultDate) {
+      setEditingExam({
+        id: '',
+        subject: '',
+        datetime: defaultDate,
+        category: 'other'
+      });
+    } else {
+      setEditingExam(null);
+    }
     setIsModalOpen(true);
   };
 
@@ -152,9 +169,11 @@ function App() {
   const stats = getStats();
 
   // Filter & Sort logic
-  const filteredExams = exams.filter(exam => 
-    exam.subject.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredExams = exams.filter(exam => {
+    const matchesSearch = exam.subject.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesCategory = selectedCategory === 'all' || (exam.category || 'other') === selectedCategory;
+    return matchesSearch && matchesCategory;
+  });
 
   const sortedExams = [...filteredExams].sort((a, b) => {
     if (sortBy === 'date-asc') {
@@ -187,6 +206,28 @@ function App() {
             enabled={notificationsEnabled} 
             onToggle={setNotificationsEnabled} 
           />
+          <button 
+            className={`btn-icon ${viewMode === 'calendar' ? 'active' : ''}`} 
+            onClick={() => setViewMode(viewMode === 'card' ? 'calendar' : 'card')}
+            title={viewMode === 'card' ? 'Xem lịch' : 'Xem danh sách'}
+            aria-label={viewMode === 'card' ? 'Xem lịch' : 'Xem danh sách'}
+          >
+            {viewMode === 'card' ? (
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="16" y1="2" x2="16" y2="6"></line>
+                <line x1="8" y1="2" x2="8" y2="6"></line>
+                <line x1="3" y1="10" x2="21" y2="10"></line>
+              </svg>
+            ) : (
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="3" width="7" height="7"></rect>
+                <rect x="14" y="3" width="7" height="7"></rect>
+                <rect x="14" y="14" width="7" height="7"></rect>
+                <rect x="3" y="14" width="7" height="7"></rect>
+              </svg>
+            )}
+          </button>
           <button className="btn btn-primary" onClick={handleCreateOpen}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <line x1="12" y1="5" x2="12" y2="19"></line>
@@ -293,64 +334,98 @@ function App() {
           />
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Sắp xếp:</span>
-          <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value)}
-            style={{
-              background: 'var(--bg-secondary)',
-              border: '1px solid var(--border-glass)',
-              color: '#fff',
-              borderRadius: '8px',
-              padding: '0.4rem 0.8rem',
-              fontSize: '0.9rem',
-              outline: 'none',
-              cursor: 'pointer'
-            }}
-            aria-label="Tiêu chí sắp xếp"
-          >
-            <option value="date-asc">Thời gian thi (gần nhất)</option>
-            <option value="date-desc">Thời gian thi (xa nhất)</option>
-            <option value="name-asc">Tên môn thi (A-Z)</option>
-          </select>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Phân loại:</span>
+            <select
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+              style={{
+                background: 'var(--bg-secondary)',
+                border: '1px solid var(--border-glass)',
+                color: '#fff',
+                borderRadius: '8px',
+                padding: '0.4rem 0.8rem',
+                fontSize: '0.9rem',
+                outline: 'none',
+                cursor: 'pointer'
+              }}
+              aria-label="Phân loại môn thi"
+            >
+              <option value="all">Tất cả</option>
+              {Object.entries(CATEGORIES).map(([key, cat]) => (
+                <option key={key} value={key}>{cat.name}</option>
+              ))}
+            </select>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Sắp xếp:</span>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              style={{
+                background: 'var(--bg-secondary)',
+                border: '1px solid var(--border-glass)',
+                color: '#fff',
+                borderRadius: '8px',
+                padding: '0.4rem 0.8rem',
+                fontSize: '0.9rem',
+                outline: 'none',
+                cursor: 'pointer'
+              }}
+              aria-label="Tiêu chí sắp xếp"
+            >
+              <option value="date-asc">Thời gian thi (gần nhất)</option>
+              <option value="date-desc">Thời gian thi (xa nhất)</option>
+              <option value="name-asc">Tên môn thi (A-Z)</option>
+            </select>
+          </div>
         </div>
       </section>
 
       {/* Main Grid View */}
-      <main className="exams-grid">
-        {sortedExams.length > 0 ? (
-          sortedExams.map(exam => (
-            <ExamCard
-              key={exam.id}
-              exam={exam}
-              onEdit={handleEditOpen}
-              onDelete={handleDeleteExam}
-            />
-          ))
-        ) : (
-          <div className="empty-state">
-            <div className="empty-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="10"></circle>
-                <line x1="12" y1="8" x2="12" y2="12"></line>
-                <line x1="12" y1="16" x2="12.01" y2="16"></line>
-              </svg>
+      {viewMode === 'card' ? (
+        <main className="exams-grid">
+          {sortedExams.length > 0 ? (
+            sortedExams.map(exam => (
+              <ExamCard
+                key={exam.id}
+                exam={exam}
+                onEdit={handleEditOpen}
+                onDelete={handleDeleteExam}
+              />
+            ))
+          ) : (
+            <div className="empty-state">
+              <div className="empty-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="8" x2="12" y2="12"></line>
+                  <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+              </div>
+              <h2 className="empty-text">Không tìm thấy lịch thi nào</h2>
+              <p className="empty-subtext">
+                {searchQuery 
+                  ? 'Hãy thử tìm kiếm với từ khóa khác hoặc xóa bộ lọc.' 
+                  : 'Bắt đầu bằng cách thêm một môn thi mới vào danh sách theo dõi của bạn!'}
+              </p>
+              {!searchQuery && (
+                <button className="btn btn-primary" onClick={handleCreateOpen}>
+                  Thêm môn thi đầu tiên
+                </button>
+              )}
             </div>
-            <h2 className="empty-text">Không tìm thấy lịch thi nào</h2>
-            <p className="empty-subtext">
-              {searchQuery 
-                ? 'Hãy thử tìm kiếm với từ khóa khác hoặc xóa bộ lọc.' 
-                : 'Bắt đầu bằng cách thêm một môn thi mới vào danh sách theo dõi của bạn!'}
-            </p>
-            {!searchQuery && (
-              <button className="btn btn-primary" onClick={handleCreateOpen}>
-                Thêm môn thi đầu tiên
-              </button>
-            )}
-          </div>
-        )}
-      </main>
+          )}
+        </main>
+      ) : (
+        <CalendarView 
+          exams={sortedExams} 
+          onEdit={handleEditOpen}
+          onDelete={handleDeleteExam}
+          onCreate={handleCreateOpen}
+        />
+      )}
 
       {/* Add / Edit Modal Form */}
       {isModalOpen && (

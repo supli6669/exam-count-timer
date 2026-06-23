@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
 function DatePicker({ value, onChange }) {
   const date = value ? new Date(value) : new Date();
@@ -9,17 +9,16 @@ function DatePicker({ value, onChange }) {
   const [hour, setHour] = useState(date.getHours());
   const [minute, setMinute] = useState(date.getMinutes());
 
-  // Sync state when value prop changes
-  useEffect(() => {
-    if (value) {
-      const newDate = new Date(value);
-      setYear(newDate.getFullYear());
-      setMonth(newDate.getMonth());
-      setDay(newDate.getDate());
-      setHour(newDate.getHours());
-      setMinute(newDate.getMinutes());
-    }
-  }, [value]);
+  const [prevValue, setPrevValue] = useState(value);
+  if (value !== prevValue) {
+    setPrevValue(value);
+    const newDate = value ? new Date(value) : new Date();
+    setYear(newDate.getFullYear());
+    setMonth(newDate.getMonth());
+    setDay(newDate.getDate());
+    setHour(newDate.getHours());
+    setMinute(newDate.getMinutes());
+  }
 
   const months = [
     'Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5', 'Tháng 6',
