@@ -27,8 +27,16 @@
 - [x] Hiệu ứng hạt tương tác chuột (Interactive Particles) (Trạng thái: Đã xong)
 - [x] Bản đồ nhiệt & Phân tích Nhịp sinh học (Chronotype Focus Heatmap) (Trạng thái: Đã xong)
 - [x] Điều chỉnh âm lượng tổng cho Soundboard & chuông báo Pomodoro (Trạng thái: Đã xong)
+- [x] Kiểu âm báo tùy chỉnh (5 kiểu Web Audio API) mỗi khi kết thúc phiên Pomodoro (Trạng thái: Đã xong)
+- [x] Thanh điều chỉnh âm lượng cảnh báo bảo mật cho trình phát Spotify (Trạng thái: Đã xong)
 
 ## 2. Chi Tiết Các Phần Đã Triển Khai Gần Đây
+- **Tùy chọn kiểu âm báo Pomodoro**:
+  - Tích hợp 5 kiểu âm báo khác nhau vào menu Cài đặt Pomodoro: **Chuông điện tử Classic**, **Giai điệu Zen Chime**, **Gõ gỗ Woodblock**, **Tiếng chiêng sâu Mystic Gong**, và **Chuông cơ học Mechanical Bell**.
+  - Toàn bộ âm báo đều được thiết kế và tạo dao động âm trực tiếp bằng **Web Audio API** thời gian thực, đảm bảo nhẹ nhàng, nhanh chóng và hoạt động ngoại tuyến không cần Internet.
+- **Thanh cảnh báo điều chỉnh âm lượng Spotify**:
+  - Do chính sách bảo mật sandboxed của Spotify cấm điều chỉnh âm lượng trình phát nhúng Iframe từ code ứng dụng bên ngoài (trừ khi dùng Web Playback SDK Premium phức tạp và yêu cầu login token), chúng tôi đã thiết kế một giải pháp thông minh:
+  - Bổ sung thanh trượt âm lượng Spotify tương tác. Khi người dùng cố gắng kéo thanh trượt, hệ thống sẽ hiển thị một thông báo hướng dẫn cụ thể màu đỏ: *"Do chính sách bảo mật, Spotify không cho phép chỉnh âm lượng qua web nhúng. Vui lòng tăng/giảm trực tiếp trên thiết bị của bạn hoặc app Spotify Connect."* để hướng dẫn học sinh thao tác nhanh.
 - **Bộ hòa âm sóng não & tiếng ồn trắng (Web Audio API Synthesizer)**:
   - Tích hợp trực tiếp 3 loại sóng não tập trung (Alpha - 10Hz, Beta - 16Hz, Theta - 6Hz) và 3 loại tiếng ồn màu (White, Pink, Brown Noise) ngay trong bảng điều khiển.
   - Sử dụng **Web Audio API** tạo dao động âm và lọc tần số thời gian thực ngay trên trình duyệt mà không cần tải file MP3 bên ngoài, giúp ứng dụng hoạt động offline 100% và nhẹ tối đa.
@@ -39,7 +47,7 @@
 - **Hiệu ứng hạt tương tác (Interactive Theme Particles)**:
   - Cải tiến hiệu ứng hạt chạy dưới màn hình Pomodoro để phản hồi trực tiếp với con trỏ chuột:
     - **Cyberpunk Alley / Sakura Library**: Giọt mưa neon và cánh hoa đào tự né tránh (repel) con trỏ chuột tạo vùng bảo vệ.
-    - **Lofi Café / Nature Cabin**: Hạt bụi nắng và tàn lửa trại bị hút nhẹ (attract) và xoáy theo chuyển động chuột (swirl).
+    - **Lofi Café / Nature Cabin**: Hạt bụi nắng và tàn lửa trại bị hút nhẹ (attract) và xoay theo chuyển động chuột (swirl).
     - **Space Odyssey**: Các vì sao phát sáng rực rỡ và phóng to nhẹ khi chuột di chuyển đến gần.
   - Canvas giữ thuộc tính `pointer-events: none` nên hoàn toàn không ảnh hưởng tới tương tác click của các nút bấm giao diện phía trên.
 - **Phân tích nhịp sinh học ôn thi & Bản đồ nhiệt 24 giờ (Chronotype Heatmap)**:
@@ -47,7 +55,7 @@
   - Vẽ bản đồ nhiệt dạng lưới 24 giờ ngang trực quan, đổi màu xanh đậm dần tùy thuộc vào mức độ tập trung ôn bài trong ngày cùng tooltip CSS mượt mà khi di chuột qua.
 
 ## 3. Trạng Thái Git Hiện Tại
-- Mã SHA commit / Message gần nhất: `c48aebb` / `feat: add brainwave & noise synth, interactive particles, chronotype heatmap, master & alarm volume controls, and remove readiness radar`
+- Mã SHA commit / Message gần nhất: `67555dc` / `feat: add alarm sound selection to Pomodoro settings and mock volume slider with warning to Spotify player`
 - Tên Branch hiện tại: `main`
 - GitHub Remote: `https://github.com/supli6669/exam-count-timer.git`
 
