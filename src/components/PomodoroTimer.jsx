@@ -274,161 +274,6 @@ function PomodoroTimer({ isOpen, onClose, exams = [] }) {
   });
   const [historySubTab, setHistorySubTab] = useState('day');
 
-  // Get time thresholds for Today, 1 Week, 4 Weeks
-  const getThresholds = () => {
-    const now = Date.now();
-    const startOfToday = new Date();
-    startOfToday.setHours(0, 0, 0, 0);
-    const todayMs = startOfToday.getTime();
-    const oneWeekMs = now - 7 * 24 * 60 * 60 * 1000;
-    const fourWeeksMs = now - 28 * 24 * 60 * 60 * 1000;
-    return { today: todayMs, oneWeek: oneWeekMs, fourWeeks: fourWeeksMs };
-  };
-
-  const getFocusMetrics = () => {
-    const thresholds = getThresholds();
-    
-    const getStatsForRange = (startTime) => {
-      // Focus time (seconds)
-      const rangeLogs = studyLogs.filter(log => log.timestamp >= startTime);
-      const seconds = rangeLogs.reduce((sum, log) => sum + log.seconds, 0);
-      const minutes = seconds / 60;
-      
-      // Sessions
-      const sessions = rangeLogs.length;
-      
-      // Breaks
-      const breaks = breakLogs.filter(b => b.timestamp >= startTime).length;
-      
-      // Tasks Completed
-      let tasksCompleted = 0;
-      exams.forEach(exam => {
-        (exam.tasks || []).forEach(task => {
-          if (task.completed && task.completedAt && task.completedAt >= startTime) {
-            tasksCompleted++;
-          }
-        });
-      });
-
-      // Focus Score: 120 minutes daily target
-      const days = Math.max(1, (Date.now() - startTime) / (24 * 60 * 60 * 1000));
-      const targetMinutes = 120 * days;
-      const focusScore = targetMinutes > 0 ? Math.min(100, Math.round((minutes / targetMinutes) * 100)) : 0;
-
-      return {
-        focusTimeStr: formatFocusTime(seconds),
-        focusScore,
-        tasksCompleted,
-        sessions,
-        breaks
-      };
-    };
-
-    const formatFocusTime = (s) => {
-      if (s === 0) return '0m';
-      if (s < 3600) return `${Math.round(s / 60)}m`;
-      return `${(s / 3600).toFixed(1)}h`;
-    };
-
-    return {
-      today: getStatsForRange(thresholds.today),
-      oneWeek: getStatsForRange(thresholds.oneWeek),
-      fourWeeks: getStatsForRange(thresholds.fourWeeks)
-    };
-  };
-
-  const getHistoryList = () => {
-    const list = [];
-    const now = new Date();
-    
-    if (historySubTab === 'day') {
-      // Last 7 days
-      for (let i = 0; i < 7; i++) {
-        const d = new Date();
-        d.setDate(now.getDate() - i);
-        d.setHours(0, 0, 0, 0);
-        const dayStart = d.getTime();
-        const dayEnd = dayStart + 24 * 60 * 60 * 1000 - 1;
-        
-        const dayLogs = studyLogs.filter(l => l.timestamp >= dayStart && l.timestamp <= dayEnd);
-        const sec = dayLogs.reduce((sum, l) => sum + l.seconds, 0);
-        const mins = Math.round(sec / 60);
-        const hr = (sec / 3600).toFixed(1);
-        const timeStr = sec === 0 ? '0m' : sec < 3600 ? `${mins}m` : `${hr}h`;
-
-        let tasks = 0;
-        exams.forEach(exam => {
-          (exam.tasks || []).forEach(t => {
-            if (t.completed && t.completedAt && t.completedAt >= dayStart && t.completedAt <= dayEnd) {
-              tasks++;
-            }
-          });
-        });
-
-        const dayName = i === 0 ? 'Hôm nay' : i === 1 ? 'Hôm qua' : `${d.getDate()}/${d.getMonth() + 1}`;
-        list.push({ label: dayName, timeStr, tasks, sessions: dayLogs.length });
-      }
-    } else if (historySubTab === 'week') {
-      // Last 4 weeks
-      for (let i = 0; i < 4; i++) {
-        const wStart = new Date();
-        wStart.setDate(now.getDate() - now.getDay() - (i * 7));
-        wStart.setHours(0, 0, 0, 0);
-        const wStartMs = wStart.getTime();
-        const wEndMs = wStartMs + 7 * 24 * 60 * 60 * 1000 - 1;
-        
-        const weekLogs = studyLogs.filter(l => l.timestamp >= wStartMs && l.timestamp <= wEndMs);
-        const sec = weekLogs.reduce((sum, l) => sum + l.seconds, 0);
-        const mins = Math.round(sec / 60);
-        const hr = (sec / 3600).toFixed(1);
-        const timeStr = sec === 0 ? '0m' : sec < 3600 ? `${mins}m` : `${hr}h`;
-
-        let tasks = 0;
-        exams.forEach(exam => {
-          (exam.tasks || []).forEach(t => {
-            if (t.completed && t.completedAt && t.completedAt >= wStartMs && t.completedAt <= wEndMs) {
-              tasks++;
-            }
-          });
-        });
-
-        const wEnd = new Date(wEndMs);
-        const label = i === 0 ? 'Tuần này' : `Tuần ${wStart.getDate()}/${wStart.getMonth() + 1} - ${wEnd.getDate()}/${wEnd.getMonth() + 1}`;
-        list.push({ label, timeStr, tasks, sessions: weekLogs.length });
-      }
-    } else if (historySubTab === 'month') {
-      // Last 6 months
-      for (let i = 0; i < 6; i++) {
-        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-        const mStartMs = d.getTime();
-        const nextMonth = new Date(d.getFullYear(), d.getMonth() + 1, 1);
-        const mEndMs = nextMonth.getTime() - 1;
-        
-        const monthLogs = studyLogs.filter(l => l.timestamp >= mStartMs && l.timestamp <= mEndMs);
-        const sec = monthLogs.reduce((sum, l) => sum + l.seconds, 0);
-        const mins = Math.round(sec / 60);
-        const hr = (sec / 3600).toFixed(1);
-        const timeStr = sec === 0 ? '0m' : sec < 3600 ? `${mins}m` : `${hr}h`;
-
-        let tasks = 0;
-        exams.forEach(exam => {
-          (exam.tasks || []).forEach(t => {
-            if (t.completed && t.completedAt && t.completedAt >= mStartMs && t.completedAt <= mEndMs) {
-              tasks++;
-            }
-          });
-        });
-
-        const label = i === 0 ? 'Tháng này' : `Tháng ${d.getMonth() + 1}/${d.getFullYear()}`;
-        list.push({ label, timeStr, tasks, sessions: monthLogs.length });
-      }
-    }
-    
-    return list;
-  };
-
-  const metrics = getFocusMetrics();
-
   // Active Tab: 'timer' | 'stats'
   const [activeTab, setActiveTab] = useState('timer');
   const [statsMode, setStatsMode] = useState('week'); // 'week' | 'month' | 'year'
@@ -921,6 +766,161 @@ function PomodoroTimer({ isOpen, onClose, exams = [] }) {
     });
     return months;
   };
+
+  // Get time thresholds for Today, 1 Week, 4 Weeks
+  const getThresholds = () => {
+    const now = Date.now();
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+    const todayMs = startOfToday.getTime();
+    const oneWeekMs = now - 7 * 24 * 60 * 60 * 1000;
+    const fourWeeksMs = now - 28 * 24 * 60 * 60 * 1000;
+    return { today: todayMs, oneWeek: oneWeekMs, fourWeeks: fourWeeksMs };
+  };
+
+  const getFocusMetrics = () => {
+    const thresholds = getThresholds();
+    
+    const getStatsForRange = (startTime) => {
+      // Focus time (seconds)
+      const rangeLogs = studyLogs.filter(log => log.timestamp >= startTime);
+      const seconds = rangeLogs.reduce((sum, log) => sum + log.seconds, 0);
+      const minutes = seconds / 60;
+      
+      // Sessions
+      const sessions = rangeLogs.length;
+      
+      // Breaks
+      const breaks = breakLogs.filter(b => b.timestamp >= startTime).length;
+      
+      // Tasks Completed
+      let tasksCompleted = 0;
+      exams.forEach(exam => {
+        (exam.tasks || []).forEach(task => {
+          if (task.completed && task.completedAt && task.completedAt >= startTime) {
+            tasksCompleted++;
+          }
+        });
+      });
+
+      // Focus Score: 120 minutes daily target
+      const days = Math.max(1, (Date.now() - startTime) / (24 * 60 * 60 * 1000));
+      const targetMinutes = 120 * days;
+      const focusScore = targetMinutes > 0 ? Math.min(100, Math.round((minutes / targetMinutes) * 100)) : 0;
+
+      return {
+        focusTimeStr: formatFocusTime(seconds),
+        focusScore,
+        tasksCompleted,
+        sessions,
+        breaks
+      };
+    };
+
+    const formatFocusTime = (s) => {
+      if (s === 0) return '0m';
+      if (s < 3600) return `${Math.round(s / 60)}m`;
+      return `${(s / 3600).toFixed(1)}h`;
+    };
+
+    return {
+      today: getStatsForRange(thresholds.today),
+      oneWeek: getStatsForRange(thresholds.oneWeek),
+      fourWeeks: getStatsForRange(thresholds.fourWeeks)
+    };
+  };
+
+  const getHistoryList = () => {
+    const list = [];
+    const now = new Date();
+    
+    if (historySubTab === 'day') {
+      // Last 7 days
+      for (let i = 0; i < 7; i++) {
+        const d = new Date();
+        d.setDate(now.getDate() - i);
+        d.setHours(0, 0, 0, 0);
+        const dayStart = d.getTime();
+        const dayEnd = dayStart + 24 * 60 * 60 * 1000 - 1;
+        
+        const dayLogs = studyLogs.filter(l => l.timestamp >= dayStart && l.timestamp <= dayEnd);
+        const sec = dayLogs.reduce((sum, l) => sum + l.seconds, 0);
+        const mins = Math.round(sec / 60);
+        const hr = (sec / 3600).toFixed(1);
+        const timeStr = sec === 0 ? '0m' : sec < 3600 ? `${mins}m` : `${hr}h`;
+
+        let tasks = 0;
+        exams.forEach(exam => {
+          (exam.tasks || []).forEach(t => {
+            if (t.completed && t.completedAt && t.completedAt >= dayStart && t.completedAt <= dayEnd) {
+              tasks++;
+            }
+          });
+        });
+
+        const dayName = i === 0 ? 'Hôm nay' : i === 1 ? 'Hôm qua' : `${d.getDate()}/${d.getMonth() + 1}`;
+        list.push({ label: dayName, timeStr, tasks, sessions: dayLogs.length });
+      }
+    } else if (historySubTab === 'week') {
+      // Last 4 weeks
+      for (let i = 0; i < 4; i++) {
+        const wStart = new Date();
+        wStart.setDate(now.getDate() - now.getDay() - (i * 7));
+        wStart.setHours(0, 0, 0, 0);
+        const wStartMs = wStart.getTime();
+        const wEndMs = wStartMs + 7 * 24 * 60 * 60 * 1000 - 1;
+        
+        const weekLogs = studyLogs.filter(l => l.timestamp >= wStartMs && l.timestamp <= wEndMs);
+        const sec = weekLogs.reduce((sum, l) => sum + l.seconds, 0);
+        const mins = Math.round(sec / 60);
+        const hr = (sec / 3600).toFixed(1);
+        const timeStr = sec === 0 ? '0m' : sec < 3600 ? `${mins}m` : `${hr}h`;
+
+        let tasks = 0;
+        exams.forEach(exam => {
+          (exam.tasks || []).forEach(t => {
+            if (t.completed && t.completedAt && t.completedAt >= wStartMs && t.completedAt <= wEndMs) {
+              tasks++;
+            }
+          });
+        });
+
+        const wEnd = new Date(wEndMs);
+        const label = i === 0 ? 'Tuần này' : `Tuần ${wStart.getDate()}/${wStart.getMonth() + 1} - ${wEnd.getDate()}/${wEnd.getMonth() + 1}`;
+        list.push({ label, timeStr, tasks, sessions: weekLogs.length });
+      }
+    } else if (historySubTab === 'month') {
+      // Last 6 months
+      for (let i = 0; i < 6; i++) {
+        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const mStartMs = d.getTime();
+        const nextMonth = new Date(d.getFullYear(), d.getMonth() + 1, 1);
+        const mEndMs = nextMonth.getTime() - 1;
+        
+        const monthLogs = studyLogs.filter(l => l.timestamp >= mStartMs && l.timestamp <= mEndMs);
+        const sec = monthLogs.reduce((sum, l) => sum + l.seconds, 0);
+        const mins = Math.round(sec / 60);
+        const hr = (sec / 3600).toFixed(1);
+        const timeStr = sec === 0 ? '0m' : sec < 3600 ? `${mins}m` : `${hr}h`;
+
+        let tasks = 0;
+        exams.forEach(exam => {
+          (exam.tasks || []).forEach(t => {
+            if (t.completed && t.completedAt && t.completedAt >= mStartMs && t.completedAt <= mEndMs) {
+              tasks++;
+            }
+          });
+        });
+
+        const label = i === 0 ? 'Tháng này' : `Tháng ${d.getMonth() + 1}/${d.getFullYear()}`;
+        list.push({ label, timeStr, tasks, sessions: monthLogs.length });
+      }
+    }
+    
+    return list;
+  };
+
+  const metrics = getFocusMetrics();
 
   const chartData = getChartData();
   const maxMinutes = Math.max(...chartData.map(s => s.minutes), 30);

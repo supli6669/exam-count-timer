@@ -78,4 +78,4 @@
 - Hiện tại toàn bộ tính năng đề xuất đã hoàn thiện, hoạt động ổn định và được đẩy thành công lên nhánh chính GitHub.
 
 ## 5. Lỗi Hiện Tại / Điểm Nghẽn / Khó Khăn Kỹ Thuật
-- Không có lỗi hiện tại.
+- **Đã khắc phục lỗi ReferenceError khởi động**: Sửa lỗi tham chiếu `studyLogs` trước khi khởi tạo trong `PomodoroTimer.jsx` bằng cách chuyển các hàm tính toán thống kê xuống dưới phần khai báo các React hooks và state. Hiện tại trang web khởi chạy hoàn hảo không còn lỗi runtime.
