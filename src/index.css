@@ -3983,4 +3983,65 @@ body {
   border-top: 1px dashed rgba(255, 255, 255, 0.05);
 }
 
+/* Layout Expansion and Typography Enhancements for Stats Dashboard */
+@media (min-width: 860px) {
+  .pomodoro-sidebar-content.tab-stats {
+    max-width: 850px;
+    gap: 2rem;
+  }
+  
+  .focus-stats-cards-grid {
+    grid-template-columns: repeat(5, 1fr) !important; /* Spread all 5 cards across the screen */
+    gap: 1.1rem;
+  }
+
+  .focus-stat-card {
+    min-height: 140px;
+    padding: 1.3rem;
+  }
+
+  .focus-stat-card .card-value {
+    font-size: 1.95rem !important; /* Larger text for metrics */
+  }
+
+  .focus-stat-card .card-title {
+    font-size: 0.8rem !important;
+  }
+
+  .focus-stat-card .card-trend {
+    font-size: 0.85rem !important;
+  }
+
+  .focus-stats-section,
+  .focus-chart-section,
+  .stats-subject-breakdown,
+  .focus-history-section {
+    padding: 1.5rem !important; /* Extra padding for desktop layout */
+  }
+
+  .stats-section-title {
+    font-size: 1.15rem !important; /* Slightly larger headers */
+  }
+
+  .stats-section-subtitle {
+    font-size: 0.82rem !important;
+  }
+}
+
+@media (min-width: 600px) and (max-width: 859px) {
+  .pomodoro-sidebar-content.tab-stats {
+    max-width: 680px;
+    gap: 1.75rem;
+  }
+  .focus-stats-cards-grid {
+    grid-template-columns: repeat(3, 1fr) !important;
+  }
+  .focus-stat-card {
+    min-height: 130px;
+  }
+  .focus-stat-card .card-value {
+    font-size: 1.75rem !important;
+  }
+}
+
 

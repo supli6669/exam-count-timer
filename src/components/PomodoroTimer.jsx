@@ -1105,7 +1105,7 @@ function PomodoroTimer({ isOpen, onClose, exams = [] }) {
         </svg>
       </button>
 
-      <div className="pomodoro-sidebar-content">
+      <div className={`pomodoro-sidebar-content tab-${activeTab}`}>
         {/* Sidebar Header */}
       <div className="pomodoro-header">
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
