@@ -1185,56 +1185,28 @@ function PomodoroTimer({ isOpen, onClose, exams = [] }) {
             </button>
           </div>
 
-          {/* Circular Progress & Timer */}
+          {/* Large Digital Timer & Progress Bar */}
           <div className="pomodoro-display-container">
-            <div className="progress-ring-container">
-              <svg width="200" height="200" className="progress-ring">
-                <circle 
-                  className="progress-ring-bg"
-                  stroke="rgba(255, 255, 255, 0.05)"
-                  strokeWidth="8"
-                  fill="transparent"
-                  r={radius}
-                  cx="100"
-                  cy="100"
+            <div className="pomodoro-timer-large">{formatTime(timeLeft)}</div>
+            <span className="pomodoro-timer-label" style={{ marginTop: '0.4rem', marginBottom: '1rem' }}>{getModeLabel()}</span>
+            
+            <div className="pomodoro-timer-progress-container" style={{ width: '100%', maxWidth: '300px', margin: '0 auto 1rem auto' }} title={`${totalSeconds > 0 ? Math.round(((totalSeconds - timeLeft) / totalSeconds) * 100) : 0}% hoàn thành`}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.74rem', color: 'rgba(255,255,255,0.6)', marginBottom: '5px', fontWeight: '600' }}>
+                <span>Tiến độ phiên</span>
+                <span>{totalSeconds > 0 ? Math.round(((totalSeconds - timeLeft) / totalSeconds) * 100) : 0}%</span>
+              </div>
+              <div className="pomodoro-timer-progress-track" style={{ height: '6px', width: '100%', backgroundColor: 'rgba(255, 255, 255, 0.15)', borderRadius: '3px', overflow: 'hidden' }}>
+                <div 
+                  className="pomodoro-timer-progress-fill" 
+                  style={{ 
+                    height: '100%', 
+                    width: `${totalSeconds > 0 ? Math.round(((totalSeconds - timeLeft) / totalSeconds) * 100) : 0}%`, 
+                    backgroundColor: getThemeColor(), 
+                    borderRadius: '3px',
+                    transition: 'width 0.3s linear',
+                    boxShadow: `0 0 10px ${getThemeColor()}`
+                  }} 
                 />
-                <circle 
-                  className={`progress-ring-bar ${mode}`}
-                  stroke={getThemeColor()}
-                  strokeWidth="8"
-                  fill="transparent"
-                  r={radius}
-                  cx="100"
-                  cy="100"
-                  strokeDasharray={circumference}
-                  strokeDashoffset={strokeDashoffset}
-                  strokeLinecap="round"
-                  transform="rotate(-90 100 100)"
-                  style={{ transition: 'stroke-dashoffset 0.3s linear' }}
-                />
-              </svg>
-              <div className="progress-ring-text">
-                <span className="pomodoro-timer-digits">{formatTime(timeLeft)}</span>
-                <div className="pomodoro-timer-progress-container" style={{ margin: '6px auto 4px auto', width: '90px' }} title={`${totalSeconds > 0 ? Math.round(((totalSeconds - timeLeft) / totalSeconds) * 100) : 0}% hoàn thành`}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.62rem', color: 'rgba(255,255,255,0.6)', marginBottom: '3px', fontWeight: '600' }}>
-                    <span>Tiến độ</span>
-                    <span>{totalSeconds > 0 ? Math.round(((totalSeconds - timeLeft) / totalSeconds) * 100) : 0}%</span>
-                  </div>
-                  <div className="pomodoro-timer-progress-track" style={{ height: '5px', width: '100%', backgroundColor: 'rgba(255, 255, 255, 0.15)', borderRadius: '3px', overflow: 'hidden' }}>
-                    <div 
-                      className="pomodoro-timer-progress-fill" 
-                      style={{ 
-                        height: '100%', 
-                        width: `${totalSeconds > 0 ? Math.round(((totalSeconds - timeLeft) / totalSeconds) * 100) : 0}%`, 
-                        backgroundColor: getThemeColor(), 
-                        borderRadius: '3px',
-                        transition: 'width 0.3s linear',
-                        boxShadow: `0 0 8px ${getThemeColor()}`
-                      }} 
-                    />
-                  </div>
-                </div>
-                <span className="pomodoro-timer-label" style={{ marginTop: '4px' }}>{getModeLabel()}</span>
               </div>
             </div>
           </div>

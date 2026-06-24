@@ -82,9 +82,13 @@
 - GitHub Remote: `https://github.com/supli6669/exam-count-timer.git`
 
 ## 4. Các Steps Tiếp Theo (Kế hoạch thực hiện hiện tại)
-- [x] **Kéo dài Focus Stats sidebar**: Điều chỉnh `.pomodoro-sidebar-content.tab-stats` đạt `max-width: 1100px` trên desktop và `.pomodoro-stats-tab` đạt `max-width: 100%` để hiển thị tràn đều, không cuộn ngang. (Trạng thái: Đã xong)
-- [x] **Thanh tiến trình Pomodoro**: Thay đổi phần trăm số dạng text (`X% hoàn thành`) trong vòng tròn Pomodoro thành một thanh tiến trình ngang mini tinh tế kèm số % nhỏ bên trên. (Trạng thái: Đã xong)
-- [x] **Thanh tiến trình checklist trong Smart Insights**: Thêm thanh tiến trình ngang biểu thị phần trăm hoàn thành checklist nhiệm vụ học tập của từng môn, hiển thị ngay bên dưới thanh đã học, kèm số `% hoàn thành`. (Trạng thái: Đã xong)
+- [x] **Làm lớn đồng hồ Pomodoro & Đưa thanh tiến trình xuống dưới**: (Trạng thái: Đã xong)
+  - Loại bỏ vòng tròn SVG đếm ngược.
+  - Tăng kích thước số đếm ngược Pomodoro lên cực lớn (`font-size: 6.5rem` trên desktop, in đậm, trắng).
+  - Đặt thanh tiến trình ngang mini nằm bên dưới số đếm ngược này (giống phong cách flocus).
+- [x] **Tối ưu hóa Smart Insights (Trình phân tích ôn thi)**: (Trạng thái: Đã xong)
+  - Loại bỏ thanh tiến trình nhiệm vụ (checklist) riêng biệt ở dưới.
+  - Gộp chung tỷ lệ phần trăm hoàn thành checklist nhiệm vụ học tập lên nhãn phía trên của thanh tiến trình đã học, hiển thị dạng `Nhiệm vụ: X/Y việc (Z% hoàn thành)` giống phong cách hiển thị % hoàn thành của Pomodoro.
 
 ## 5. Lỗi Hiện Tại / Điểm Nghẽn / Khó Khăn Kỹ Thuật
 - **Đã khắc phục lỗi ReferenceError khởi động**: Sửa lỗi tham chiếu `studyLogs` trước khi khởi tạo trong `PomodoroTimer.jsx` bằng cách chuyển các hàm tính toán thống kê xuống dưới phần khai báo các React hooks và state. Hiện tại trang web khởi chạy hoàn hảo không còn lỗi runtime.

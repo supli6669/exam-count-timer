@@ -1270,8 +1270,10 @@ body {
 
 .pomodoro-display-container {
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
+  width: 100%;
 }
 
 .progress-ring-container {
@@ -1299,6 +1301,23 @@ body {
   line-height: 1;
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.02em;
+}
+
+.pomodoro-timer-large {
+  font-size: 5.25rem;
+  font-weight: 800;
+  color: #fff;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.03em;
+  text-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+  transition: font-size 0.3s ease;
+}
+
+@media (min-width: 480px) {
+  .pomodoro-timer-large {
+    font-size: 7.25rem;
+  }
 }
 
 .pomodoro-timer-label {

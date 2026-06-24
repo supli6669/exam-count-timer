@@ -277,9 +277,9 @@ function SmartInsights({ exams = [] }) {
 
                 {/* Progress bar */}
                 <div className="insights-progress-section">
-                  <div className="insights-progress-labels">
-                    <span>Đã học: <strong>{item.accumulatedMins} phút</strong></span>
-                    <span>Mục tiêu: {item.targetPrepMinutes} phút ({(item.targetPrepMinutes / 60).toFixed(1)}h)</span>
+                  <div className="insights-progress-labels" style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.74rem', color: 'var(--text-secondary)' }}>
+                    <span>Đã học: <strong>{item.accumulatedMins}/{item.targetPrepMinutes} phút</strong> ({item.progressPercent}%)</span>
+                    <span>Nhiệm vụ: <strong>{item.completedTasks}/{item.totalTasks} việc</strong> ({item.taskPercent}%)</span>
                   </div>
                   <div className="insights-progress-bar">
                     <div 
@@ -287,20 +287,8 @@ function SmartInsights({ exams = [] }) {
                       style={{ width: `${item.progressPercent}%` }}
                     />
                   </div>
-                  
-                  {/* Task checklist progress bar */}
-                  <div className="insights-progress-labels" style={{ marginTop: '0.6rem' }}>
-                    <span>Nhiệm vụ: <strong>{item.completedTasks}/{item.totalTasks} việc</strong></span>
-                    <span>{item.taskPercent}% hoàn thành</span>
-                  </div>
-                  <div className="insights-tasks-bar">
-                    <div 
-                      className="insights-tasks-fill" 
-                      style={{ width: `${item.taskPercent}%` }}
-                    />
-                  </div>
 
-                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '0.3rem', fontStyle: 'italic' }}>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '0.25rem', fontStyle: 'italic' }}>
                     📐 Ước tính: {item.credits || 3} tín chỉ x {item.factorMinutes} phút/tín chỉ
                   </div>
                 </div>
