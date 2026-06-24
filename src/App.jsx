@@ -182,7 +182,7 @@ function App() {
           ...exam,
           tasks: (exam.tasks || []).map(task => {
             if (task.id === taskId) {
-              return { ...task, completed: !task.completed };
+              return { ...task, completed: !task.completed, completedAt: !task.completed ? Date.now() : null };
             }
             return task;
           })

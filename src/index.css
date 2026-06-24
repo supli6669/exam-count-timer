@@ -3752,4 +3752,167 @@ body {
   gap: 0.35rem;
 }
 
+/* Focus Stats Grid */
+.focus-stats-section {
+  background: rgba(10, 14, 23, 0.35);
+  border: 1px solid var(--border-glass);
+  padding: 1.25rem;
+  border-radius: 16px;
+  width: 100%;
+}
+
+.stats-section-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #fff;
+  margin: 0;
+}
+
+.stats-section-subtitle {
+  font-size: 0.76rem;
+  color: var(--text-secondary);
+  margin: 0.25rem 0 0.85rem 0;
+  line-height: 1.4;
+}
+
+.focus-stats-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.focus-grid-header {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  text-align: center;
+}
+
+.focus-grid-header:first-child {
+  text-align: left;
+}
+
+.focus-grid-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  padding: 0.4rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+}
+
+.focus-grid-value {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #fff;
+  text-align: center;
+  padding: 0.4rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+}
+
+.focus-grid-value.score {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Focus History */
+.focus-history-section {
+  background: rgba(10, 14, 23, 0.35);
+  border: 1px solid var(--border-glass);
+  padding: 1.25rem;
+  border-radius: 16px;
+  width: 100%;
+}
+
+.history-subtabs {
+  display: flex;
+  gap: 0.4rem;
+  margin-bottom: 0.75rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  padding-bottom: 0.5rem;
+}
+
+.history-subtab-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.3rem 0.6rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: var(--transition-smooth);
+}
+
+.history-subtab-btn:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.history-subtab-btn.active {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-height: 220px;
+  overflow-y: auto;
+  padding-right: 0.25rem;
+}
+
+.history-list::-webkit-scrollbar {
+  width: 4px;
+}
+.history-list::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+}
+
+.history-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.03);
+  padding: 0.45rem 0.65rem;
+  border-radius: 8px;
+  transition: var(--transition-smooth);
+}
+
+.history-item:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.history-item-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.history-item-metrics {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.history-metric {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+.history-coming-soon {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  font-style: italic;
+  text-align: center;
+  padding: 0.5rem 0 0.25rem 0;
+  border-top: 1px dashed rgba(255, 255, 255, 0.05);
+}
+
 

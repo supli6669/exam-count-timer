@@ -268,6 +268,167 @@ function PomodoroTimer({ isOpen, onClose, exams = [] }) {
     return saved ? parseInt(saved, 10) : 0;
   });
 
+  const [breakLogs, setBreakLogs] = useState(() => {
+    const saved = localStorage.getItem('pomodoro_break_logs');
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [historySubTab, setHistorySubTab] = useState('day');
+
+  // Get time thresholds for Today, 1 Week, 4 Weeks
+  const getThresholds = () => {
+    const now = Date.now();
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+    const todayMs = startOfToday.getTime();
+    const oneWeekMs = now - 7 * 24 * 60 * 60 * 1000;
+    const fourWeeksMs = now - 28 * 24 * 60 * 60 * 1000;
+    return { today: todayMs, oneWeek: oneWeekMs, fourWeeks: fourWeeksMs };
+  };
+
+  const getFocusMetrics = () => {
+    const thresholds = getThresholds();
+    
+    const getStatsForRange = (startTime) => {
+      // Focus time (seconds)
+      const rangeLogs = studyLogs.filter(log => log.timestamp >= startTime);
+      const seconds = rangeLogs.reduce((sum, log) => sum + log.seconds, 0);
+      const minutes = seconds / 60;
+      
+      // Sessions
+      const sessions = rangeLogs.length;
+      
+      // Breaks
+      const breaks = breakLogs.filter(b => b.timestamp >= startTime).length;
+      
+      // Tasks Completed
+      let tasksCompleted = 0;
+      exams.forEach(exam => {
+        (exam.tasks || []).forEach(task => {
+          if (task.completed && task.completedAt && task.completedAt >= startTime) {
+            tasksCompleted++;
+          }
+        });
+      });
+
+      // Focus Score: 120 minutes daily target
+      const days = Math.max(1, (Date.now() - startTime) / (24 * 60 * 60 * 1000));
+      const targetMinutes = 120 * days;
+      const focusScore = targetMinutes > 0 ? Math.min(100, Math.round((minutes / targetMinutes) * 100)) : 0;
+
+      return {
+        focusTimeStr: formatFocusTime(seconds),
+        focusScore,
+        tasksCompleted,
+        sessions,
+        breaks
+      };
+    };
+
+    const formatFocusTime = (s) => {
+      if (s === 0) return '0m';
+      if (s < 3600) return `${Math.round(s / 60)}m`;
+      return `${(s / 3600).toFixed(1)}h`;
+    };
+
+    return {
+      today: getStatsForRange(thresholds.today),
+      oneWeek: getStatsForRange(thresholds.oneWeek),
+      fourWeeks: getStatsForRange(thresholds.fourWeeks)
+    };
+  };
+
+  const getHistoryList = () => {
+    const list = [];
+    const now = new Date();
+    
+    if (historySubTab === 'day') {
+      // Last 7 days
+      for (let i = 0; i < 7; i++) {
+        const d = new Date();
+        d.setDate(now.getDate() - i);
+        d.setHours(0, 0, 0, 0);
+        const dayStart = d.getTime();
+        const dayEnd = dayStart + 24 * 60 * 60 * 1000 - 1;
+        
+        const dayLogs = studyLogs.filter(l => l.timestamp >= dayStart && l.timestamp <= dayEnd);
+        const sec = dayLogs.reduce((sum, l) => sum + l.seconds, 0);
+        const mins = Math.round(sec / 60);
+        const hr = (sec / 3600).toFixed(1);
+        const timeStr = sec === 0 ? '0m' : sec < 3600 ? `${mins}m` : `${hr}h`;
+
+        let tasks = 0;
+        exams.forEach(exam => {
+          (exam.tasks || []).forEach(t => {
+            if (t.completed && t.completedAt && t.completedAt >= dayStart && t.completedAt <= dayEnd) {
+              tasks++;
+            }
+          });
+        });
+
+        const dayName = i === 0 ? 'Hôm nay' : i === 1 ? 'Hôm qua' : `${d.getDate()}/${d.getMonth() + 1}`;
+        list.push({ label: dayName, timeStr, tasks, sessions: dayLogs.length });
+      }
+    } else if (historySubTab === 'week') {
+      // Last 4 weeks
+      for (let i = 0; i < 4; i++) {
+        const wStart = new Date();
+        wStart.setDate(now.getDate() - now.getDay() - (i * 7));
+        wStart.setHours(0, 0, 0, 0);
+        const wStartMs = wStart.getTime();
+        const wEndMs = wStartMs + 7 * 24 * 60 * 60 * 1000 - 1;
+        
+        const weekLogs = studyLogs.filter(l => l.timestamp >= wStartMs && l.timestamp <= wEndMs);
+        const sec = weekLogs.reduce((sum, l) => sum + l.seconds, 0);
+        const mins = Math.round(sec / 60);
+        const hr = (sec / 3600).toFixed(1);
+        const timeStr = sec === 0 ? '0m' : sec < 3600 ? `${mins}m` : `${hr}h`;
+
+        let tasks = 0;
+        exams.forEach(exam => {
+          (exam.tasks || []).forEach(t => {
+            if (t.completed && t.completedAt && t.completedAt >= wStartMs && t.completedAt <= wEndMs) {
+              tasks++;
+            }
+          });
+        });
+
+        const wEnd = new Date(wEndMs);
+        const label = i === 0 ? 'Tuần này' : `Tuần ${wStart.getDate()}/${wStart.getMonth() + 1} - ${wEnd.getDate()}/${wEnd.getMonth() + 1}`;
+        list.push({ label, timeStr, tasks, sessions: weekLogs.length });
+      }
+    } else if (historySubTab === 'month') {
+      // Last 6 months
+      for (let i = 0; i < 6; i++) {
+        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const mStartMs = d.getTime();
+        const nextMonth = new Date(d.getFullYear(), d.getMonth() + 1, 1);
+        const mEndMs = nextMonth.getTime() - 1;
+        
+        const monthLogs = studyLogs.filter(l => l.timestamp >= mStartMs && l.timestamp <= mEndMs);
+        const sec = monthLogs.reduce((sum, l) => sum + l.seconds, 0);
+        const mins = Math.round(sec / 60);
+        const hr = (sec / 3600).toFixed(1);
+        const timeStr = sec === 0 ? '0m' : sec < 3600 ? `${mins}m` : `${hr}h`;
+
+        let tasks = 0;
+        exams.forEach(exam => {
+          (exam.tasks || []).forEach(t => {
+            if (t.completed && t.completedAt && t.completedAt >= mStartMs && t.completedAt <= mEndMs) {
+              tasks++;
+            }
+          });
+        });
+
+        const label = i === 0 ? 'Tháng này' : `Tháng ${d.getMonth() + 1}/${d.getFullYear()}`;
+        list.push({ label, timeStr, tasks, sessions: monthLogs.length });
+      }
+    }
+    
+    return list;
+  };
+
+  const metrics = getFocusMetrics();
+
   // Active Tab: 'timer' | 'stats'
   const [activeTab, setActiveTab] = useState('timer');
   const [statsMode, setStatsMode] = useState('week'); // 'week' | 'month' | 'year'
@@ -414,6 +575,13 @@ function PomodoroTimer({ isOpen, onClose, exams = [] }) {
         setMode('shortBreak');
       }
     } else {
+      // Log break session completed
+      const today = new Date().toISOString().split('T')[0];
+      const newBreak = { timestamp: Date.now(), date: today, type: mode };
+      const updatedBreaks = [...breakLogs, newBreak];
+      setBreakLogs(updatedBreaks);
+      localStorage.setItem('pomodoro_break_logs', JSON.stringify(updatedBreaks));
+
       sendPushNotification('Hết giờ nghỉ ngơi!', 'Thời gian thư giãn đã hết. Sẵn sàng tập trung học bài nhé.');
       setMode('work');
     }
@@ -1161,109 +1329,130 @@ function PomodoroTimer({ isOpen, onClose, exams = [] }) {
         </>
       ) : (
         /* STATS TAB CONTENTS */
-        <div className="pomodoro-stats-tab">
-          {/* Period Selector & Navigation */}
-          <div className="stats-tab-header">
-            <div className="stats-period-selector">
-              {['week', 'month', 'year'].map(modeOpt => (
-                <button
-                  key={modeOpt}
-                  className={`period-btn ${statsMode === modeOpt ? 'active' : ''}`}
-                  onClick={() => { setStatsMode(modeOpt); setStatsDateOffset(0); }}
-                  style={{ 
-                    borderColor: statsMode === modeOpt ? getThemeColor() : '',
-                    boxShadow: statsMode === modeOpt ? `0 0 8px ${getThemeColor()}30` : ''
-                  }}
-                >
-                  {modeOpt === 'week' ? 'Tuần' : modeOpt === 'month' ? 'Tháng' : 'Năm'}
+        <div className="pomodoro-stats-tab" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+          
+          {/* Section 1: All Focus Stats */}
+          <div className="focus-stats-section">
+            <h4 className="stats-section-title">📊 All Focus Stats</h4>
+            <p className="stats-section-subtitle">Get a full breakdown of your focus time, sessions, and tasks — along with improvement insights.</p>
+            
+            <div className="focus-stats-grid">
+              <div className="focus-grid-header">Metric</div>
+              <div className="focus-grid-header">Today</div>
+              <div className="focus-grid-header">1 Week</div>
+              <div className="focus-grid-header">4 Weeks</div>
+              
+              <div className="focus-grid-label">⏱️ Focus Time</div>
+              <div className="focus-grid-value">{metrics.today.focusTimeStr}</div>
+              <div className="focus-grid-value">{metrics.oneWeek.focusTimeStr}</div>
+              <div className="focus-grid-value">{metrics.fourWeeks.focusTimeStr}</div>
+
+              <div className="focus-grid-label">🎯 Focus Score</div>
+              <div className="focus-grid-value score" style={{ color: getThemeColor() }}>{metrics.today.focusScore}/100</div>
+              <div className="focus-grid-value score" style={{ color: getThemeColor() }}>{metrics.oneWeek.focusScore}/100</div>
+              <div className="focus-grid-value score" style={{ color: getThemeColor() }}>{metrics.fourWeeks.focusScore}/100</div>
+
+              <div className="focus-grid-label">✅ Tasks Completed</div>
+              <div className="focus-grid-value">{metrics.today.tasksCompleted}</div>
+              <div className="focus-grid-value">{metrics.oneWeek.tasksCompleted}</div>
+              <div className="focus-grid-value">{metrics.fourWeeks.tasksCompleted}</div>
+
+              <div className="focus-grid-label">🍅 Sessions</div>
+              <div className="focus-grid-value">{metrics.today.sessions}</div>
+              <div className="focus-grid-value">{metrics.oneWeek.sessions}</div>
+              <div className="focus-grid-value">{metrics.fourWeeks.sessions}</div>
+
+              <div className="focus-grid-label">☕ Breaks</div>
+              <div className="focus-grid-value">{metrics.today.breaks}</div>
+              <div className="focus-grid-value">{metrics.oneWeek.breaks}</div>
+              <div className="focus-grid-value">{metrics.fourWeeks.breaks}</div>
+            </div>
+          </div>
+
+          {/* Section 2: Visual Chart */}
+          <div className="focus-chart-section" style={{ background: 'rgba(10, 14, 23, 0.35)', border: '1px solid var(--border-glass)', borderRadius: '16px', padding: '1.25rem' }}>
+            <h4 className="stats-section-title">📈 Visual Chart</h4>
+            <p className="stats-section-subtitle">Spot patterns and track your focus flow over time.</p>
+
+            <div className="stats-tab-header" style={{ marginTop: '0.5rem', background: 'rgba(0, 0, 0, 0.25)' }}>
+              <div className="stats-period-selector">
+                {['week', 'month', 'year'].map(modeOpt => (
+                  <button
+                    key={modeOpt}
+                    className={`period-btn ${statsMode === modeOpt ? 'active' : ''}`}
+                    onClick={() => { setStatsMode(modeOpt); setStatsDateOffset(0); }}
+                    style={{ 
+                      borderColor: statsMode === modeOpt ? getThemeColor() : '',
+                      boxShadow: statsMode === modeOpt ? `0 0 8px ${getThemeColor()}30` : ''
+                    }}
+                  >
+                    {modeOpt === 'week' ? 'Tuần' : modeOpt === 'month' ? 'Tháng' : 'Năm'}
+                  </button>
+                ))}
+              </div>
+
+              <div className="stats-navigation">
+                <button className="nav-btn" onClick={() => setStatsDateOffset(prev => prev - 1)}>
+                  ◀
                 </button>
-              ))}
+                <span className="nav-current-label">
+                  {getNavigationLabel()}
+                </span>
+                <button 
+                  className="nav-btn" 
+                  onClick={() => setStatsDateOffset(prev => prev + 1)} 
+                  disabled={statsDateOffset >= 0}
+                >
+                  ▶
+                </button>
+              </div>
+
+              <div className="stats-comparison">
+                <span className="comparison-title">Thời lượng học: </span>
+                <span className={`comparison-badge ${comparison.pctChange >= 0 ? 'increase' : 'decrease'}`} style={{
+                  color: comparison.pctChange >= 0 ? '#10b981' : '#f87171',
+                  background: comparison.pctChange >= 0 ? 'rgba(16, 185, 129, 0.1)' : 'rgba(248, 113, 113, 0.1)'
+                }}>
+                  {comparison.pctChange >= 0 ? `↑ ${comparison.pctChange}%` : `↓ ${Math.abs(comparison.pctChange)}%`}
+                </span>
+                <span className="comparison-text">
+                  {statsMode === 'week' ? 'so với tuần trước' : statsMode === 'month' ? 'so với tháng trước' : 'so với năm trước'}
+                </span>
+              </div>
             </div>
 
-            <div className="stats-navigation">
-              <button className="nav-btn" onClick={() => setStatsDateOffset(prev => prev - 1)}>
-                ◀
-              </button>
-              <span className="nav-current-label">
-                {getNavigationLabel()}
-              </span>
-              <button 
-                className="nav-btn" 
-                onClick={() => setStatsDateOffset(prev => prev + 1)} 
-                disabled={statsDateOffset >= 0}
-              >
-                ▶
-              </button>
-            </div>
-
-            {/* Performance Comparison Indicator */}
-            <div className="stats-comparison">
-              <span className="comparison-title">Thời lượng học: </span>
-              <span className={`comparison-badge ${comparison.pctChange >= 0 ? 'increase' : 'decrease'}`} style={{
-                color: comparison.pctChange >= 0 ? '#10b981' : '#f87171',
-                background: comparison.pctChange >= 0 ? 'rgba(16, 185, 129, 0.1)' : 'rgba(248, 113, 113, 0.1)'
-              }}>
-                {comparison.pctChange >= 0 ? `↑ ${comparison.pctChange}%` : `↓ ${Math.abs(comparison.pctChange)}%`}
-              </span>
-              <span className="comparison-text">
-                {statsMode === 'week' ? 'so với tuần trước' : statsMode === 'month' ? 'so với tháng trước' : 'so với năm trước'}
-              </span>
-            </div>
-          </div>
-          
-          {/* Dynamic Bar Chart */}
-          <div className="stats-chart-wrapper">
-            <div className={`stats-chart col-count-${chartData.length}`}>
-              {chartData.map((day, idx) => {
-                const heightPercent = (day.minutes / maxMinutes) * 100;
-                return (
-                  <div key={idx} className="chart-column">
-                    <div className="chart-bar-container">
-                      <div 
-                        className="chart-bar" 
-                        style={{ 
-                          height: `${Math.max(4, heightPercent)}%`,
-                          background: `linear-gradient(180deg, ${getThemeColor()}dd, ${getThemeColor()}33)`,
-                          boxShadow: day.minutes > 0 ? `0 0 8px ${getThemeColor()}60` : 'none'
-                        }}
-                        title={`${day.minutes} phút`}
-                      >
-                        {day.minutes > 0 && <span className="bar-value">{day.minutes}m</span>}
+            <div className="stats-chart-wrapper" style={{ marginTop: '0.75rem' }}>
+              <div className={`stats-chart col-count-${chartData.length}`}>
+                {chartData.map((day, idx) => {
+                  const heightPercent = (day.minutes / maxMinutes) * 100;
+                  return (
+                    <div key={idx} className="chart-column">
+                      <div className="chart-bar-container">
+                        <div 
+                          className="chart-bar" 
+                          style={{ 
+                            height: `${Math.max(4, heightPercent)}%`,
+                            background: `linear-gradient(180deg, ${getThemeColor()}dd, ${getThemeColor()}33)`,
+                            boxShadow: day.minutes > 0 ? `0 0 8px ${getThemeColor()}60` : 'none'
+                          }}
+                          title={`${day.minutes} phút`}
+                        >
+                          {day.minutes > 0 && <span className="bar-value">{day.minutes}m</span>}
+                        </div>
                       </div>
+                      <span className="chart-label">{day.label}</span>
+                      <span className="chart-sublabel">{day.subLabel}</span>
                     </div>
-                    <span className="chart-label">{day.label}</span>
-                    <span className="chart-sublabel">{day.subLabel}</span>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
           </div>
-          
-          {/* Stats Summary Cards */}
-          <div className="stats-summary-grid">
-            <div className="stats-summary-card">
-              <span className="summary-value" style={{ color: getThemeColor() }}>
-                {periodSummary.hours}h
-              </span>
-              <span className="summary-label">Tổng giờ học</span>
-            </div>
-            <div className="stats-summary-card">
-              <span className="summary-value" style={{ color: getThemeColor() }}>
-                {periodSummary.minutes}
-              </span>
-              <span className="summary-label">Tổng số phút</span>
-            </div>
-            <div className="stats-summary-card">
-              <span className="summary-value" style={{ color: getThemeColor() }}>
-                {periodSummary.sessions}
-              </span>
-              <span className="summary-label">Số phiên đã lưu</span>
-            </div>
-          </div>
-          
-          {/* Study Breakdown by Subject */}
-          <div className="stats-subject-breakdown">
-            <h4 className="breakdown-title">📚 Chi tiết theo môn học</h4>
+
+          {/* Section 3: Chi tiết theo môn học */}
+          <div className="stats-subject-breakdown" style={{ background: 'rgba(10, 14, 23, 0.35)', border: '1px solid var(--border-glass)', borderRadius: '16px', padding: '1.25rem' }}>
+            <h4 className="stats-section-title">📚 Chi tiết theo môn học</h4>
+            <p className="stats-section-subtitle">Tỉ lệ phân bổ thời gian ôn tập cho từng môn học.</p>
             {subjectBreakdown.length > 0 ? (
               <div className="breakdown-list">
                 {subjectBreakdown.map((subject, idx) => {
@@ -1293,8 +1482,47 @@ function PomodoroTimer({ isOpen, onClose, exams = [] }) {
               <p className="breakdown-empty-text">Chưa có dữ liệu học tập cho chu kỳ này.</p>
             )}
           </div>
+
+          {/* Section 4: Focus History */}
+          <div className="focus-history-section">
+            <h4 className="stats-section-title">📜 Focus History</h4>
+            <p className="stats-section-subtitle">See your daily, weekly, and monthly progress.</p>
+            
+            <div className="history-subtabs">
+              {['day', 'week', 'month'].map(tabOpt => (
+                <button
+                  key={tabOpt}
+                  className={`history-subtab-btn ${historySubTab === tabOpt ? 'active' : ''}`}
+                  onClick={() => setHistorySubTab(tabOpt)}
+                  style={{
+                    color: historySubTab === tabOpt ? '#fff' : '',
+                    background: historySubTab === tabOpt ? 'rgba(255, 255, 255, 0.1)' : ''
+                  }}
+                >
+                  {tabOpt === 'day' ? 'Ngày' : tabOpt === 'week' ? 'Tuần' : 'Tháng'}
+                </button>
+              ))}
+            </div>
+
+            <div className="history-list">
+              {getHistoryList().map((item, idx) => (
+                <div key={idx} className="history-item">
+                  <span className="history-item-label">{item.label}</span>
+                  <div className="history-item-metrics">
+                    <span className="history-metric" title="Thời gian tập trung">⏱️ {item.timeStr}</span>
+                    <span className="history-metric" title="Phiên học">🍅 {item.sessions}</span>
+                    <span className="history-metric" title="Nhiệm vụ hoàn thành">✅ {item.tasks}</span>
+                  </div>
+                </div>
+              ))}
+              
+              <div className="history-coming-soon">
+                ⏳ Năm & Trọn đời (Sắp ra mắt 🚀)
+              </div>
+            </div>
+          </div>
           
-          {/* Clear stats button */}
+          {/* Action button */}
           <div className="stats-actions">
             <button className="btn btn-secondary btn-clear-stats" onClick={handleClearStats}>
               🧹 Xóa lịch sử học tập

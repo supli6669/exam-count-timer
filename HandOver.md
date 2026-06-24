@@ -31,8 +31,15 @@
 - [x] Thanh điều chỉnh âm lượng cảnh báo bảo mật cho trình phát Spotify (Trạng thái: Đã xong)
 - [x] Nút "Nghe thử" để phát thử kiểu chuông và âm lượng đã cài đặt (Trạng thái: Đã xong)
 - [x] Mô tả chi tiết kiểu chuông, nhãn âm lượng trực quan, thanh trượt viền tím filled-track và tự động phát thử khi kéo thả (Trạng thái: Đã xong)
+- [x] Nâng cấp tab Thống kê học tập thành bảng điều khiển Focus Stats toàn diện (Today, 1 Week, 4 Weeks) và Focus History chi tiết (Trạng thái: Đã xong)
 
 ## 2. Chi Tiết Các Phần Đã Triển Khai Gần Đây
+- **Bảng Thống Kê Focus Stats Toàn Diện & Focus History**:
+  - Tái thiết kế toàn bộ Tab Thống kê học tập để cung cấp báo cáo đa chiều:
+    - **All Focus Stats**: Bảng so sánh 3 cột (Today - Hôm nay, 1 Week - 1 Tuần, 4 Weeks - 4 Tuần) chứa các chỉ số quan trọng: *Focus Time* (Thời gian tập trung), *Focus Score* (Điểm hiệu suất tập trung, tính dựa trên mục tiêu 120 phút mỗi ngày), *Tasks Completed* (Số lượng nhiệm vụ phụ hoàn thành từ danh mục môn thi), *Sessions* (Số phiên tập trung Pomodoro), và *Breaks* (Số lần nghỉ ngơi, tự động ghi nhận khi kết thúc phiên nghỉ).
+    - **Visual Chart**: Biểu đồ trực quan hóa xu hướng tập trung theo Tuần, Tháng, và Năm giúp spot patterns.
+    - **Focus History**: Danh sách lịch sử học tập theo Ngày, Tuần, Tháng hiển thị thời gian, số phiên học, và số task hoàn thành (có hiển thị Năm & Trọn đời dạng sắp ra mắt).
+  - Tự động hóa việc ghi nhận break logs và lưu giữ lịch sử tasks hoàn thành thời gian thực thông qua việc lưu trữ thêm thuộc tính `completedAt` cho các sub-tasks.
 - **Mô tả chi tiết kiểu chuông, nhãn âm lượng và tự động phát thử khi kéo thả (Alarm Sound Descriptions & Auto-Preview on Slider Release)**:
   - Bổ sung hộp thông tin mô tả đặc trưng (Classic - bíp bíp dồn dập đánh thức tức thì, Zen Chime - giai điệu thiền thanh tao thư thái, Woodblock - mộc mạc không xao nhãng, Gong - ngân vang sâu lắng tĩnh tâm, Bell - reng reng cơ học giòn giã rõ ràng) xuất hiện linh hoạt theo kiểu chuông được chọn.
   - Hiển thị nhãn âm lượng cụ thể tùy theo phần trăm (Tắt tiếng 🔕, Nhỏ nhẹ 🔈, Vừa phải 🔉, To rõ 🔊, Rất to 📢) để người học biết chính xác âm lượng đang điều chỉnh ở mức độ nào.
