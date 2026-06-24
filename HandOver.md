@@ -27,22 +27,21 @@
 - [x] Hiệu ứng hạt tương tác chuột (Interactive Particles) (Trạng thái: Đã xong)
 - [x] Bản đồ nhiệt & Phân tích Nhịp sinh học (Chronotype Focus Heatmap) (Trạng thái: Đã xong)
 - [x] Điều chỉnh âm lượng tổng cho Soundboard & chuông báo Pomodoro (Trạng thái: Đã xong)
-- [x] Kiểu âm báo tùy chỉnh (5 kiểu Web Audio API) mỗi khi kết thúc phiên Pomodoro (Trạng thái: Đã xong)
+- [x] 12 Kiểu âm báo tùy chỉnh dạng lưới radio 2 cột (Sparkle, Commuter Jingle, Airport, Chime, Success, Applause, Train Arrival, Game Show, Soft, Piano, Level Up, No Alert) (Trạng thái: Đã xong)
 - [x] Thanh điều chỉnh âm lượng cảnh báo bảo mật cho trình phát Spotify (Trạng thái: Đã xong)
 - [x] Nút "Nghe thử" để phát thử kiểu chuông và âm lượng đã cài đặt (Trạng thái: Đã xong)
-- [x] Mô tả chi tiết kiểu chuông, nhãn âm lượng trực quan và tự động phát thử khi kéo thả thanh trượt (Trạng thái: Đã xong)
+- [x] Mô tả chi tiết kiểu chuông, nhãn âm lượng trực quan, thanh trượt viền tím filled-track và tự động phát thử khi kéo thả (Trạng thái: Đã xong)
 
 ## 2. Chi Tiết Các Phần Đã Triển Khai Gần Đây
 - **Mô tả chi tiết kiểu chuông, nhãn âm lượng và tự động phát thử khi kéo thả (Alarm Sound Descriptions & Auto-Preview on Slider Release)**:
   - Bổ sung hộp thông tin mô tả đặc trưng (Classic - bíp bíp dồn dập đánh thức tức thì, Zen Chime - giai điệu thiền thanh tao thư thái, Woodblock - mộc mạc không xao nhãng, Gong - ngân vang sâu lắng tĩnh tâm, Bell - reng reng cơ học giòn giã rõ ràng) xuất hiện linh hoạt theo kiểu chuông được chọn.
   - Hiển thị nhãn âm lượng cụ thể tùy theo phần trăm (Tắt tiếng 🔕, Nhỏ nhẹ 🔈, Vừa phải 🔉, To rõ 🔊, Rất to 📢) để người học biết chính xác âm lượng đang điều chỉnh ở mức độ nào.
   - Sự kiện `onMouseUp` và `onTouchEnd` được liên kết với bộ phát âm thanh giúp tự động phát thử tiếng chuông ngay khi người dùng thả con chạy của thanh trượt âm lượng chuông báo, giúp người dùng cảm nhận âm lượng thực tế cực kỳ trực quan và tiện lợi.
-- **Tính năng Nghe thử Chuông báo (Preview Alarm Sound)**:
-  - Bổ sung nút **"Nghe thử"** cạnh dropdown chọn kiểu chuông báo Pomodoro trong phần Cài đặt.
-  - Khi nhấp chọn, hệ thống sẽ phát thử kiểu chuông đang chọn tại mức âm lượng đang chỉnh bằng Web Audio API để người dùng cảm nhận và cân đối trước khi bấm "Áp dụng".
-- **Tùy chọn kiểu âm báo Pomodoro**:
-  - Tích hợp 5 kiểu âm báo khác nhau vào menu Cài đặt Pomodoro: **Chuông điện tử Classic**, **Giai điệu Zen Chime**, **Gõ gỗ Woodblock**, **Tiếng chiêng sâu Mystic Gong**, và **Chuông cơ học Mechanical Bell**.
-  - Toàn bộ âm báo đều được thiết kế và tạo dao động âm trực tiếp bằng **Web Audio API** thời gian thực, đảm bảo nhẹ nhàng, nhanh chóng và hoạt động ngoại tuyến không cần Internet.
+- **12 Tùy chọn kiểu âm báo Pomodoro & Giao diện dạng lưới 2 cột (12 Alarm Sound Grid)**:
+  - Tích hợp 12 kiểu âm báo khác nhau vào menu Cài đặt Pomodoro thiết kế dạng lưới 2 cột theo đúng mẫu thiết kế: **Sparkle, Commuter Jingle, Airport, Chime, Success, Applause, Train Arrival, Game Show, Soft, Piano, Level Up, No Alert**.
+  - Toàn bộ âm báo đều được thiết kế và tạo dao động âm trực tiếp bằng **Web Audio API** thời gian thực (100% offline) không cần tải file MP3 ngoài.
+  - Tích hợp tính năng nhấp chọn để nghe thử trực tiếp âm thanh tương ứng mà không cần nút nghe thử riêng biệt.
+  - Thiết kế thanh trượt âm lượng với viền filled-track màu tím chuyển màu mượt mà ôm sát con chạy (slider thumb), mô phỏng hoàn hảo thiết kế cao cấp của giao diện tham chiếu.
 - **Thanh cảnh báo điều chỉnh âm lượng Spotify**:
   - Do chính sách bảo mật sandboxed của Spotify cấm điều chỉnh âm lượng trình phát nhúng Iframe từ code ứng dụng bên ngoài (trừ khi dùng Web Playback SDK Premium phức tạp và yêu cầu login token), chúng tôi đã thiết kế một giải pháp thông minh:
   - Bổ sung thanh trượt âm lượng Spotify tương tác. Khi người dùng cố gắng kéo thanh trượt, hệ thống sẽ hiển thị một thông báo hướng dẫn cụ thể màu đỏ: *"Do chính sách bảo mật, Spotify không cho phép chỉnh âm lượng qua web nhúng. Vui lòng tăng/giảm trực tiếp trên thiết bị của bạn hoặc app Spotify Connect."* để hướng dẫn học sinh thao tác nhanh.

@@ -4,18 +4,49 @@ import ThemeParticles from './ThemeParticles';
 import AmbientSoundboard from './AmbientSoundboard';
 import { incrementContribution } from '../utils/contributions';
 
+const ALARM_SOUND_OPTIONS = [
+  { id: 'sparkle', name: 'Sparkle', emoji: '✨' },
+  { id: 'train', name: 'Train Arrival', emoji: '🚄' },
+  { id: 'commuter', name: 'Commuter Jingle', emoji: '🚊' },
+  { id: 'gameshow', name: 'Game Show', emoji: '🎲' },
+  { id: 'airport', name: 'Airport', emoji: '🛫' },
+  { id: 'soft', name: 'Soft', emoji: '☁️' },
+  { id: 'chime', name: 'Chime', emoji: '🔔' },
+  { id: 'piano', name: 'Piano', emoji: '🎹' },
+  { id: 'success', name: 'Success', emoji: '🏆' },
+  { id: 'levelup', name: 'Level Up', emoji: '👾' },
+  { id: 'applause', name: 'Applause', emoji: '👏' },
+  { id: 'none', name: 'No Alert', emoji: '🔕' }
+];
+
 const getAlarmSoundDesc = (soundId) => {
   switch (soundId) {
+    case 'sparkle':
+      return 'Giai điệu lấp lánh dồn dập, tạo cảm giác kỳ ảo và tươi sáng.';
+    case 'commuter':
+      return 'Giai điệu ga tàu công cộng (kiểu Nhật), thanh tao, dễ chịu.';
+    case 'airport':
+      return 'Âm báo phát thanh sân bay cổ điển, thu hút chú ý nhẹ nhàng.';
     case 'chime':
-      return 'Giai điệu thiền ngân vang thanh thoát, nhẹ nhàng, báo hiệu kết thúc phiên thư thái (Zen Chime).';
-    case 'woodblock':
-      return 'Tiếng gõ mõ gỗ tự nhiên, mộc mạc và dứt khoát, thích hợp cho không gian yên tĩnh (Woodblock).';
-    case 'gong':
-      return 'Tiếng chiêng đồng vang vọng, trầm ấm và ngân dài, mang lại cảm giác thư thái, sâu lắng (Mystic Gong).';
-    case 'bell':
-      return 'Tiếng chuông reng cơ học để bàn giòn giã, rõ ràng và cổ điển (Mechanical Bell).';
+      return 'Giai điệu thiền ngân vang thanh thoát, nhẹ nhàng, báo hiệu kết thúc phiên thư thái.';
+    case 'success':
+      return 'Giai điệu chiến thắng hào hùng, ăn mừng hoàn thành phiên học.';
+    case 'applause':
+      return 'Tiếng vỗ tay giòn giã mô phỏng bằng bộ lọc tiếng ồn.';
+    case 'train':
+      return 'Tiếng còi tàu kép trầm ấm, báo hiệu kết thúc phiên rõ ràng.';
+    case 'gameshow':
+      return 'Giai điệu 8-bit retro vui nhộn của game show truyền hình.';
+    case 'soft':
+      return 'Tần số sóng sine trầm ấm nhẹ nhàng, không gây giật mình.';
+    case 'piano':
+      return 'Hòa âm phím đàn piano mộc mạc, thư thái, tự nhiên.';
+    case 'levelup':
+      return 'Âm thanh tăng cấp arcade cổ điển, tạo động lực ôn tập.';
+    case 'none':
+      return 'Không âm báo (hoàn toàn im lặng khi hết giờ).';
     default:
-      return 'Âm thanh bíp điện tử dồn dập, rõ ràng, giúp đánh thức sự tập trung tức thì (Classic).';
+      return 'Âm thanh bíp điện tử dồn dập, rõ ràng, giúp đánh thức sự tập trung tức thì.';
   }
 };
 
@@ -25,6 +56,187 @@ const getVolumeLevelLabel = (vol) => {
   if (vol <= 50) return `${vol}% - Vừa phải 🔉`;
   if (vol <= 80) return `${vol}% - To rõ 🔊`;
   return `${vol}% - Rất to 📢 (Tránh giật mình)`;
+};
+
+const playSynthAlarm = (soundId, volumePercent) => {
+  try {
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextClass) return;
+    const ctx = new AudioContextClass();
+    const now = ctx.currentTime;
+    
+    // Scale volume (max 0.4 to protect hearing)
+    const vol = (volumePercent / 100) * 0.4;
+    if (vol <= 0 || soundId === 'none') return;
+
+    // Helper: standard beep with optional decay/type/gain-ramp
+    const playBeep = (time, freq, duration, type = 'sine', decayTime = null) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.frequency.setValueAtTime(freq, time);
+      osc.type = type;
+
+      gain.gain.setValueAtTime(0, time);
+      gain.gain.linearRampToValueAtTime(vol, time + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + (decayTime || duration));
+
+      osc.start(time);
+      osc.stop(time + duration);
+    };
+
+    // Helper: noise burst (applause)
+    const playNoiseBurst = (time, duration, burstVol) => {
+      const bufferSize = ctx.sampleRate * duration;
+      const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        data[i] = Math.random() * 2 - 1;
+      }
+
+      const noise = ctx.createBufferSource();
+      noise.buffer = buffer;
+
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'bandpass';
+      filter.frequency.setValueAtTime(1000, time);
+      filter.Q.setValueAtTime(2, time);
+
+      const gain = ctx.createGain();
+      gain.gain.setValueAtTime(0, time);
+      gain.gain.linearRampToValueAtTime(burstVol, time + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + duration);
+
+      noise.connect(filter);
+      filter.connect(gain);
+      gain.connect(ctx.destination);
+
+      noise.start(time);
+      noise.stop(time + duration);
+    };
+
+    // Helper: piano-like sound (fundamental + harmonics)
+    const playPianoNote = (time, freq, duration) => {
+      const gain = ctx.createGain();
+      gain.connect(ctx.destination);
+      
+      gain.gain.setValueAtTime(0, time);
+      gain.gain.linearRampToValueAtTime(vol, time + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + duration);
+
+      const harmonics = [1, 2, 3, 4];
+      const weights = [1, 0.4, 0.2, 0.1];
+      harmonics.forEach((h, i) => {
+        const osc = ctx.createOscillator();
+        const oscGain = ctx.createGain();
+        osc.frequency.setValueAtTime(freq * h, time);
+        osc.type = 'sine';
+        oscGain.gain.setValueAtTime(weights[i], time);
+        osc.connect(oscGain);
+        oscGain.connect(gain);
+        osc.start(time);
+        osc.stop(time + duration);
+      });
+    };
+
+    switch (soundId) {
+      case 'sparkle': {
+        const sparkleNotes = [1200, 1500, 1800, 2200, 2600, 3100];
+        sparkleNotes.forEach((freq, idx) => {
+          playBeep(now + idx * 0.06, freq, 0.25, 'sine');
+        });
+        break;
+      }
+      case 'commuter': {
+        const commuterNotes = [659.25, 880, 987.77, 1109.73, 1318.51];
+        commuterNotes.forEach((freq, idx) => {
+          playBeep(now + idx * 0.12, freq, 0.6, 'sine');
+        });
+        break;
+      }
+      case 'airport': {
+        playBeep(now, 554.37, 0.8, 'sine'); // C#5
+        playBeep(now + 0.35, 440.00, 0.8, 'sine'); // A4
+        break;
+      }
+      case 'chime': {
+        const chimeNotes = [523.25, 659.25, 783.99, 1046.50];
+        chimeNotes.forEach((freq, idx) => {
+          playBeep(now + idx * 0.15, freq, 0.8, 'sine');
+        });
+        break;
+      }
+      case 'success': {
+        playBeep(now, 523.25, 0.15, 'triangle'); // C5
+        playBeep(now + 0.15, 659.25, 0.15, 'triangle'); // E5
+        playBeep(now + 0.3, 783.99, 0.15, 'triangle'); // G5
+        playBeep(now + 0.45, 1046.50, 0.6, 'triangle'); // C6
+        playBeep(now + 0.45, 1318.51, 0.6, 'sine'); // E6
+        break;
+      }
+      case 'applause': {
+        for (let i = 0; i < 35; i++) {
+          const burstTime = now + i * 0.05 + Math.random() * 0.03;
+          const duration = 0.06 + Math.random() * 0.06;
+          playNoiseBurst(burstTime, duration, vol * 0.35);
+        }
+        break;
+      }
+      case 'train': {
+        playBeep(now, 330, 0.4, 'triangle');
+        playBeep(now, 392, 0.4, 'triangle');
+        playBeep(now + 0.5, 330, 0.6, 'triangle');
+        playBeep(now + 0.5, 392, 0.6, 'triangle');
+        break;
+      }
+      case 'gameshow': {
+        playBeep(now, 440, 0.1, 'square');
+        playBeep(now + 0.1, 554, 0.1, 'square');
+        playBeep(now + 0.2, 659, 0.15, 'square');
+        playBeep(now + 0.35, 880, 0.4, 'square');
+        break;
+      }
+      case 'soft': {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.frequency.setValueAtTime(329.63, now); // E4
+        osc.type = 'sine';
+        gain.gain.setValueAtTime(0, now);
+        gain.gain.linearRampToValueAtTime(vol * 0.8, now + 0.3);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 1.8);
+        osc.start(now);
+        osc.stop(now + 1.8);
+        break;
+      }
+      case 'piano': {
+        playPianoNote(now, 523.25, 1.2); // C5
+        playPianoNote(now + 0.2, 659.25, 1.0); // E5
+        playPianoNote(now + 0.4, 783.99, 0.8); // G5
+        break;
+      }
+      case 'levelup': {
+        const levelUpNotes = [261.63, 329.63, 392.00, 523.25, 659.25, 783.99, 1046.50];
+        levelUpNotes.forEach((freq, idx) => {
+          playBeep(now + idx * 0.07, freq, 0.15, 'triangle');
+        });
+        break;
+      }
+      case 'classic':
+      default: {
+        playBeep(now, 880, 0.15, 'sine');
+        playBeep(now + 0.2, 880, 0.15, 'sine');
+        playBeep(now + 0.38, 880, 0.15, 'sine');
+        playBeep(now + 0.58, 1100, 0.5, 'sine');
+        break;
+      }
+    }
+  } catch (err) {
+    console.warn('Cannot play synth sound:', err);
+  }
 };
 
 function PomodoroTimer({ isOpen, onClose, exams = [] }) {
@@ -161,128 +373,15 @@ function PomodoroTimer({ isOpen, onClose, exams = [] }) {
     }
   }, [isOpen]);
 
-  // Synth alert tone using Web Audio API
+  // Play session finished alarm
   const playAlarmSound = () => {
-    try {
-      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-      if (!AudioContextClass) return;
-      const ctx = new AudioContextClass();
-
-      const playBeep = (time, freq, duration, type = 'sine') => {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-
-        osc.frequency.value = freq;
-        osc.type = type;
-
-        // Limit the max synthetic volume to 0.4 to prevent hearing damage
-        const vol = (alarmVolume / 100) * 0.4;
-
-        gain.gain.setValueAtTime(0, time);
-        gain.gain.linearRampToValueAtTime(vol, time + 0.05);
-        gain.gain.exponentialRampToValueAtTime(0.001, time + duration);
-
-        osc.start(time);
-        osc.stop(time + duration);
-      };
-
-      const now = ctx.currentTime;
-      
-      if (alarmSound === 'chime') {
-        // Melodic Zen Chime
-        const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
-        notes.forEach((freq, idx) => {
-          playBeep(now + idx * 0.15, freq, 0.8, 'sine');
-        });
-      } else if (alarmSound === 'woodblock') {
-        // Crisp Woody Taps
-        playBeep(now, 600, 0.1, 'triangle');
-        playBeep(now + 0.12, 450, 0.1, 'triangle');
-        playBeep(now + 0.24, 550, 0.12, 'triangle');
-      } else if (alarmSound === 'gong') {
-        // Deep Singing Bowl / Gong
-        playBeep(now, 160, 2.0, 'sine');
-        playBeep(now, 240, 1.8, 'sine');
-        playBeep(now, 320, 1.5, 'sine');
-      } else if (alarmSound === 'bell') {
-        // Wobbling mechanical desk bell ring
-        playBeep(now, 1200, 0.5, 'sine');
-        playBeep(now, 1205, 0.5, 'sine');
-        playBeep(now + 0.08, 1200, 0.45, 'sine');
-        playBeep(now + 0.08, 1205, 0.45, 'sine');
-        playBeep(now + 0.16, 1200, 0.4, 'sine');
-        playBeep(now + 0.16, 1205, 0.4, 'sine');
-      } else {
-        // Classic Digital (default)
-        playBeep(now, 880, 0.15, 'sine');
-        playBeep(now + 0.2, 880, 0.15, 'sine');
-        playBeep(now + 0.38, 880, 0.15, 'sine');
-        playBeep(now + 0.58, 1100, 0.5, 'sine');
-      }
-    } catch (err) {
-      console.warn('Cannot play synth sound:', err);
-    }
+    playSynthAlarm(alarmSound, alarmVolume);
   };
 
   // Play preview alarm based on current unapplied inputs in settings
-  const playPreviewAlarmSound = () => {
-    try {
-      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-      if (!AudioContextClass) return;
-      const ctx = new AudioContextClass();
-
-      const playBeep = (time, freq, duration, type = 'sine') => {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-
-        osc.frequency.value = freq;
-        osc.type = type;
-
-        const vol = (inputAlarmVolume / 100) * 0.4;
-
-        gain.gain.setValueAtTime(0, time);
-        gain.gain.linearRampToValueAtTime(vol, time + 0.05);
-        gain.gain.exponentialRampToValueAtTime(0.001, time + duration);
-
-        osc.start(time);
-        osc.stop(time + duration);
-      };
-
-      const now = ctx.currentTime;
-      
-      if (inputAlarmSound === 'chime') {
-        const notes = [523.25, 659.25, 783.99, 1046.50];
-        notes.forEach((freq, idx) => {
-          playBeep(now + idx * 0.15, freq, 0.8, 'sine');
-        });
-      } else if (inputAlarmSound === 'woodblock') {
-        playBeep(now, 600, 0.1, 'triangle');
-        playBeep(now + 0.12, 450, 0.1, 'triangle');
-        playBeep(now + 0.24, 550, 0.12, 'triangle');
-      } else if (inputAlarmSound === 'gong') {
-        playBeep(now, 160, 2.0, 'sine');
-        playBeep(now, 240, 1.8, 'sine');
-        playBeep(now, 320, 1.5, 'sine');
-      } else if (inputAlarmSound === 'bell') {
-        playBeep(now, 1200, 0.5, 'sine');
-        playBeep(now, 1205, 0.5, 'sine');
-        playBeep(now + 0.08, 1200, 0.45, 'sine');
-        playBeep(now + 0.08, 1205, 0.45, 'sine');
-        playBeep(now + 0.16, 1200, 0.4, 'sine');
-        playBeep(now + 0.16, 1205, 0.4, 'sine');
-      } else {
-        playBeep(now, 880, 0.15, 'sine');
-        playBeep(now + 0.2, 880, 0.15, 'sine');
-        playBeep(now + 0.38, 880, 0.15, 'sine');
-        playBeep(now + 0.58, 1100, 0.5, 'sine');
-      }
-    } catch (err) {
-      console.warn('Cannot play preview sound:', err);
-    }
+  const playPreviewAlarmSound = (overrideSoundId = null) => {
+    const targetSound = overrideSoundId && typeof overrideSoundId === 'string' ? overrideSoundId : inputAlarmSound;
+    playSynthAlarm(targetSound, inputAlarmVolume);
   };
 
   // Push notifications
@@ -987,7 +1086,7 @@ function PomodoroTimer({ isOpen, onClose, exams = [] }) {
                 <div className="settings-field" style={{ flexDirection: 'column', alignItems: 'stretch', gap: '0.4rem' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <label htmlFor="settings-alarm-vol">Âm lượng chuông</label>
-                    <span style={{ fontSize: '0.8rem', fontWeight: '700', color: getThemeColor() }}>
+                    <span style={{ fontSize: '0.8rem', fontWeight: '700', color: '#8b5cf6' }}>
                       {getVolumeLevelLabel(inputAlarmVolume)}
                     </span>
                   </div>
@@ -999,38 +1098,39 @@ function PomodoroTimer({ isOpen, onClose, exams = [] }) {
                     step="5"
                     value={inputAlarmVolume} 
                     onChange={(e) => setInputAlarmVolume(parseInt(e.target.value, 10))}
-                    onMouseUp={playPreviewAlarmSound}
-                    onTouchEnd={playPreviewAlarmSound}
+                    onMouseUp={() => playPreviewAlarmSound()}
+                    onTouchEnd={() => playPreviewAlarmSound()}
                     className="sound-volume-slider"
-                    style={{ width: '100%' }}
+                    style={{
+                      width: '100%',
+                      background: `linear-gradient(to right, #8b5cf6 0%, #8b5cf6 ${inputAlarmVolume}%, rgba(255, 255, 255, 0.12) ${inputAlarmVolume}%, rgba(255, 255, 255, 0.12) 100%)`
+                    }}
                   />
                 </div>
 
-                <div className="settings-field" style={{ flexDirection: 'column', alignItems: 'stretch', gap: '0.4rem' }}>
-                  <label htmlFor="settings-alarm-sound">Kiểu âm báo</label>
-                  <div style={{ display: 'flex', gap: '0.5rem' }}>
-                    <select 
-                      id="settings-alarm-sound"
-                      value={inputAlarmSound}
-                      onChange={(e) => setInputAlarmSound(e.target.value)}
-                      className="form-input"
-                      style={{ flex: 1 }}
-                    >
-                      <option value="classic">🔔 Chuông điện tử (Classic)</option>
-                      <option value="chime">🎵 Giai điệu nhẹ (Zen Chime)</option>
-                      <option value="woodblock">🪵 Gõ gỗ thanh (Woodblock)</option>
-                      <option value="gong">🧘 Tiếng chiêng sâu (Mystic Gong)</option>
-                      <option value="bell">🛎️ Chuông cơ học (Mechanical Bell)</option>
-                    </select>
-                    <button
-                      type="button"
-                      onClick={playPreviewAlarmSound}
-                      className="btn btn-secondary"
-                      style={{ padding: '0.6rem 0.85rem', fontSize: '0.82rem', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '0.25rem' }}
-                      title="Nghe thử âm lượng và kiểu chuông"
-                    >
-                      🔊 Nghe thử
-                    </button>
+                <div className="settings-field" style={{ flexDirection: 'column', alignItems: 'stretch', gap: '0.6rem' }}>
+                  <label>Kiểu âm báo</label>
+                  <div className="alarm-sound-grid">
+                    {ALARM_SOUND_OPTIONS.map((opt) => {
+                      const isActive = inputAlarmSound === opt.id;
+                      return (
+                        <div 
+                          key={opt.id} 
+                          className={`alarm-sound-option ${isActive ? 'active' : ''}`}
+                          onClick={() => {
+                            setInputAlarmSound(opt.id);
+                            playPreviewAlarmSound(opt.id);
+                          }}
+                        >
+                          <div className="alarm-sound-radio">
+                            <div className="alarm-sound-radio-inner" />
+                          </div>
+                          <span className="alarm-sound-label">
+                            {opt.emoji} {opt.name}
+                          </span>
+                        </div>
+                      );
+                    })}
                   </div>
                   <div className="alarm-sound-desc-box" style={{
                     marginTop: '0.25rem',
