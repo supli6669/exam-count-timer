@@ -3775,47 +3775,115 @@ body {
   line-height: 1.4;
 }
 
-.focus-stats-grid {
+/* Focus Stats Cards Grid */
+.focus-stats-cards-grid {
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr 1fr;
-  gap: 0.5rem;
-  align-items: center;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 0.75rem;
+  margin-top: 1rem;
 }
 
-.focus-grid-header {
-  font-size: 0.72rem;
+@media (min-width: 480px) {
+  .focus-stats-cards-grid {
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 1rem;
+  }
+}
+
+.focus-stat-card {
+  border-radius: 16px;
+  padding: 1.1rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 120px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.25s ease;
+}
+
+.focus-stat-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
+}
+
+/* Background Gradients from reference image */
+.focus-time-card {
+  background: linear-gradient(135deg, #ffb300 0%, #ff5e00 100%);
+}
+
+.focus-tasks-card {
+  background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+}
+
+.focus-sessions-card {
+  background: linear-gradient(135deg, #00c6ff 0%, #0072ff 100%);
+}
+
+.focus-streak-card {
+  background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%);
+}
+
+.focus-breaks-card {
+  background: linear-gradient(135deg, #ec008c 0%, #fc6767 100%);
+}
+
+.focus-stat-card .card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  width: 100%;
+}
+
+.focus-stat-card .card-title {
+  font-size: 0.75rem;
   font-weight: 700;
-  color: var(--text-secondary);
+  color: rgba(255, 255, 255, 0.9);
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  padding-bottom: 0.5rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-  text-align: center;
 }
 
-.focus-grid-header:first-child {
-  text-align: left;
+.focus-stat-card .card-icon {
+  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.95);
 }
 
-.focus-grid-label {
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--text-primary);
-  padding: 0.4rem 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+.focus-stat-card .card-value {
+  font-size: 1.45rem;
+  font-weight: 800;
+  color: #ffffff;
+  margin-top: 0.4rem;
+  line-height: 1.2;
+  font-family: inherit;
 }
 
-.focus-grid-value {
-  font-size: 0.8rem;
+@media (min-width: 480px) {
+  .focus-stat-card .card-value {
+    font-size: 1.65rem;
+  }
+}
+
+.focus-stat-card .card-trend {
+  font-size: 0.78rem;
   font-weight: 700;
-  color: #fff;
-  text-align: center;
-  padding: 0.4rem 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+  color: rgba(255, 255, 255, 0.95);
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
 }
 
-.focus-grid-value.score {
-  font-variant-numeric: tabular-nums;
+.focus-range-btn:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: #fff !important;
+}
+
+.focus-range-btn.active:hover {
+  background: linear-gradient(135deg, #7c3aed, #2563eb) !important;
 }
 
 /* Focus History */

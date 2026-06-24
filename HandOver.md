@@ -32,13 +32,20 @@
 - [x] Nút "Nghe thử" để phát thử kiểu chuông và âm lượng đã cài đặt (Trạng thái: Đã xong)
 - [x] Mô tả chi tiết kiểu chuông, nhãn âm lượng trực quan, thanh trượt viền tím filled-track và tự động phát thử khi kéo thả (Trạng thái: Đã xong)
 - [x] Nâng cấp tab Thống kê học tập thành bảng điều khiển Focus Stats toàn diện (Today, 1 Week, 4 Weeks) và Focus History chi tiết (Trạng thái: Đã xong)
+- [x] Tái thiết kế giao diện Focus Stats với 5 thẻ gradient rực rỡ và biểu đồ đường cong SVG (Bezier Curve) mượt mà (Trạng thái: Đã xong)
 
 ## 2. Chi Tiết Các Phần Đã Triển Khai Gần Đây
-- **Bảng Thống Kê Focus Stats Toàn Diện & Focus History**:
-  - Tái thiết kế toàn bộ Tab Thống kê học tập để cung cấp báo cáo đa chiều:
-    - **All Focus Stats**: Bảng so sánh 3 cột (Today - Hôm nay, 1 Week - 1 Tuần, 4 Weeks - 4 Tuần) chứa các chỉ số quan trọng: *Focus Time* (Thời gian tập trung), *Focus Score* (Điểm hiệu suất tập trung, tính dựa trên mục tiêu 120 phút mỗi ngày), *Tasks Completed* (Số lượng nhiệm vụ phụ hoàn thành từ danh mục môn thi), *Sessions* (Số phiên tập trung Pomodoro), và *Breaks* (Số lần nghỉ ngơi, tự động ghi nhận khi kết thúc phiên nghỉ).
-    - **Visual Chart**: Biểu đồ trực quan hóa xu hướng tập trung theo Tuần, Tháng, và Năm giúp spot patterns.
-    - **Focus History**: Danh sách lịch sử học tập theo Ngày, Tuần, Tháng hiển thị thời gian, số phiên học, và số task hoàn thành (có hiển thị Năm & Trọn đời dạng sắp ra mắt).
+- **Bảng Thống Kê Focus Stats & Biểu Đồ Bezier SVG Mượt Mà**:
+  - Thiết kế lại Tab Thống kê học tập thành một dashboard cao cấp:
+    - **Thanh Chọn Khoảng Thời Gian (Today, 1 Week, 4 Weeks)**: Cho phép chuyển đổi nhanh để cập nhật toàn bộ số liệu thống kê thời gian thực.
+    - **5 Thẻ Chỉ Số Gradient**:
+      - **Focus Time** (Gradient Vàng-Cam): Tổng số giờ học kèm phần trăm thay đổi so với kỳ trước.
+      - **Tasks Completed** (Gradient Xanh Lá): Số nhiệm vụ đã làm xong kèm phần trăm thay đổi.
+      - **Sessions** (Gradient Xanh Dương): Số phiên Pomodoro.
+      - **Streak** (Gradient Đỏ-Cam): Chuỗi ngày học tập liên tục và kỷ lục chuỗi ngày dài nhất (tự động tính toán từ study logs).
+      - **Breaks** (Gradient Hồng-Đỏ): Số lần nghỉ ngơi.
+    - **Visual Chart (Biểu Đồ Đường Cong SVG)**: Biểu đồ đường cong Bezier mềm mại với nét màu động đổi theo theme hoạt động, phần tô dải màu (gradient fill) mờ dưới đường cong, các nút điểm tròn kèm nhãn số phút và ngày hiển thị sắc nét.
+    - **Focus History**: Danh sách lịch sử học tập phân loại theo các sub-tab Ngày, Tuần, Tháng hiển thị thời lượng học tập, số phiên học, và số task hoàn thành của từng mốc thời gian.
   - Tự động hóa việc ghi nhận break logs và lưu giữ lịch sử tasks hoàn thành thời gian thực thông qua việc lưu trữ thêm thuộc tính `completedAt` cho các sub-tasks.
 - **Mô tả chi tiết kiểu chuông, nhãn âm lượng và tự động phát thử khi kéo thả (Alarm Sound Descriptions & Auto-Preview on Slider Release)**:
   - Bổ sung hộp thông tin mô tả đặc trưng (Classic - bíp bíp dồn dập đánh thức tức thì, Zen Chime - giai điệu thiền thanh tao thư thái, Woodblock - mộc mạc không xao nhãng, Gong - ngân vang sâu lắng tĩnh tâm, Bell - reng reng cơ học giòn giã rõ ràng) xuất hiện linh hoạt theo kiểu chuông được chọn.
@@ -69,8 +76,8 @@
   - Phân tích log thời gian học từ `localStorage` để phân loại nhịp sinh học tập trung của học sinh: **Sơn Ca Đón Sớm (Early Bird)**, **Chiến Binh Chiều Tà (Afternoon Warrior)**, hoặc **Cú Đêm Ôn Luyện (Night Owl)** kèm lời khuyên tối ưu giờ học.
   - Vẽ bản đồ nhiệt dạng lưới 24 giờ ngang trực quan, đổi màu xanh đậm dần tùy thuộc vào mức độ tập trung ôn bài trong ngày cùng tooltip CSS mượt mà khi di chuột qua.
 
-## 3. Trạng Thái Git Hiện Tại
-- Mã SHA commit / Message gần nhất: `2b40d9e` / `feat: add alarm preview test button to settings menu`
+## 3. Trạng Thế Git Hiện Tại
+- Mã SHA commit / Message gần nhất: `1966cae` / `fix: resolve startup ReferenceError in PomodoroTimer`
 - Tên Branch hiện tại: `main`
 - GitHub Remote: `https://github.com/supli6669/exam-count-timer.git`
 
