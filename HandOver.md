@@ -77,7 +77,7 @@
   - Vẽ bản đồ nhiệt dạng lưới 24 giờ ngang trực quan, đổi màu xanh đậm dần tùy thuộc vào mức độ tập trung ôn bài trong ngày cùng tooltip CSS mượt mà khi di chuột qua.
 
 ## 3. Trạng Thế Git Hiện Tại
-- Mã SHA commit / Message gần nhất: `e5458bf` / `style: expand statistics dashboard container width and increase typography size on desktop`
+- Mã SHA commit / Message gần nhất: `bce336e` / `feat: redesign dashboard stats cards grid into 2 rows, add Pomodoro percentage, make SVG chart fluid, rearrange home page sections`
 - Tên Branch hiện tại: `main`
 - GitHub Remote: `https://github.com/supli6669/exam-count-timer.git`
 
