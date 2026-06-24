@@ -22,6 +22,9 @@ function PomodoroTimer({ isOpen, onClose, exams = [] }) {
     const saved = localStorage.getItem('pomodoro_alarm_volume');
     return saved ? parseInt(saved, 10) : 50;
   });
+  const [alarmSound, setAlarmSound] = useState(() => {
+    return localStorage.getItem('pomodoro_alarm_sound') || 'classic';
+  });
 
   const [mode, setMode] = useState('work'); // 'work' | 'shortBreak' | 'longBreak'
   const [isActive, setIsActive] = useState(false);
@@ -68,6 +71,7 @@ function PomodoroTimer({ isOpen, onClose, exams = [] }) {
   const [inputShort, setInputShort] = useState(shortBreakTime);
   const [inputLong, setInputLong] = useState(longBreakTime);
   const [inputAlarmVolume, setInputAlarmVolume] = useState(alarmVolume);
+  const [inputAlarmSound, setInputAlarmSound] = useState(alarmSound);
 
   const timerRef = useRef(null);
 
@@ -141,14 +145,14 @@ function PomodoroTimer({ isOpen, onClose, exams = [] }) {
       if (!AudioContextClass) return;
       const ctx = new AudioContextClass();
 
-      const playBeep = (time, freq, duration) => {
+      const playBeep = (time, freq, duration, type = 'sine') => {
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
         osc.connect(gain);
         gain.connect(ctx.destination);
 
         osc.frequency.value = freq;
-        osc.type = 'sine';
+        osc.type = type;
 
         // Limit the max synthetic volume to 0.4 to prevent hearing damage
         const vol = (alarmVolume / 100) * 0.4;
@@ -162,10 +166,38 @@ function PomodoroTimer({ isOpen, onClose, exams = [] }) {
       };
 
       const now = ctx.currentTime;
-      playBeep(now, 880, 0.15);
-      playBeep(now + 0.2, 880, 0.15);
-      playBeep(now + 0.4, 880, 0.15);
-      playBeep(now + 0.6, 1100, 0.5);
+      
+      if (alarmSound === 'chime') {
+        // Melodic Zen Chime
+        const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+        notes.forEach((freq, idx) => {
+          playBeep(now + idx * 0.15, freq, 0.8, 'sine');
+        });
+      } else if (alarmSound === 'woodblock') {
+        // Crisp Woody Taps
+        playBeep(now, 600, 0.1, 'triangle');
+        playBeep(now + 0.12, 450, 0.1, 'triangle');
+        playBeep(now + 0.24, 550, 0.12, 'triangle');
+      } else if (alarmSound === 'gong') {
+        // Deep Singing Bowl / Gong
+        playBeep(now, 160, 2.0, 'sine');
+        playBeep(now, 240, 1.8, 'sine');
+        playBeep(now, 320, 1.5, 'sine');
+      } else if (alarmSound === 'bell') {
+        // Wobbling mechanical desk bell ring
+        playBeep(now, 1200, 0.5, 'sine');
+        playBeep(now, 1205, 0.5, 'sine');
+        playBeep(now + 0.08, 1200, 0.45, 'sine');
+        playBeep(now + 0.08, 1205, 0.45, 'sine');
+        playBeep(now + 0.16, 1200, 0.4, 'sine');
+        playBeep(now + 0.16, 1205, 0.4, 'sine');
+      } else {
+        // Classic Digital (default)
+        playBeep(now, 880, 0.15, 'sine');
+        playBeep(now + 0.2, 880, 0.15, 'sine');
+        playBeep(now + 0.38, 880, 0.15, 'sine');
+        playBeep(now + 0.58, 1100, 0.5, 'sine');
+      }
     } catch (err) {
       console.warn('Cannot play synth sound:', err);
     }
@@ -274,16 +306,19 @@ function PomodoroTimer({ isOpen, onClose, exams = [] }) {
     const s = Math.max(1, Math.min(60, parseInt(inputShort, 10) || 5));
     const l = Math.max(1, Math.min(60, parseInt(inputLong, 10) || 15));
     const vol = Math.max(0, Math.min(100, parseInt(inputAlarmVolume, 10) || 50));
+    const snd = inputAlarmSound;
 
     setWorkTime(w);
     setShortBreakTime(s);
     setLongBreakTime(l);
     setAlarmVolume(vol);
+    setAlarmSound(snd);
 
     localStorage.setItem('pomodoro_work', w.toString());
     localStorage.setItem('pomodoro_short_break', s.toString());
     localStorage.setItem('pomodoro_long_break', l.toString());
     localStorage.setItem('pomodoro_alarm_volume', vol.toString());
+    localStorage.setItem('pomodoro_alarm_sound', snd);
 
     setIsSettingsOpen(false);
   };
@@ -293,6 +328,7 @@ function PomodoroTimer({ isOpen, onClose, exams = [] }) {
     setInputShort(shortBreakTime);
     setInputLong(longBreakTime);
     setInputAlarmVolume(alarmVolume);
+    setInputAlarmSound(alarmSound);
     setIsSettingsOpen(false);
   };
 
@@ -878,6 +914,22 @@ function PomodoroTimer({ isOpen, onClose, exams = [] }) {
                     onChange={(e) => setInputAlarmVolume(parseInt(e.target.value, 10))}
                     className="sound-volume-slider"
                   />
+                </div>
+
+                <div className="settings-field">
+                  <label htmlFor="settings-alarm-sound">Kiểu âm báo</label>
+                  <select 
+                    id="settings-alarm-sound"
+                    value={inputAlarmSound}
+                    onChange={(e) => setInputAlarmSound(e.target.value)}
+                    className="form-input"
+                  >
+                    <option value="classic">🔔 Chuông điện tử (Classic)</option>
+                    <option value="chime">🎵 Giai điệu nhẹ (Zen Chime)</option>
+                    <option value="woodblock">🪵 Gõ gỗ thanh (Woodblock)</option>
+                    <option value="gong">🧘 Tiếng chiêng sâu (Mystic Gong)</option>
+                    <option value="bell">🛎️ Chuông cơ học (Mechanical Bell)</option>
+                  </select>
                 </div>
 
                 <div className="settings-form-actions">

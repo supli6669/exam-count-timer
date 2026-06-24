@@ -40,6 +40,22 @@ function SpotifyPlayer() {
   const [customInput, setCustomInput] = useState('');
   const [isOpen, setIsOpen] = useState(true);
   const [error, setError] = useState('');
+  const [spotifyVolume, setSpotifyVolume] = useState(100);
+  const [showSpotifyVolWarning, setShowSpotifyVolWarning] = useState(false);
+
+  const handleSpotifyVolumeChange = (e) => {
+    setSpotifyVolume(parseInt(e.target.value, 10));
+    setShowSpotifyVolWarning(true);
+  };
+
+  useEffect(() => {
+    if (showSpotifyVolWarning) {
+      const timer = setTimeout(() => {
+        setShowSpotifyVolWarning(false);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [showSpotifyVolWarning]);
 
   useEffect(() => {
     localStorage.setItem('pomodoro_spotify_url', currentUrl);
@@ -160,6 +176,28 @@ function SpotifyPlayer() {
               loading="lazy"
               title="Spotify Focus Player"
             ></iframe>
+          </div>
+
+          {/* Spotify Volume Notice & Slider */}
+          <div className="spotify-volume-wrapper" style={{ margin: '0.75rem 0.25rem' }}>
+            <div className="spotify-volume-slider-row" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <span className="spotify-volume-label" style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>🔊 Âm lượng:</span>
+              <input
+                type="range"
+                min="0"
+                max="100"
+                value={spotifyVolume}
+                onChange={handleSpotifyVolumeChange}
+                className="sound-volume-slider spotify-volume-slider"
+                aria-label="Âm lượng Spotify"
+              />
+              <span className="spotify-volume-percent" style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--color-primary)', minWidth: '32px', textAlign: 'right' }}>{spotifyVolume}%</span>
+            </div>
+            {showSpotifyVolWarning && (
+              <div className="spotify-volume-warning" style={{ fontSize: '0.72rem', color: '#f87171', background: 'rgba(239, 68, 68, 0.08)', border: '1px solid rgba(239, 68, 68, 0.15)', padding: '0.4rem 0.6rem', borderRadius: '8px', marginTop: '0.5rem', lineHeight: '1.4' }}>
+                ⚠️ Do chính sách bảo mật, Spotify không cho phép chỉnh âm lượng qua web nhúng. Vui lòng tăng/giảm trực tiếp trên thiết bị của bạn hoặc app Spotify Connect.
+              </div>
+            )}
           </div>
 
           {/* Custom Link Form */}
