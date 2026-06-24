@@ -4,6 +4,29 @@ import ThemeParticles from './ThemeParticles';
 import AmbientSoundboard from './AmbientSoundboard';
 import { incrementContribution } from '../utils/contributions';
 
+const getAlarmSoundDesc = (soundId) => {
+  switch (soundId) {
+    case 'chime':
+      return 'Giai điệu thiền ngân vang thanh thoát, nhẹ nhàng, báo hiệu kết thúc phiên thư thái (Zen Chime).';
+    case 'woodblock':
+      return 'Tiếng gõ mõ gỗ tự nhiên, mộc mạc và dứt khoát, thích hợp cho không gian yên tĩnh (Woodblock).';
+    case 'gong':
+      return 'Tiếng chiêng đồng vang vọng, trầm ấm và ngân dài, mang lại cảm giác thư thái, sâu lắng (Mystic Gong).';
+    case 'bell':
+      return 'Tiếng chuông reng cơ học để bàn giòn giã, rõ ràng và cổ điển (Mechanical Bell).';
+    default:
+      return 'Âm thanh bíp điện tử dồn dập, rõ ràng, giúp đánh thức sự tập trung tức thì (Classic).';
+  }
+};
+
+const getVolumeLevelLabel = (vol) => {
+  if (vol === 0) return 'Tắt tiếng 🔕';
+  if (vol <= 20) return `${vol}% - Nhỏ nhẹ 🔈`;
+  if (vol <= 50) return `${vol}% - Vừa phải 🔉`;
+  if (vol <= 80) return `${vol}% - To rõ 🔊`;
+  return `${vol}% - Rất to 📢 (Tránh giật mình)`;
+};
+
 function PomodoroTimer({ isOpen, onClose, exams = [] }) {
   // Load custom time settings (in minutes) or default values
   const [workTime, setWorkTime] = useState(() => {
@@ -916,14 +939,14 @@ function PomodoroTimer({ isOpen, onClose, exams = [] }) {
                   <circle cx="12" cy="12" r="3"></circle>
                   <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
                 </svg>
-                Tùy chỉnh thời gian
+                Cấu hình thời gian & Chuông báo
               </button>
             ) : (
               <form className="pomodoro-settings-form" onSubmit={handleSaveSettings}>
-                <h3 className="settings-form-title">Cấu hình thời lượng (Phút)</h3>
+                <h3 className="settings-form-title">Cài đặt Pomodoro & Chuông báo</h3>
                 
                 <div className="settings-field">
-                  <label htmlFor="settings-work">Tập trung</label>
+                  <label htmlFor="settings-work">Tập trung (phút)</label>
                   <input 
                     id="settings-work"
                     type="number" 
@@ -936,7 +959,7 @@ function PomodoroTimer({ isOpen, onClose, exams = [] }) {
                 </div>
                 
                 <div className="settings-field">
-                  <label htmlFor="settings-short">Nghỉ ngắn</label>
+                  <label htmlFor="settings-short">Nghỉ ngắn (phút)</label>
                   <input 
                     id="settings-short"
                     type="number" 
@@ -949,7 +972,7 @@ function PomodoroTimer({ isOpen, onClose, exams = [] }) {
                 </div>
                 
                 <div className="settings-field">
-                  <label htmlFor="settings-long">Nghỉ dài</label>
+                  <label htmlFor="settings-long">Nghỉ dài (phút)</label>
                   <input 
                     id="settings-long"
                     type="number" 
@@ -961,8 +984,13 @@ function PomodoroTimer({ isOpen, onClose, exams = [] }) {
                   />
                 </div>
 
-                <div className="settings-field">
-                  <label htmlFor="settings-alarm-vol">Âm lượng chuông ({inputAlarmVolume}%)</label>
+                <div className="settings-field" style={{ flexDirection: 'column', alignItems: 'stretch', gap: '0.4rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <label htmlFor="settings-alarm-vol">Âm lượng chuông</label>
+                    <span style={{ fontSize: '0.8rem', fontWeight: '700', color: getThemeColor() }}>
+                      {getVolumeLevelLabel(inputAlarmVolume)}
+                    </span>
+                  </div>
                   <input 
                     id="settings-alarm-vol"
                     type="range" 
@@ -971,11 +999,14 @@ function PomodoroTimer({ isOpen, onClose, exams = [] }) {
                     step="5"
                     value={inputAlarmVolume} 
                     onChange={(e) => setInputAlarmVolume(parseInt(e.target.value, 10))}
+                    onMouseUp={playPreviewAlarmSound}
+                    onTouchEnd={playPreviewAlarmSound}
                     className="sound-volume-slider"
+                    style={{ width: '100%' }}
                   />
                 </div>
 
-                <div className="settings-field">
+                <div className="settings-field" style={{ flexDirection: 'column', alignItems: 'stretch', gap: '0.4rem' }}>
                   <label htmlFor="settings-alarm-sound">Kiểu âm báo</label>
                   <div style={{ display: 'flex', gap: '0.5rem' }}>
                     <select 
@@ -1000,6 +1031,19 @@ function PomodoroTimer({ isOpen, onClose, exams = [] }) {
                     >
                       🔊 Nghe thử
                     </button>
+                  </div>
+                  <div className="alarm-sound-desc-box" style={{
+                    marginTop: '0.25rem',
+                    padding: '0.6rem 0.8rem',
+                    background: 'rgba(10, 14, 23, 0.4)',
+                    border: '1px dashed rgba(255, 255, 255, 0.08)',
+                    borderRadius: '8px',
+                    fontSize: '0.78rem',
+                    color: 'var(--text-secondary)',
+                    lineHeight: '1.45',
+                    textAlign: 'left'
+                  }}>
+                    <span style={{ color: '#fff', fontWeight: '700' }}>Đặc trưng:</span> {getAlarmSoundDesc(inputAlarmSound)}
                   </div>
                 </div>
 

@@ -29,8 +29,17 @@
 - [x] Điều chỉnh âm lượng tổng cho Soundboard & chuông báo Pomodoro (Trạng thái: Đã xong)
 - [x] Kiểu âm báo tùy chỉnh (5 kiểu Web Audio API) mỗi khi kết thúc phiên Pomodoro (Trạng thái: Đã xong)
 - [x] Thanh điều chỉnh âm lượng cảnh báo bảo mật cho trình phát Spotify (Trạng thái: Đã xong)
+- [x] Nút "Nghe thử" để phát thử kiểu chuông và âm lượng đã cài đặt (Trạng thái: Đã xong)
+- [x] Mô tả chi tiết kiểu chuông, nhãn âm lượng trực quan và tự động phát thử khi kéo thả thanh trượt (Trạng thái: Đã xong)
 
 ## 2. Chi Tiết Các Phần Đã Triển Khai Gần Đây
+- **Mô tả chi tiết kiểu chuông, nhãn âm lượng và tự động phát thử khi kéo thả (Alarm Sound Descriptions & Auto-Preview on Slider Release)**:
+  - Bổ sung hộp thông tin mô tả đặc trưng (Classic - bíp bíp dồn dập đánh thức tức thì, Zen Chime - giai điệu thiền thanh tao thư thái, Woodblock - mộc mạc không xao nhãng, Gong - ngân vang sâu lắng tĩnh tâm, Bell - reng reng cơ học giòn giã rõ ràng) xuất hiện linh hoạt theo kiểu chuông được chọn.
+  - Hiển thị nhãn âm lượng cụ thể tùy theo phần trăm (Tắt tiếng 🔕, Nhỏ nhẹ 🔈, Vừa phải 🔉, To rõ 🔊, Rất to 📢) để người học biết chính xác âm lượng đang điều chỉnh ở mức độ nào.
+  - Sự kiện `onMouseUp` và `onTouchEnd` được liên kết với bộ phát âm thanh giúp tự động phát thử tiếng chuông ngay khi người dùng thả con chạy của thanh trượt âm lượng chuông báo, giúp người dùng cảm nhận âm lượng thực tế cực kỳ trực quan và tiện lợi.
+- **Tính năng Nghe thử Chuông báo (Preview Alarm Sound)**:
+  - Bổ sung nút **"Nghe thử"** cạnh dropdown chọn kiểu chuông báo Pomodoro trong phần Cài đặt.
+  - Khi nhấp chọn, hệ thống sẽ phát thử kiểu chuông đang chọn tại mức âm lượng đang chỉnh bằng Web Audio API để người dùng cảm nhận và cân đối trước khi bấm "Áp dụng".
 - **Tùy chọn kiểu âm báo Pomodoro**:
   - Tích hợp 5 kiểu âm báo khác nhau vào menu Cài đặt Pomodoro: **Chuông điện tử Classic**, **Giai điệu Zen Chime**, **Gõ gỗ Woodblock**, **Tiếng chiêng sâu Mystic Gong**, và **Chuông cơ học Mechanical Bell**.
   - Toàn bộ âm báo đều được thiết kế và tạo dao động âm trực tiếp bằng **Web Audio API** thời gian thực, đảm bảo nhẹ nhàng, nhanh chóng và hoạt động ngoại tuyến không cần Internet.
@@ -55,11 +64,11 @@
   - Vẽ bản đồ nhiệt dạng lưới 24 giờ ngang trực quan, đổi màu xanh đậm dần tùy thuộc vào mức độ tập trung ôn bài trong ngày cùng tooltip CSS mượt mà khi di chuột qua.
 
 ## 3. Trạng Thái Git Hiện Tại
-- Mã SHA commit / Message gần nhất: `67555dc` / `feat: add alarm sound selection to Pomodoro settings and mock volume slider with warning to Spotify player`
+- Mã SHA commit / Message gần nhất: `2b40d9e` / `feat: add alarm preview test button to settings menu`
 - Tên Branch hiện tại: `main`
 - GitHub Remote: `https://github.com/supli6669/exam-count-timer.git`
 
-## 4. Các Bước Tiếp Theo (Dành cho AI Agent)
+## 4. Các Steps Tiếp Theo (Dành cho AI Agent)
 - Hiện tại toàn bộ tính năng đề xuất đã hoàn thiện, hoạt động ổn định và được đẩy thành công lên nhánh chính GitHub.
 
 ## 5. Lỗi Hiện Tại / Điểm Nghẽn / Khó Khăn Kỹ Thuật
