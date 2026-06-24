@@ -1215,9 +1215,25 @@ function PomodoroTimer({ isOpen, onClose, exams = [] }) {
               </svg>
               <div className="progress-ring-text">
                 <span className="pomodoro-timer-digits">{formatTime(timeLeft)}</span>
-                <span className="pomodoro-timer-percent" style={{ fontSize: '0.8rem', color: 'rgba(255, 255, 255, 0.7)', fontWeight: '600', marginTop: '2px', display: 'block' }}>
-                  {totalSeconds > 0 ? Math.round(((totalSeconds - timeLeft) / totalSeconds) * 100) : 0}% hoàn thành
-                </span>
+                <div className="pomodoro-timer-progress-container" style={{ margin: '6px auto 4px auto', width: '90px' }} title={`${totalSeconds > 0 ? Math.round(((totalSeconds - timeLeft) / totalSeconds) * 100) : 0}% hoàn thành`}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.62rem', color: 'rgba(255,255,255,0.6)', marginBottom: '3px', fontWeight: '600' }}>
+                    <span>Tiến độ</span>
+                    <span>{totalSeconds > 0 ? Math.round(((totalSeconds - timeLeft) / totalSeconds) * 100) : 0}%</span>
+                  </div>
+                  <div className="pomodoro-timer-progress-track" style={{ height: '5px', width: '100%', backgroundColor: 'rgba(255, 255, 255, 0.15)', borderRadius: '3px', overflow: 'hidden' }}>
+                    <div 
+                      className="pomodoro-timer-progress-fill" 
+                      style={{ 
+                        height: '100%', 
+                        width: `${totalSeconds > 0 ? Math.round(((totalSeconds - timeLeft) / totalSeconds) * 100) : 0}%`, 
+                        backgroundColor: getThemeColor(), 
+                        borderRadius: '3px',
+                        transition: 'width 0.3s linear',
+                        boxShadow: `0 0 8px ${getThemeColor()}`
+                      }} 
+                    />
+                  </div>
+                </div>
                 <span className="pomodoro-timer-label" style={{ marginTop: '4px' }}>{getModeLabel()}</span>
               </div>
             </div>

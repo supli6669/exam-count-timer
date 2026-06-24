@@ -81,8 +81,11 @@
 - Tên Branch hiện tại: `main`
 - GitHub Remote: `https://github.com/supli6669/exam-count-timer.git`
 
-## 4. Các Steps Tiếp Theo (Dành cho AI Agent)
-- Hiện tại toàn bộ tính năng đề xuất đã hoàn thiện, hoạt động ổn định và được đẩy thành công lên nhánh chính GitHub.
+## 4. Các Steps Tiếp Theo (Kế hoạch thực hiện hiện tại)
+- [x] **Kéo dài Focus Stats sidebar**: Điều chỉnh `.pomodoro-sidebar-content.tab-stats` đạt `max-width: 1100px` trên desktop và `.pomodoro-stats-tab` đạt `max-width: 100%` để hiển thị tràn đều, không cuộn ngang. (Trạng thái: Đã xong)
+- [x] **Thanh tiến trình Pomodoro**: Thay đổi phần trăm số dạng text (`X% hoàn thành`) trong vòng tròn Pomodoro thành một thanh tiến trình ngang mini tinh tế kèm số % nhỏ bên trên. (Trạng thái: Đã xong)
+- [x] **Thanh tiến trình checklist trong Smart Insights**: Thêm thanh tiến trình ngang biểu thị phần trăm hoàn thành checklist nhiệm vụ học tập của từng môn, hiển thị ngay bên dưới thanh đã học, kèm số `% hoàn thành`. (Trạng thái: Đã xong)
 
 ## 5. Lỗi Hiện Tại / Điểm Nghẽn / Khó Khăn Kỹ Thuật
 - **Đã khắc phục lỗi ReferenceError khởi động**: Sửa lỗi tham chiếu `studyLogs` trước khi khởi tạo trong `PomodoroTimer.jsx` bằng cách chuyển các hàm tính toán thống kê xuống dưới phần khai báo các React hooks và state. Hiện tại trang web khởi chạy hoàn hảo không còn lỗi runtime.
+
