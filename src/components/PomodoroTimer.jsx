@@ -1215,7 +1215,10 @@ function PomodoroTimer({ isOpen, onClose, exams = [] }) {
               </svg>
               <div className="progress-ring-text">
                 <span className="pomodoro-timer-digits">{formatTime(timeLeft)}</span>
-                <span className="pomodoro-timer-label">{getModeLabel()}</span>
+                <span className="pomodoro-timer-percent" style={{ fontSize: '0.8rem', color: 'rgba(255, 255, 255, 0.7)', fontWeight: '600', marginTop: '2px', display: 'block' }}>
+                  {totalSeconds > 0 ? Math.round(((totalSeconds - timeLeft) / totalSeconds) * 100) : 0}% hoàn thành
+                </span>
+                <span className="pomodoro-timer-label" style={{ marginTop: '4px' }}>{getModeLabel()}</span>
               </div>
             </div>
           </div>
@@ -1609,55 +1612,53 @@ function PomodoroTimer({ isOpen, onClose, exams = [] }) {
               </div>
             </div>
 
-            <div className="stats-chart-wrapper" style={{ marginTop: '1rem', width: '100%', overflowX: 'auto' }}>
-              <div style={{ minWidth: '450px', width: '100%' }}>
-                <svg viewBox="0 0 600 220" width="100%" height="220" style={{ display: 'block', overflow: 'visible' }}>
-                  <defs>
-                    <linearGradient id="chartFillGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor={getThemeColor()} stopOpacity="0.45" />
-                      <stop offset="100%" stopColor={getThemeColor()} stopOpacity="0.0" />
-                    </linearGradient>
-                  </defs>
+            <div className="stats-chart-wrapper" style={{ marginTop: '1rem', width: '100%', overflow: 'hidden' }}>
+              <svg viewBox="0 0 600 220" width="100%" height="220" style={{ display: 'block', overflow: 'visible' }}>
+                <defs>
+                  <linearGradient id="chartFillGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor={getThemeColor()} stopOpacity="0.45" />
+                    <stop offset="100%" stopColor={getThemeColor()} stopOpacity="0.0" />
+                  </linearGradient>
+                </defs>
 
-                  {/* Horizontal Grid lines */}
-                  <line x1="50" y1="40" x2="550" y2="40" stroke="rgba(255,255,255,0.06)" strokeDasharray="4 4" />
-                  <line x1="50" y1="100" x2="550" y2="100" stroke="rgba(255,255,255,0.06)" strokeDasharray="4 4" />
-                  <line x1="50" y1="160" x2="550" y2="160" stroke="rgba(255,255,255,0.15)" strokeWidth="1.5" />
+                {/* Horizontal Grid lines */}
+                <line x1="50" y1="40" x2="550" y2="40" stroke="rgba(255,255,255,0.06)" strokeDasharray="4 4" />
+                <line x1="50" y1="100" x2="550" y2="100" stroke="rgba(255,255,255,0.06)" strokeDasharray="4 4" />
+                <line x1="50" y1="160" x2="550" y2="160" stroke="rgba(255,255,255,0.15)" strokeWidth="1.5" />
 
-                  {points.length > 0 && (
-                    <>
-                      {/* Gradient Fill under curve */}
-                      <path d={fillD} fill="url(#chartFillGradient)" />
+                {points.length > 0 && (
+                  <>
+                    {/* Gradient Fill under curve */}
+                    <path d={fillD} fill="url(#chartFillGradient)" />
 
-                      {/* Stroke Line Curve */}
-                      <path d={lineD} fill="none" stroke={getThemeColor()} strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
+                    {/* Stroke Line Curve */}
+                    <path d={lineD} fill="none" stroke={getThemeColor()} strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
 
-                      {/* Circles, Values and Labels */}
-                      {points.map((p, idx) => (
-                        <g key={idx}>
-                          {/* Dot Circle */}
-                          <circle cx={p.x} cy={p.y} r="5.5" fill="#ffffff" stroke={getThemeColor()} strokeWidth="3" />
+                    {/* Circles, Values and Labels */}
+                    {points.map((p, idx) => (
+                      <g key={idx}>
+                        {/* Dot Circle */}
+                        <circle cx={p.x} cy={p.y} r="5.5" fill="#ffffff" stroke={getThemeColor()} strokeWidth="3" />
 
-                          {/* Value above the dot */}
-                          <text x={p.x} y={p.y - 12} textAnchor="middle" fill="#ffffff" fontSize="10.5" fontWeight="700" fontFamily="inherit">
-                            {p.minutes > 0 ? formatChartValue(p.minutes) : ''}
-                          </text>
+                        {/* Value above the dot */}
+                        <text x={p.x} y={p.y - 12} textAnchor="middle" fill="#ffffff" fontSize="10.5" fontWeight="700" fontFamily="inherit">
+                          {p.minutes > 0 ? formatChartValue(p.minutes) : ''}
+                        </text>
 
-                          {/* Primary label */}
-                          <text x={p.x} y="185" textAnchor="middle" fill="var(--text-primary)" fontSize="11" fontWeight="600" fontFamily="inherit">
-                            {p.label}
-                          </text>
+                        {/* Primary label */}
+                        <text x={p.x} y="185" textAnchor="middle" fill="var(--text-primary)" fontSize="11" fontWeight="600" fontFamily="inherit">
+                          {p.label}
+                        </text>
 
-                          {/* Sublabel */}
-                          <text x={p.x} y="200" textAnchor="middle" fill="var(--text-secondary)" fontSize="9.5" fontFamily="inherit">
-                            {p.subLabel}
-                          </text>
-                        </g>
-                      ))}
-                    </>
-                  )}
-                </svg>
-              </div>
+                        {/* Sublabel */}
+                        <text x={p.x} y="200" textAnchor="middle" fill="var(--text-secondary)" fontSize="9.5" fontFamily="inherit">
+                          {p.subLabel}
+                        </text>
+                      </g>
+                    ))}
+                  </>
+                )}
+              </svg>
             </div>
           </div>
 

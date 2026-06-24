@@ -373,12 +373,6 @@ function App() {
       {/* Mục Tiêu Định Kỳ (Rule of 3) */}
       <RecurringTasks />
 
-      {/* Trình Phân Tích & Cảnh Báo Học Tập Thông Minh */}
-      <SmartInsights exams={exams} />
-
-      {/* Lịch Sử Đóng Góp Học Tập (GitHub-style Commit Graph) */}
-      <ContributionGraph />
-
       {/* Search & Sort Panel */}
       <section 
         className="filter-panel" 
@@ -513,6 +507,12 @@ function App() {
           onCreate={handleCreateOpen}
         />
       )}
+
+      {/* Trình Phân Tích & Cảnh Báo Học Tập Thông Minh */}
+      <SmartInsights exams={exams} />
+
+      {/* Lịch Sử Đóng Góp Học Tập (GitHub-style Commit Graph) */}
+      <ContributionGraph />
 
       {/* Add / Edit Modal Form */}
       {isModalOpen && (

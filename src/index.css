@@ -3775,18 +3775,37 @@ body {
   line-height: 1.4;
 }
 
-/* Focus Stats Cards Grid */
+/* Focus Stats Cards Grid - Split into 2 rows */
 .focus-stats-cards-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  grid-template-columns: repeat(6, 1fr);
   gap: 0.75rem;
   margin-top: 1rem;
 }
 
+.focus-time-card, 
+.focus-tasks-card, 
+.focus-sessions-card {
+  grid-column: span 6; /* 1 card per row on mobile */
+}
+
+.focus-streak-card, 
+.focus-breaks-card {
+  grid-column: span 6;
+}
+
 @media (min-width: 480px) {
   .focus-stats-cards-grid {
-    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
     gap: 1rem;
+  }
+  .focus-time-card, 
+  .focus-tasks-card, 
+  .focus-sessions-card {
+    grid-column: span 2; /* 3 cards in row 1 */
+  }
+  .focus-streak-card, 
+  .focus-breaks-card {
+    grid-column: span 3; /* 2 cards in row 2 */
   }
 }
 
@@ -3991,8 +4010,19 @@ body {
   }
   
   .focus-stats-cards-grid {
-    grid-template-columns: repeat(5, 1fr) !important; /* Spread all 5 cards across the screen */
-    gap: 1.1rem;
+    grid-template-columns: repeat(6, 1fr) !important;
+    gap: 1.15rem;
+  }
+
+  .focus-time-card, 
+  .focus-tasks-card, 
+  .focus-sessions-card {
+    grid-column: span 2 !important;
+  }
+
+  .focus-streak-card, 
+  .focus-breaks-card {
+    grid-column: span 3 !important;
   }
 
   .focus-stat-card {
@@ -4034,7 +4064,17 @@ body {
     gap: 1.75rem;
   }
   .focus-stats-cards-grid {
-    grid-template-columns: repeat(3, 1fr) !important;
+    grid-template-columns: repeat(6, 1fr) !important;
+    gap: 1rem;
+  }
+  .focus-time-card, 
+  .focus-tasks-card, 
+  .focus-sessions-card {
+    grid-column: span 2 !important;
+  }
+  .focus-streak-card, 
+  .focus-breaks-card {
+    grid-column: span 3 !important;
   }
   .focus-stat-card {
     min-height: 130px;
