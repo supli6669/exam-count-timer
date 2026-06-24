@@ -278,8 +278,8 @@ function SmartInsights({ exams = [] }) {
                 {/* Progress bar */}
                 <div className="insights-progress-section">
                   <div className="insights-progress-labels" style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.74rem', color: 'var(--text-secondary)' }}>
-                    <span>Đã học: <strong>{item.accumulatedMins}/{item.targetPrepMinutes} phút</strong> ({item.progressPercent}%)</span>
-                    <span>Nhiệm vụ: <strong>{item.completedTasks}/{item.totalTasks} việc</strong> ({item.taskPercent}%)</span>
+                    <span>Đã học: <strong>{item.accumulatedMins} phút</strong> ({item.progressPercent}%)</span>
+                    <span>Mục tiêu: {item.targetPrepMinutes} phút ({(item.targetPrepMinutes / 60).toFixed(1)}h)</span>
                   </div>
                   <div className="insights-progress-bar">
                     <div 
