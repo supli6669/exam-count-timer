@@ -203,6 +203,65 @@ function PomodoroTimer({ isOpen, onClose, exams = [] }) {
     }
   };
 
+  // Play preview alarm based on current unapplied inputs in settings
+  const playPreviewAlarmSound = () => {
+    try {
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContextClass) return;
+      const ctx = new AudioContextClass();
+
+      const playBeep = (time, freq, duration, type = 'sine') => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc.frequency.value = freq;
+        osc.type = type;
+
+        const vol = (inputAlarmVolume / 100) * 0.4;
+
+        gain.gain.setValueAtTime(0, time);
+        gain.gain.linearRampToValueAtTime(vol, time + 0.05);
+        gain.gain.exponentialRampToValueAtTime(0.001, time + duration);
+
+        osc.start(time);
+        osc.stop(time + duration);
+      };
+
+      const now = ctx.currentTime;
+      
+      if (inputAlarmSound === 'chime') {
+        const notes = [523.25, 659.25, 783.99, 1046.50];
+        notes.forEach((freq, idx) => {
+          playBeep(now + idx * 0.15, freq, 0.8, 'sine');
+        });
+      } else if (inputAlarmSound === 'woodblock') {
+        playBeep(now, 600, 0.1, 'triangle');
+        playBeep(now + 0.12, 450, 0.1, 'triangle');
+        playBeep(now + 0.24, 550, 0.12, 'triangle');
+      } else if (inputAlarmSound === 'gong') {
+        playBeep(now, 160, 2.0, 'sine');
+        playBeep(now, 240, 1.8, 'sine');
+        playBeep(now, 320, 1.5, 'sine');
+      } else if (inputAlarmSound === 'bell') {
+        playBeep(now, 1200, 0.5, 'sine');
+        playBeep(now, 1205, 0.5, 'sine');
+        playBeep(now + 0.08, 1200, 0.45, 'sine');
+        playBeep(now + 0.08, 1205, 0.45, 'sine');
+        playBeep(now + 0.16, 1200, 0.4, 'sine');
+        playBeep(now + 0.16, 1205, 0.4, 'sine');
+      } else {
+        playBeep(now, 880, 0.15, 'sine');
+        playBeep(now + 0.2, 880, 0.15, 'sine');
+        playBeep(now + 0.38, 880, 0.15, 'sine');
+        playBeep(now + 0.58, 1100, 0.5, 'sine');
+      }
+    } catch (err) {
+      console.warn('Cannot play preview sound:', err);
+    }
+  };
+
   // Push notifications
   const sendPushNotification = (title, body) => {
     if ('Notification' in window && Notification.permission === 'granted') {
@@ -918,18 +977,30 @@ function PomodoroTimer({ isOpen, onClose, exams = [] }) {
 
                 <div className="settings-field">
                   <label htmlFor="settings-alarm-sound">Kiểu âm báo</label>
-                  <select 
-                    id="settings-alarm-sound"
-                    value={inputAlarmSound}
-                    onChange={(e) => setInputAlarmSound(e.target.value)}
-                    className="form-input"
-                  >
-                    <option value="classic">🔔 Chuông điện tử (Classic)</option>
-                    <option value="chime">🎵 Giai điệu nhẹ (Zen Chime)</option>
-                    <option value="woodblock">🪵 Gõ gỗ thanh (Woodblock)</option>
-                    <option value="gong">🧘 Tiếng chiêng sâu (Mystic Gong)</option>
-                    <option value="bell">🛎️ Chuông cơ học (Mechanical Bell)</option>
-                  </select>
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <select 
+                      id="settings-alarm-sound"
+                      value={inputAlarmSound}
+                      onChange={(e) => setInputAlarmSound(e.target.value)}
+                      className="form-input"
+                      style={{ flex: 1 }}
+                    >
+                      <option value="classic">🔔 Chuông điện tử (Classic)</option>
+                      <option value="chime">🎵 Giai điệu nhẹ (Zen Chime)</option>
+                      <option value="woodblock">🪵 Gõ gỗ thanh (Woodblock)</option>
+                      <option value="gong">🧘 Tiếng chiêng sâu (Mystic Gong)</option>
+                      <option value="bell">🛎️ Chuông cơ học (Mechanical Bell)</option>
+                    </select>
+                    <button
+                      type="button"
+                      onClick={playPreviewAlarmSound}
+                      className="btn btn-secondary"
+                      style={{ padding: '0.6rem 0.85rem', fontSize: '0.82rem', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '0.25rem' }}
+                      title="Nghe thử âm lượng và kiểu chuông"
+                    >
+                      🔊 Nghe thử
+                    </button>
+                  </div>
                 </div>
 
                 <div className="settings-form-actions">
