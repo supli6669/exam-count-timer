@@ -15,6 +15,23 @@ function ThemeParticles({ theme }) {
     let width = (canvas.width = canvas.offsetWidth || window.innerWidth);
     let height = (canvas.height = canvas.offsetHeight || window.innerHeight);
 
+    // Mouse coordinates tracker
+    let mouse = { x: null, y: null, radius: 120 };
+
+    const handleMouseMove = (e) => {
+      const rect = canvas.getBoundingClientRect();
+      mouse.x = e.clientX - rect.left;
+      mouse.y = e.clientY - rect.top;
+    };
+
+    const handleMouseLeave = () => {
+      mouse.x = null;
+      mouse.y = null;
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseleave', handleMouseLeave);
+
     // Handle resizing
     const resizeObserver = new ResizeObserver((entries) => {
       for (let entry of entries) {
@@ -115,6 +132,39 @@ function ThemeParticles({ theme }) {
       }
 
       update() {
+        // Physical interactive mouse force (attract, repel, swirl)
+        if (mouse.x !== null && mouse.y !== null) {
+          const dx = this.x - mouse.x;
+          const dy = this.y - mouse.y;
+          const distance = Math.sqrt(dx * dx + dy * dy);
+
+          if (distance < mouse.radius) {
+            const force = (mouse.radius - distance) / mouse.radius; // 0 to 1
+
+            if (theme === 'cyberpunk-alley' || theme === 'sakura-library') {
+              // Repel effect: push away from the cursor
+              const repelStrength = theme === 'cyberpunk-alley' ? 5 : 3;
+              const angleX = distance > 0 ? dx / distance : 1;
+              const angleY = distance > 0 ? dy / distance : 0;
+              this.x += angleX * force * repelStrength;
+              this.y += angleY * force * repelStrength;
+            } 
+            else if (theme === 'lofi-cafe' || theme === 'nature-cabin') {
+              // Attract & Swirl: pull toward the cursor, but rotate around it
+              const attractStrength = 0.8;
+              const angleX = distance > 0 ? dx / distance : 1;
+              const angleY = distance > 0 ? dy / distance : 0;
+              
+              // Perpendicular vector for swirl rotation
+              const swirlX = -angleY * force * 2.0;
+              const swirlY = angleX * force * 2.0;
+
+              this.x += -angleX * force * attractStrength + swirlX;
+              this.y += -angleY * force * attractStrength + swirlY;
+            }
+          }
+        }
+
         if (theme === 'lofi-cafe') {
           this.y += this.speedY;
           this.x += this.speedX;
@@ -246,11 +296,26 @@ function ThemeParticles({ theme }) {
             ctx.stroke();
             ctx.restore();
           } else {
+            // Mouse proximity effects for stars in Space Odyssey: glow brighter & swell
+            let drawAlpha = this.alpha;
+            let drawSize = this.size;
+
+            if (mouse.x !== null && mouse.y !== null) {
+              const dx = this.x - mouse.x;
+              const dy = this.y - mouse.y;
+              const distance = Math.sqrt(dx * dx + dy * dy);
+              if (distance < mouse.radius) {
+                const factor = (mouse.radius - distance) / mouse.radius; // 0 to 1
+                drawAlpha = Math.min(1.0, this.alpha + factor * 0.5);
+                drawSize = this.size + factor * 2.5;
+              }
+            }
+
             // Draw twinkling star
             ctx.beginPath();
-            ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-            ctx.fillStyle = `rgba(255, 255, 255, ${this.alpha})`;
-            ctx.shadowBlur = this.size * 3;
+            ctx.arc(this.x, this.y, drawSize, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(255, 255, 255, ${drawAlpha})`;
+            ctx.shadowBlur = drawSize * 3;
             ctx.shadowColor = '#fff';
             ctx.fill();
             ctx.shadowBlur = 0; // reset
@@ -298,6 +363,8 @@ function ThemeParticles({ theme }) {
     return () => {
       cancelAnimationFrame(animationFrameId);
       window.removeEventListener('resize', handleResize);
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseleave', handleMouseLeave);
       resizeObserver.disconnect();
     };
   }, [theme]);

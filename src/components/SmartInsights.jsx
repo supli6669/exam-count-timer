@@ -14,8 +14,6 @@ function SmartInsights({ exams = [] }) {
     };
 
     window.addEventListener('storage', handleStorageChange);
-    
-    // Custom event to update logs when pomodoro completes in the same tab
     window.addEventListener('studyLogsUpdated', handleStorageChange);
 
     return () => {
@@ -24,7 +22,7 @@ function SmartInsights({ exams = [] }) {
     };
   }, []);
 
-  // Recalculate if studyLogs changed elsewhere
+  // Sync logs periodically
   useEffect(() => {
     const interval = setInterval(() => {
       const saved = localStorage.getItem('pomodoro_study_logs');
@@ -34,7 +32,7 @@ function SmartInsights({ exams = [] }) {
           setStudyLogs(parsed);
         }
       }
-    }, 5000); // Check every 5s
+    }, 5000);
 
     return () => clearInterval(interval);
   }, [studyLogs]);
@@ -46,7 +44,7 @@ function SmartInsights({ exams = [] }) {
     return Math.round(totalSeconds / 60);
   };
 
-  // Dynamic target calculation based on credits: Target = credits * factor
+  // Dynamic target calculation based on credits
   const getTargetPrepMinutes = (exam) => {
     const FACTOR_MINUTES = {
       final: 180,       // 3 hours per credit
@@ -83,7 +81,7 @@ function SmartInsights({ exams = [] }) {
       const credits = exam.credits || 3;
 
       // Warning assessment
-      let alertLevel = 'safe'; // 'safe' | 'warning' | 'danger'
+      let alertLevel = 'safe';
       let alertText = 'Tiến độ bình thường';
 
       if (daysLeft < 3) {
@@ -104,7 +102,7 @@ function SmartInsights({ exams = [] }) {
         }
       }
 
-      // Recommended daily minutes to reach target
+      // Recommended daily minutes
       const remainingMins = Math.max(0, targetPrepMinutes - accumulatedMins);
       const dailyRecommended = daysLeft > 0 ? Math.ceil(remainingMins / daysLeft) : 0;
 
@@ -121,7 +119,62 @@ function SmartInsights({ exams = [] }) {
         progressPercent: Math.min(100, Math.round((accumulatedMins / targetPrepMinutes) * 100))
       };
     })
-    .sort((a, b) => a.daysLeft - b.daysLeft); // Order by closest exam date
+    .sort((a, b) => a.daysLeft - b.daysLeft);
+
+  // Chronotype Analysis
+  const getChronotypeData = () => {
+    const hourStats = Array(24).fill(0);
+    studyLogs.forEach(log => {
+      const logDate = new Date(log.timestamp);
+      const hour = logDate.getHours();
+      hourStats[hour] += Math.round(log.seconds / 60);
+    });
+
+    let morningMins = 0;   // 5:00 - 11:59
+    let afternoonMins = 0; // 12:00 - 17:59
+    let nightMins = 0;     // 18:00 - 4:59
+
+    hourStats.forEach((mins, hour) => {
+      if (hour >= 5 && hour < 12) {
+        morningMins += mins;
+      } else if (hour >= 12 && hour < 18) {
+        afternoonMins += mins;
+      } else {
+        nightMins += mins;
+      }
+    });
+
+    let type = 'neutral';
+    let title = 'Nhịp Sinh Học Ôn Tập';
+    let emoji = '⏰';
+    let description = 'Hoàn thành thêm một vài phiên học để hệ thống phân tích nhịp sinh học của bạn.';
+
+    const totalStudied = morningMins + afternoonMins + nightMins;
+
+    if (totalStudied > 10) {
+      if (morningMins >= afternoonMins && morningMins >= nightMins) {
+        type = 'morning';
+        title = 'Sơn Ca Đón Sớm (Early Bird)';
+        emoji = '🌅';
+        description = 'Bạn học tập hiệu quả nhất vào buổi sáng. Hãy tận dụng khoảng thời gian từ 8h đến 11h sáng để giải quyết các môn ôn tập khó nhằn nhất nhé!';
+      } else if (afternoonMins >= morningMins && afternoonMins >= nightMins) {
+        type = 'afternoon';
+        title = 'Chiến Binh Chiều Tà (Afternoon Warrior)';
+        emoji = '☀️';
+        description = 'Bạn tập trung cực kỳ tốt vào buổi chiều. Khung giờ từ 14h đến 17h là lúc trí óc bạn hoạt động tối ưu để ôn luyện và giải đề.';
+      } else {
+        type = 'night';
+        title = 'Cú Đêm Ôn Luyện (Night Owl)';
+        emoji = '🦉';
+        description = 'Bạn là một chú cú đêm thực thụ! Sự yên tĩnh của không gian từ 20h đến nửa đêm giúp bạn tiếp thu kiến thức tốt và làm bài hiệu quả nhất.';
+      }
+    }
+
+    return { hourStats, type, title, emoji, description, totalStudied };
+  };
+
+  const chronotype = getChronotypeData();
+  const maxHourMins = Math.max(...chronotype.hourStats, 1);
 
   // Growth Analysis (Today vs. Yesterday)
   const getGrowthInsight = () => {
@@ -187,7 +240,7 @@ function SmartInsights({ exams = [] }) {
             <span className="insights-icon">🧠</span>
             <div>
               <h2 className="insights-title">Trình Phân Tích & Cảnh Báo Ôn Thi</h2>
-              <p className="insights-subtitle">Tự động phân tích và đưa ra kế hoạch học tập tối ưu</p>
+              <p className="insights-subtitle">Tự động phân tích dữ liệu và gợi ý lộ trình tập trung</p>
             </div>
           </div>
         </div>
@@ -198,10 +251,9 @@ function SmartInsights({ exams = [] }) {
           <span className="growth-text">{growthInsight.text}</span>
         </div>
 
-        {/* Recommendations list */}
+        {/* Recommendations List */}
         <div className="insights-content">
-          <h3 className="insights-section-heading">🎯 Đề xuất lịch ôn tập hôm nay:</h3>
-          
+          <h3 className="insights-section-heading">🎯 Đề xuất ôn thi hôm nay:</h3>
           <div className="insights-grid">
             {insights.map((item) => (
               <div key={item.id} className={`insights-item alert-${item.alertLevel}`}>
@@ -215,7 +267,7 @@ function SmartInsights({ exams = [] }) {
                   </span>
                 </div>
 
-                {/* Progress bar to target */}
+                {/* Progress bar */}
                 <div className="insights-progress-section">
                   <div className="insights-progress-labels">
                     <span>Đã học: <strong>{item.accumulatedMins} phút</strong></span>
@@ -232,15 +284,15 @@ function SmartInsights({ exams = [] }) {
                   </div>
                 </div>
 
-                {/* Daily Suggestion Text */}
+                {/* Daily Suggestion */}
                 <div className="insights-suggestion-box">
                   {item.dailyRecommended > 0 ? (
                     <>
-                      💡 Khuyên học hôm nay: <strong>{item.dailyRecommended} phút</strong> để kịp mục tiêu thi.
+                      💡 Khuyên ôn hôm nay: <strong>{item.dailyRecommended} phút</strong> để đảm bảo kịp mục tiêu thi.
                     </>
                   ) : (
                     <>
-                      🎉 Đã tích lũy đủ mục tiêu ôn tập ({(item.targetPrepMinutes / 60).toFixed(1)} giờ) cho môn này!
+                      🎉 Đã đạt mục tiêu ôn thi tích lũy cho môn học này!
                     </>
                   )}
                 </div>
@@ -248,6 +300,68 @@ function SmartInsights({ exams = [] }) {
             ))}
           </div>
         </div>
+
+        {/* Chronotype & Heatmap Section */}
+        <div className="insights-chronotype-section">
+          <div className="chrono-header">
+            <span className="chrono-emoji" style={{ fontSize: '1.4rem' }}>{chronotype.emoji}</span>
+            <div>
+              <h4 className="chrono-title">{chronotype.title}</h4>
+              <p className="chrono-desc">{chronotype.description}</p>
+            </div>
+          </div>
+
+          <div className="heatmap-container">
+            <div className="heatmap-label-row">
+              <span className="heatmap-section-title">📊 Bản đồ nhiệt tập trung (24 giờ):</span>
+              <span className="heatmap-legend">
+                <span>Ít học</span>
+                <span className="legend-box level-0"></span>
+                <span className="legend-box level-1"></span>
+                <span className="legend-box level-2"></span>
+                <span className="legend-box level-3"></span>
+                <span className="legend-box level-4"></span>
+                <span>Chăm học</span>
+              </span>
+            </div>
+
+            <div className="heatmap-grid">
+              {chronotype.hourStats.map((mins, hour) => {
+                let levelClass = 'level-0';
+                if (mins > 0) {
+                  const ratio = mins / maxHourMins;
+                  if (ratio <= 0.25) levelClass = 'level-1';
+                  else if (ratio <= 0.5) levelClass = 'level-2';
+                  else if (ratio <= 0.75) levelClass = 'level-3';
+                  else levelClass = 'level-4';
+                }
+
+                const hourStr = String(hour).padStart(2, '0') + ':00';
+
+                return (
+                  <div 
+                    key={hour} 
+                    className={`heatmap-cell ${levelClass}`}
+                    title={`${hourStr}: ${mins} phút tập trung`}
+                  >
+                    <span className="cell-tooltip">{hourStr}<br /><strong>{mins} phút</strong></span>
+                  </div>
+                );
+              })}
+            </div>
+            
+            <div className="heatmap-time-axis">
+              <span>00:00</span>
+              <span>04:00</span>
+              <span>08:00</span>
+              <span>12:00</span>
+              <span>16:00</span>
+              <span>20:00</span>
+              <span>23:00</span>
+            </div>
+          </div>
+        </div>
+
       </div>
     </section>
   );

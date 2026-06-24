@@ -18,6 +18,10 @@ function PomodoroTimer({ isOpen, onClose, exams = [] }) {
     const saved = localStorage.getItem('pomodoro_long_break');
     return saved ? parseInt(saved, 10) : 15;
   });
+  const [alarmVolume, setAlarmVolume] = useState(() => {
+    const saved = localStorage.getItem('pomodoro_alarm_volume');
+    return saved ? parseInt(saved, 10) : 50;
+  });
 
   const [mode, setMode] = useState('work'); // 'work' | 'shortBreak' | 'longBreak'
   const [isActive, setIsActive] = useState(false);
@@ -63,6 +67,7 @@ function PomodoroTimer({ isOpen, onClose, exams = [] }) {
   const [inputWork, setInputWork] = useState(workTime);
   const [inputShort, setInputShort] = useState(shortBreakTime);
   const [inputLong, setInputLong] = useState(longBreakTime);
+  const [inputAlarmVolume, setInputAlarmVolume] = useState(alarmVolume);
 
   const timerRef = useRef(null);
 
@@ -145,8 +150,11 @@ function PomodoroTimer({ isOpen, onClose, exams = [] }) {
         osc.frequency.value = freq;
         osc.type = 'sine';
 
+        // Limit the max synthetic volume to 0.4 to prevent hearing damage
+        const vol = (alarmVolume / 100) * 0.4;
+
         gain.gain.setValueAtTime(0, time);
-        gain.gain.linearRampToValueAtTime(0.2, time + 0.05);
+        gain.gain.linearRampToValueAtTime(vol, time + 0.05);
         gain.gain.exponentialRampToValueAtTime(0.001, time + duration);
 
         osc.start(time);
@@ -265,14 +273,17 @@ function PomodoroTimer({ isOpen, onClose, exams = [] }) {
     const w = Math.max(1, Math.min(60, parseInt(inputWork, 10) || 25));
     const s = Math.max(1, Math.min(60, parseInt(inputShort, 10) || 5));
     const l = Math.max(1, Math.min(60, parseInt(inputLong, 10) || 15));
+    const vol = Math.max(0, Math.min(100, parseInt(inputAlarmVolume, 10) || 50));
 
     setWorkTime(w);
     setShortBreakTime(s);
     setLongBreakTime(l);
+    setAlarmVolume(vol);
 
     localStorage.setItem('pomodoro_work', w.toString());
     localStorage.setItem('pomodoro_short_break', s.toString());
     localStorage.setItem('pomodoro_long_break', l.toString());
+    localStorage.setItem('pomodoro_alarm_volume', vol.toString());
 
     setIsSettingsOpen(false);
   };
@@ -281,6 +292,7 @@ function PomodoroTimer({ isOpen, onClose, exams = [] }) {
     setInputWork(workTime);
     setInputShort(shortBreakTime);
     setInputLong(longBreakTime);
+    setInputAlarmVolume(alarmVolume);
     setIsSettingsOpen(false);
   };
 
@@ -851,6 +863,20 @@ function PomodoroTimer({ isOpen, onClose, exams = [] }) {
                     value={inputLong} 
                     onChange={(e) => setInputLong(e.target.value)}
                     className="form-input"
+                  />
+                </div>
+
+                <div className="settings-field">
+                  <label htmlFor="settings-alarm-vol">Âm lượng chuông ({inputAlarmVolume}%)</label>
+                  <input 
+                    id="settings-alarm-vol"
+                    type="range" 
+                    min="0" 
+                    max="100" 
+                    step="5"
+                    value={inputAlarmVolume} 
+                    onChange={(e) => setInputAlarmVolume(parseInt(e.target.value, 10))}
+                    className="sound-volume-slider"
                   />
                 </div>
 
