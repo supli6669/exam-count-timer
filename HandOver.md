@@ -33,6 +33,7 @@
 - [x] Mô tả chi tiết kiểu chuông, nhãn âm lượng trực quan, thanh trượt viền tím filled-track và tự động phát thử khi kéo thả (Trạng thái: Đã xong)
 - [x] Nâng cấp tab Thống kê học tập thành bảng điều khiển Focus Stats toàn diện (Today, 1 Week, 4 Weeks) và Focus History chi tiết (Trạng thái: Đã xong)
 - [x] Tái thiết kế giao diện Focus Stats với 5 thẻ gradient rực rỡ và biểu đồ đường cong SVG (Bezier Curve) mượt mà (Trạng thái: Đã xong)
+- [x] Hiển thị thời gian đếm ngược Pomodoro & favicon động trên thanh tab/taskbar (Trạng thái: Đã xong)
 
 ## 2. Chi Tiết Các Phần Đã Triển Khai Gần Đây
 - **Bảng Thống Kê Focus Stats & Biểu Đồ Bezier SVG Mượt Mà**:
@@ -75,9 +76,14 @@
 - **Phân tích nhịp sinh học ôn thi & Bản đồ nhiệt 24 giờ (Chronotype Heatmap)**:
   - Phân tích log thời gian học từ `localStorage` để phân loại nhịp sinh học tập trung của học sinh: **Sơn Ca Đón Sớm (Early Bird)**, **Chiến Binh Chiều Tà (Afternoon Warrior)**, hoặc **Cú Đêm Ôn Luyện (Night Owl)** kèm lời khuyên tối ưu giờ học.
   - Vẽ bản đồ nhiệt dạng lưới 24 giờ ngang trực quan, đổi màu xanh đậm dần tùy thuộc vào mức độ tập trung ôn bài trong ngày cùng tooltip CSS mượt mà khi di chuột qua.
+- **Hiển thị thời gian đếm ngược Pomodoro & favicon động trên thanh tab/taskbar**:
+  - Thiết lập hook đồng bộ hóa thời gian đếm ngược của Pomodoro lên tiêu đề trang (`document.title`) và favicon của trình duyệt theo thời gian thực.
+  - Tự động thay đổi biểu tượng (favicon SVG) và emoji theo trạng thái của bộ đếm: `⚡` (Tập trung), `☕` (Nghỉ ngắn), `🍃` (Nghỉ dài).
+  - Hỗ trợ hiển thị ký hiệu tạm dừng `⏸️` trước tiêu đề khi người dùng tạm dừng đếm ngược.
+  - Tự động khôi phục tiêu đề gốc `Đồng Hồ Đếm Ngược Lịch Thi - Theo Dõi Lịch Thi Thời Gian Thực` và biểu tượng mặc định `⏱️` khi reset hoặc chưa chạy.
 
 ## 3. Trạng Thế Git Hiện Tại
-- Mã SHA commit / Message gần nhất: `bce336e` / `feat: redesign dashboard stats cards grid into 2 rows, add Pomodoro percentage, make SVG chart fluid, rearrange home page sections`
+- Mã SHA commit / Message gần nhất: `9d40f35` / `feat: show Pomodoro countdown on browser tab title and favicon`
 - Tên Branch hiện tại: `main`
 - GitHub Remote: `https://github.com/supli6669/exam-count-timer.git`
 

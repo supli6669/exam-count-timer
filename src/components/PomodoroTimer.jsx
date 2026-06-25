@@ -322,6 +322,44 @@ function PomodoroTimer({ isOpen, onClose, exams = [] }) {
     localStorage.setItem('pomodoro_completed_sessions', completedWorkSessions.toString());
   }, [completedWorkSessions]);
 
+  // Update browser tab title and favicon to show countdown timer (Windows taskbar)
+  useEffect(() => {
+    const totalSecs = mode === 'work' ? workTime * 60 : (mode === 'shortBreak' ? shortBreakTime * 60 : longBreakTime * 60);
+    const isTimerDirty = timeLeft !== totalSecs;
+    
+    if (isActive || isTimerDirty) {
+      const mins = Math.floor(timeLeft / 60);
+      const secs = timeLeft % 60;
+      const timeStr = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+      
+      let emoji = '⚡';
+      if (mode === 'shortBreak') emoji = '☕';
+      if (mode === 'longBreak') emoji = '🍃';
+      
+      const prefix = isActive ? '' : '⏸️ ';
+      document.title = `${prefix}${emoji} ${timeStr} | Đồng Hồ Lịch Thi`;
+      
+      const favicon = document.querySelector("link[rel*='icon']");
+      if (favicon) {
+        favicon.href = `data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>${emoji}</text></svg>`;
+      }
+    } else {
+      document.title = "Đồng Hồ Đếm Ngược Lịch Thi - Theo Dõi Lịch Thi Thời Gian Thực";
+      const favicon = document.querySelector("link[rel*='icon']");
+      if (favicon) {
+        favicon.href = `data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⏱️</text></svg>`;
+      }
+    }
+
+    return () => {
+      document.title = "Đồng Hồ Đếm Ngược Lịch Thi - Theo Dõi Lịch Thi Thời Gian Thực";
+      const favicon = document.querySelector("link[rel*='icon']");
+      if (favicon) {
+        favicon.href = `data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⏱️</text></svg>`;
+      }
+    };
+  }, [timeLeft, mode, isActive, workTime, shortBreakTime, longBreakTime]);
+
   // Get total duration for the current mode in seconds
   const getTotalSeconds = () => {
     if (mode === 'work') return workTime * 60;
