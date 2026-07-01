@@ -290,10 +290,20 @@ function PomodoroTimer({ isOpen, onClose, exams = [] }) {
     return localStorage.getItem('pomodoro_focus_subject') || 'general';
   });
 
+  // Focus Task ID: 'general' or task.id
+  const [focusTaskId, setFocusTaskId] = useState(() => {
+    return localStorage.getItem('pomodoro_focus_task') || 'general';
+  });
+
   // Save selected subject
   useEffect(() => {
     localStorage.setItem('pomodoro_focus_subject', focusSubjectId);
   }, [focusSubjectId]);
+
+  // Save selected task
+  useEffect(() => {
+    localStorage.setItem('pomodoro_focus_task', focusTaskId);
+  }, [focusTaskId]);
 
   // Load and state for study logs
   const [studyLogs, setStudyLogs] = useState(() => {
@@ -389,9 +399,16 @@ function PomodoroTimer({ isOpen, onClose, exams = [] }) {
 
     const today = new Date().toISOString().split('T')[0];
     let subjectName = 'Học tập chung';
+    let taskText = null;
     if (focusSubjectId !== 'general') {
       const exam = exams.find(e => e.id === focusSubjectId);
-      if (exam) subjectName = exam.subject;
+      if (exam) {
+        subjectName = exam.subject;
+        if (focusTaskId !== 'general') {
+          const task = (exam.tasks || []).find(t => t.id === focusTaskId);
+          if (task) taskText = task.text;
+        }
+      }
     }
 
     const newLog = {
@@ -399,6 +416,8 @@ function PomodoroTimer({ isOpen, onClose, exams = [] }) {
       date: today,
       subjectId: focusSubjectId,
       subjectName,
+      taskId: focusTaskId !== 'general' ? focusTaskId : null,
+      taskText,
       seconds
     };
 
@@ -530,6 +549,38 @@ function PomodoroTimer({ isOpen, onClose, exams = [] }) {
       setMode('work');
     }
   };
+
+  // Keyboard shortcuts listener when panel is open
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleKeyDown = (e) => {
+      const activeEl = document.activeElement;
+      const isInputActive = activeEl && (
+        activeEl.tagName === 'INPUT' || 
+        activeEl.tagName === 'SELECT' || 
+        activeEl.tagName === 'TEXTAREA' || 
+        activeEl.isContentEditable
+      );
+      if (isInputActive) return;
+
+      if (e.code === 'Space') {
+        e.preventDefault();
+        handleStartPause();
+      } else if (e.code === 'Escape') {
+        e.preventDefault();
+        onClose();
+      } else if (e.key === 's' || e.key === 'S') {
+        e.preventDefault();
+        handleSkip();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen, handleStartPause, handleSkip, onClose]);
 
   // Save customized time configurations
   const handleSaveSettings = (e) => {
@@ -1177,7 +1228,10 @@ function PomodoroTimer({ isOpen, onClose, exams = [] }) {
             <select 
               id="focus-subject-select"
               value={focusSubjectId} 
-              onChange={(e) => setFocusSubjectId(e.target.value)}
+              onChange={(e) => {
+                setFocusSubjectId(e.target.value);
+                setFocusTaskId('general');
+              }}
               disabled={isActive}
               className="form-input"
             >
@@ -1187,6 +1241,35 @@ function PomodoroTimer({ isOpen, onClose, exams = [] }) {
               ))}
             </select>
           </div>
+
+          {/* Focus Task Selector */}
+          {focusSubjectId !== 'general' && (() => {
+            const selectedExam = exams.find(e => e.id === focusSubjectId);
+            const tasks = selectedExam?.tasks || [];
+            if (tasks.length === 0) return null;
+            return (
+              <div className="focus-task-selector" style={{ marginTop: '0.6rem', marginBottom: '0.2rem' }}>
+                <label htmlFor="focus-task-select" style={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.7)', fontWeight: '600' }}>
+                  📋 Chọn nhiệm vụ cần hoàn thành:
+                </label>
+                <select 
+                  id="focus-task-select"
+                  value={focusTaskId} 
+                  onChange={(e) => setFocusTaskId(e.target.value)}
+                  disabled={isActive}
+                  className="form-input"
+                  style={{ marginTop: '0.2rem' }}
+                >
+                  <option value="general">Nhiệm vụ chung (Không chọn cụ thể)</option>
+                  {tasks.map(task => (
+                    <option key={task.id} value={task.id}>
+                      {task.text} {task.completed ? '✅' : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            );
+          })()}
 
           {/* Main Mode Toggle Buttons */}
           <div className="pomodoro-modes">

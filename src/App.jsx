@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import ExamCard from './components/ExamCard';
 import ExamForm from './components/ExamForm';
 import NotificationSettings from './components/NotificationSettings';
+import BackupRestore from './components/BackupRestore';
 import CalendarView from './components/CalendarView';
 import { CATEGORIES } from './constants';
 import PomodoroTimer from './components/PomodoroTimer';
@@ -269,6 +270,7 @@ function App() {
           </div>
         </div>
         <div className="header-actions">
+          <BackupRestore />
           <NotificationSettings 
             enabled={notificationsEnabled} 
             onToggle={setNotificationsEnabled} 

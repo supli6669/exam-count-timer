@@ -348,8 +348,22 @@ function ThemeParticles({ theme }) {
 
     initParticles();
 
+    // Page Visibility API to save resources
+    let isTabVisible = true;
+    const handleVisibilityChange = () => {
+      isTabVisible = !document.hidden;
+      if (isTabVisible) {
+        cancelAnimationFrame(animationFrameId);
+        animate();
+      } else {
+        cancelAnimationFrame(animationFrameId);
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
     // Loop
     const animate = () => {
+      if (!isTabVisible) return;
       ctx.clearRect(0, 0, width, height);
       particles.forEach((p) => {
         p.update();
@@ -365,6 +379,7 @@ function ThemeParticles({ theme }) {
       window.removeEventListener('resize', handleResize);
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseleave', handleMouseLeave);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
       resizeObserver.disconnect();
     };
   }, [theme]);
