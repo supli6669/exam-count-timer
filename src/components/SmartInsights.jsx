@@ -59,6 +59,7 @@ function SmartInsights({ exams = [] }) {
   };
 
   const now = new Date();
+  const todayStr = now.toISOString().split('T')[0];
 
   // Upcoming exams analysis
   const insights = exams
@@ -80,17 +81,28 @@ function SmartInsights({ exams = [] }) {
       
       const credits = exam.credits || 3;
 
+      // Total actual minutes remaining until the exam starts
+      const minutesLeftUntilExam = Math.max(0, Math.floor(diffMs / (1000 * 60)));
+
       // Warning assessment
       let alertLevel = 'safe';
       let alertText = 'Tiến độ bình thường';
 
-      if (daysLeft < 3) {
+      if (daysLeft < 1) {
+        if (accumulatedMins < targetPrepMinutes * 0.85) {
+          alertLevel = 'danger';
+          alertText = '🚨 THI TRONG 24H - ÔN GẤP!';
+        } else {
+          alertLevel = 'safe';
+          alertText = '✅ Sẵn sàng thi';
+        }
+      } else if (daysLeft < 3) {
         if (accumulatedMins < targetPrepMinutes * 0.6) {
           alertLevel = 'danger';
           alertText = '🚨 CẦN ÔN THI GẤP!';
         } else {
           alertLevel = 'safe';
-          alertText = '✅ Sẵn sàng thi';
+          alertText = '✅ Đang ôn tốt';
         }
       } else if (daysLeft < 7) {
         if (accumulatedMins < targetPrepMinutes * 0.3) {
@@ -104,7 +116,21 @@ function SmartInsights({ exams = [] }) {
 
       // Recommended daily minutes
       const remainingMins = Math.max(0, targetPrepMinutes - accumulatedMins);
-      const dailyRecommended = daysLeft > 0 ? Math.ceil(remainingMins / daysLeft) : 0;
+      let dailyRecommended = 0;
+      if (daysLeft > 0) {
+        if (daysLeft < 1) {
+          // Under 24h left, recommended is the remaining target, capped by actual minutes left
+          dailyRecommended = Math.min(remainingMins, minutesLeftUntilExam);
+        } else {
+          // More than 24h left, daily average capped by actual minutes left
+          dailyRecommended = Math.min(Math.ceil(remainingMins / daysLeft), minutesLeftUntilExam);
+        }
+      }
+
+      // Calculate how many minutes studied today for this specific subject
+      const todayLogsForSubject = studyLogs.filter(log => log.subjectId === exam.id && log.date === todayStr);
+      const todaySubjectMins = Math.round(todayLogsForSubject.reduce((sum, log) => sum + log.seconds, 0) / 60);
+      const todayRemainingRecommended = Math.max(0, dailyRecommended - todaySubjectMins);
 
       const tasks = exam.tasks || [];
       const completedTasks = tasks.filter(t => t.completed).length;
@@ -121,6 +147,7 @@ function SmartInsights({ exams = [] }) {
         alertLevel,
         alertText,
         dailyRecommended,
+        todayRemainingRecommended,
         progressPercent: Math.min(100, Math.round((accumulatedMins / targetPrepMinutes) * 100)),
         completedTasks,
         totalTasks,
@@ -295,13 +322,17 @@ function SmartInsights({ exams = [] }) {
 
                 {/* Daily Suggestion */}
                 <div className="insights-suggestion-box">
-                  {item.dailyRecommended > 0 ? (
+                  {item.dailyRecommended === 0 ? (
                     <>
-                      💡 Khuyên ôn hôm nay: <strong>{item.dailyRecommended} phút</strong> để đảm bảo kịp mục tiêu thi.
+                      🎉 Đã đạt mục tiêu ôn thi tích lũy cho môn học này!
+                    </>
+                  ) : item.todayRemainingRecommended > 0 ? (
+                    <>
+                      💡 Còn cần ôn: <strong>{item.todayRemainingRecommended} phút</strong> để hoàn thành mục tiêu hôm nay.
                     </>
                   ) : (
                     <>
-                      🎉 Đã đạt mục tiêu ôn thi tích lũy cho môn học này!
+                      🎉 Đã hoàn thành mục tiêu ôn tập của ngày hôm nay!
                     </>
                   )}
                 </div>
