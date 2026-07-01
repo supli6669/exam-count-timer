@@ -36,6 +36,11 @@
 - [x] Hiển thị thời gian đếm ngược Pomodoro & favicon động trên thanh tab/taskbar (Trạng thái: Đã xong)
 
 ## 2. Chi Tiết Các Phần Đã Triển Khai Gần Đây
+- **Tối Ưu Hóa Toàn Diện & Tính Năng Nâng Cao**:
+  - **Tối ưu năng lượng (Page Visibility API)**: Tự động dừng vòng lặp Canvas hạt của `ThemeParticles` khi tab ẩn để tiết kiệm 100% tài nguyên CPU/GPU và khôi phục khi tab hiển thị lại.
+  - **Phím tắt nhanh trong Pomodoro**: Phím `Space` để tạm dừng/chạy tiếp, `Esc` để đóng panel, và `S` để bỏ qua phiên tập trung (chặn kích hoạt khi đang gõ phím).
+  - **Sao lưu & Khôi phục (JSON Export/Import)**: Tích hợp component `BackupRestore` tại thanh tiêu đề để tải về (Export) và tải lên (Import) dữ liệu LocalStorage an toàn.
+  - **Liên kết Pomodoro với Task**: Thêm bộ chọn nhiệm vụ (Task Focus Selector) khi chọn môn ôn tập để lưu log học tập chứa chi tiết `taskId` và `taskText`.
 - **Tối Ưu Hóa Trình Phân Tích & Cảnh Báo Ôn Thi (Smart Insights)**:
   - Giới hạn thời gian khuyên học ôn tập hàng ngày không vượt quá thời gian thực tế còn lại trước giờ thi (`minutesLeftUntilExam`), loại bỏ các gợi ý học tập phi thực tế khi sát kỳ thi.
   - Nâng cấp nhãn hiển thị thành thời lượng **còn cần ôn tập** động trong ngày (tự động khấu trừ số phút đã học của môn đó trong ngày hôm nay).
@@ -87,7 +92,7 @@
   - Tự động khôi phục tiêu đề gốc `Đồng Hồ Đếm Ngược Lịch Thi - Theo Dõi Lịch Thi Thời Gian Thực` và biểu tượng mặc định `⏱️` khi reset hoặc chưa chạy.
 
 ## 3. Trạng Thế Git Hiện Tại
-- Mã SHA commit / Message gần nhất: `6f6f38a` / `opt: study insights calculations and remaining minutes display wording`
+- Mã SHA commit / Message gần nhất: `560be26` / `opt: full optimizations (CPU visibility API, keyboard shortcuts, backup/restore JSON, Pomodoro tasks)`
 - Tên Branch hiện tại: `main`
 - GitHub Remote: `https://github.com/supli6669/exam-count-timer.git`
 
