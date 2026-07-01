@@ -36,6 +36,10 @@
 - [x] Hiển thị thời gian đếm ngược Pomodoro & favicon động trên thanh tab/taskbar (Trạng thái: Đã xong)
 
 ## 2. Chi Tiết Các Phần Đã Triển Khai Gần Đây
+- **Tối Ưu Hóa Trình Phân Tích & Cảnh Báo Ôn Thi (Smart Insights)**:
+  - Giới hạn thời gian khuyên học ôn tập hàng ngày không vượt quá thời gian thực tế còn lại trước giờ thi (`minutesLeftUntilExam`), loại bỏ các gợi ý học tập phi thực tế khi sát kỳ thi.
+  - Nâng cấp nhãn hiển thị thành thời lượng **còn cần ôn tập** động trong ngày (tự động khấu trừ số phút đã học của môn đó trong ngày hôm nay).
+  - Thêm cấp độ cảnh báo đỏ khẩn cấp `🚨 THI TRONG 24H - ÔN GẤP!` cho các môn còn dưới 1 ngày thi mà chưa đạt 85% tiến độ ôn tập.
 - **Bảng Thống Kê Focus Stats & Biểu Đồ Bezier SVG Mượt Mà**:
   - Thiết kế lại Tab Thống kê học tập thành một dashboard cao cấp:
     - **Thanh Chọn Khoảng Thời Gian (Today, 1 Week, 4 Weeks)**: Cho phép chuyển đổi nhanh để cập nhật toàn bộ số liệu thống kê thời gian thực.
@@ -83,7 +87,7 @@
   - Tự động khôi phục tiêu đề gốc `Đồng Hồ Đếm Ngược Lịch Thi - Theo Dõi Lịch Thi Thời Gian Thực` và biểu tượng mặc định `⏱️` khi reset hoặc chưa chạy.
 
 ## 3. Trạng Thế Git Hiện Tại
-- Mã SHA commit / Message gần nhất: `9d40f35` / `feat: show Pomodoro countdown on browser tab title and favicon`
+- Mã SHA commit / Message gần nhất: `6f6f38a` / `opt: study insights calculations and remaining minutes display wording`
 - Tên Branch hiện tại: `main`
 - GitHub Remote: `https://github.com/supli6669/exam-count-timer.git`
 
