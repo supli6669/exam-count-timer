@@ -35,8 +35,15 @@
 - [x] Tái thiết kế giao diện Focus Stats với 5 thẻ gradient rực rỡ và biểu đồ đường cong SVG (Bezier Curve) mượt mà (Trạng thái: Đã xong)
 - [x] Hiển thị thời gian đếm ngược Pomodoro & favicon động trên thanh tab/taskbar (Trạng thái: Đã xong)
 - [x] Tự động xóa môn thi đã diễn ra khỏi danh sách (Trạng thái: Đã xong)
+- [x] Tối ưu hóa hiệu năng Focus Stats: Tách biệt component FocusStatsTab độc lập và memoize dữ liệu (Trạng thái: Đã xong)
+- [x] Khắc phục rò rỉ bộ nhớ AudioContext Web Audio API trong playSynthAlarm (Trạng thái: Đã xong)
+- [x] Tối ưu hóa hiệu năng SmartInsights: Bọc useMemo cho insights, chronotype, growthInsight và loại bỏ polling setInterval 5s (Trạng thái: Đã xong)
 
 ## 2. Chi Tiết Các Phần Đã Triển Khai Gần Đây
+- **Tối Ưu Hóa Hiệu Năng & Quản Lý Bộ Nhớ (Performance & Memory Optimization)**:
+  - **Tối ưu hóa hiệu năng Focus Stats**: Tách riêng component `FocusStatsTab.jsx`, chuyển các state bộ lọc nội bộ và sử dụng `useMemo` bọc toàn bộ các tính toán thống kê (streak, so sánh, SVG Bezier path). Điều này giúp cô lập state đếm ngược Pomodoro (chạy mỗi giây), ngăn không cho các phép tính đồ thị nặng re-render vô ích.
+  - **Khắc phục rò rỉ bộ nhớ AudioContext**: Cấu trúc lại hàm phát âm thanh `playSynthAlarm` trong `PomodoroTimer.jsx`, tự động giải phóng và đóng `AudioContext` qua `ctx.close()` sau 2.2 giây hoặc lập tức khi âm lượng bằng 0, giúp trình duyệt không bị giới hạn số lượng bộ dựng âm thanh.
+  - **Tối ưu hóa SmartInsights**: Bọc các phép phân tích dữ liệu môn thi (`insights`), phân tích giờ sinh học (`chronotype`) và tốc độ tăng trưởng (`growthInsight`) bằng `useMemo`. Đồng thời, loại bỏ hoàn toàn cơ chế polling bằng `setInterval` định kỳ 5 giây để thay bằng trigger phản xạ sự kiện (`storage`, `studyLogsUpdated`).
 - **Tối Ưu Hóa Toàn Diện & Tính Năng Nâng Cao**:
   - **Tối ưu năng lượng (Page Visibility API)**: Tự động dừng vòng lặp Canvas hạt của `ThemeParticles` khi tab ẩn để tiết kiệm 100% tài nguyên CPU/GPU và khôi phục khi tab hiển thị lại.
   - **Phím tắt nhanh trong Pomodoro**: Phím `Space` để tạm dừng/chạy tiếp, `Esc` để đóng panel, và `S` để bỏ qua phiên tập trung (chặn kích hoạt khi đang gõ phím).
@@ -97,7 +104,7 @@
   - Sử dụng functional state update (`setExams(prev => ...)`) để đảm bảo chỉ cập nhật state khi thực sự có môn bị xóa, tránh re-render không cần thiết.
 
 ## 3. Trạng Thế Git Hiện Tại
-- Mã SHA commit / Message gần nhất: `7c9dfea` / `feat: auto-remove passed exams from countdown list`
+- Mã SHA commit / Message gần nhất: `f1bb90e` / `feat: optimize PomodoroTimer audio context, split FocusStatsTab, and memoize insights`
 - Tên Branch hiện tại: `main`
 - GitHub Remote: `https://github.com/supli6669/exam-count-timer.git`
 
