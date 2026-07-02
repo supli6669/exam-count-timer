@@ -44,6 +44,9 @@
   - **Tối ưu hóa hiệu năng Focus Stats**: Tách riêng component `FocusStatsTab.jsx`, chuyển các state bộ lọc nội bộ và sử dụng `useMemo` bọc toàn bộ các tính toán thống kê (streak, so sánh, SVG Bezier path). Điều này giúp cô lập state đếm ngược Pomodoro (chạy mỗi giây), ngăn không cho các phép tính đồ thị nặng re-render vô ích.
   - **Khắc phục rò rỉ bộ nhớ AudioContext**: Cấu trúc lại hàm phát âm thanh `playSynthAlarm` trong `PomodoroTimer.jsx`, tự động giải phóng và đóng `AudioContext` qua `ctx.close()` sau 2.2 giây hoặc lập tức khi âm lượng bằng 0, giúp trình duyệt không bị giới hạn số lượng bộ dựng âm thanh.
   - **Tối ưu hóa SmartInsights**: Bọc các phép phân tích dữ liệu môn thi (`insights`), phân tích giờ sinh học (`chronotype`) và tốc độ tăng trưởng (`growthInsight`) bằng `useMemo`. Đồng thời, loại bỏ hoàn toàn cơ chế polling bằng `setInterval` định kỳ 5 giây để thay bằng trigger phản xạ sự kiện (`storage`, `studyLogsUpdated`).
+  - **Tối ưu hóa hiệu năng vẽ Canvas (ThemeParticles)**: Loại bỏ `ctx.shadowBlur` và `ctx.shadowColor` thay bằng kỹ thuật vẽ các hình tròn lồng nhau (Layered Circles), giúp hoạt ảnh 60 FPS chạy siêu nhẹ, tiết kiệm đáng kể CPU/GPU cho thiết bị.
+  - **Bảo vệ chống trễ nhập liệu (Keystroke Input Lag Protection)**: Bọc các component phụ (`ContributionGraph`, `RecurringTasks`, `SmartInsights`) bằng `React.memo` và bọc toàn bộ thuật toán xử lý dữ liệu nặng trong `useMemo`. Giúp tránh tình trạng re-render và tính toán thừa khi người dùng gõ từ khóa tìm kiếm môn thi trên Dashboard.
+  - **Tối ưu hóa bộ đếm trong Lịch (CalendarView)**: Đồng hồ đếm ngược chỉ chạy khi mở popup xem chi tiết ngày thi, tự động dọn dẹp (clear) khi đóng popup giúp lịch không bị re-render định kỳ mỗi giây.
 - **Tối Ưu Hóa Toàn Diện & Tính Năng Nâng Cao**:
   - **Tối ưu năng lượng (Page Visibility API)**: Tự động dừng vòng lặp Canvas hạt của `ThemeParticles` khi tab ẩn để tiết kiệm 100% tài nguyên CPU/GPU và khôi phục khi tab hiển thị lại.
   - **Phím tắt nhanh trong Pomodoro**: Phím `Space` để tạm dừng/chạy tiếp, `Esc` để đóng panel, và `S` để bỏ qua phiên tập trung (chặn kích hoạt khi đang gõ phím).
@@ -104,7 +107,7 @@
   - Sử dụng functional state update (`setExams(prev => ...)`) để đảm bảo chỉ cập nhật state khi thực sự có môn bị xóa, tránh re-render không cần thiết.
 
 ## 3. Trạng Thế Git Hiện Tại
-- Mã SHA commit / Message gần nhất: `f1bb90e` / `feat: optimize PomodoroTimer audio context, split FocusStatsTab, and memoize insights`
+- Mã SHA commit / Message gần nhất: `c50a262` / `perf: optimize canvas rendering, memoize components to prevent input lag, and fix calendar timer`
 - Tên Branch hiện tại: `main`
 - GitHub Remote: `https://github.com/supli6669/exam-count-timer.git`
 
