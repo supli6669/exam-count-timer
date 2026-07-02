@@ -21,17 +21,17 @@ const ALARM_SOUND_OPTIONS = [
 ];
 
 const STUDY_QUOTES = [
-  { text: "Học vấn do người siêng năng đạt được, tài sản do người khôn khéo sở hữu.", author: "Tục ngữ" },
-  { text: "Bản chất của thành công là sự kiên trì, nỗ lực từng ngày một.", author: "Khuyết danh" },
-  { text: "Không có con đường nào dài hơn bước chân của chính bạn, không có ngọn núi nào cao hơn đỉnh núi.", author: "Khuyết danh" },
-  { text: "Chiến thắng bản thân là chiến thắng hiển hách nhất.", author: "Plato" },
-  { text: "Học tập là hạt giống của kiến thức, kiến thức là hạt giống của hạnh phúc.", author: "Ngạn ngữ Georgia" },
-  { text: "Hôm nay làm những việc người khác không dám làm, ngày mai đạt được những điều người khác không thể.", author: "Khuyết danh" },
-  { text: "Cách duy nhất để làm tốt một việc là yêu thích những gì bạn làm.", author: "Steve Jobs" },
-  { text: "Mọi thành tựu vĩ đại đều cần có thời gian và sự kiên nhẫn.", author: "Maya Angelou" },
-  { text: "Thi cử không phải là đích đến cuối cùng, mà là một bước đệm để bạn trưởng thành.", author: "Khuyết danh" },
-  { text: "Đầu tư vào tri thức luôn mang lại lợi suất cao nhất.", author: "Benjamin Franklin" },
-  { text: "Thiên tài chỉ có 1% năng khiếu bẩm sinh, 99% còn lại là mồ hôi nước mắt.", author: "Thomas Edison" }
+  { text: "Live as if you were to die tomorrow. Learn as if you were to live forever.", author: "Mahatma Gandhi" },
+  { text: "It always seems impossible until it's done.", author: "Nelson Mandela" },
+  { text: "There is no elevator to success. You have to take the stairs.", author: "Anonymous" },
+  { text: "The secret of getting ahead is getting started.", author: "Mark Twain" },
+  { text: "Believe you can and you're halfway there.", author: "Theodore Roosevelt" },
+  { text: "Success is the sum of small efforts, repeated day in and day out.", author: "Robert Collier" },
+  { text: "The only way to do great work is to love what you do.", author: "Steve Jobs" },
+  { text: "Don't let what you cannot do interfere with what you can do.", author: "John Wooden" },
+  { text: "Productivity is being able to do things that you were never able to do before.", author: "Franz Kafka" },
+  { text: "The best way to predict your future is to create it.", author: "Abraham Lincoln" },
+  { text: "Genius is 1% inspiration, 99% perspiration.", author: "Thomas Edison" }
 ];
 
 const getAlarmSoundDesc = (soundId) => {
