@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { incrementContribution, decrementContribution } from '../utils/contributions';
 
 // Helpers to get period identifiers
@@ -363,4 +363,4 @@ function RecurringTasks() {
   );
 }
 
-export default RecurringTasks;
+export default React.memo(RecurringTasks);

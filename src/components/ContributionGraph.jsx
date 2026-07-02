@@ -1,5 +1,13 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { getContributions } from '../utils/contributions';
+
+const getLevel = (count) => {
+  if (count === 0) return 0;
+  if (count <= 2) return 1;
+  if (count <= 4) return 2;
+  if (count <= 6) return 3;
+  return 4;
+};
 
 function ContributionGraph() {
   const [contributions, setContributions] = useState(getContributions);
@@ -16,8 +24,8 @@ function ContributionGraph() {
   }, []);
 
   // Generate dates for the last 53 weeks (Sunday-aligned)
-  const getGridDates = () => {
-    const dates = [];
+  const weeks = useMemo(() => {
+    const gridDates = [];
     const today = new Date();
     const currentDay = today.getDay(); // 0 is Sunday, 6 is Saturday
     
@@ -30,25 +38,22 @@ function ContributionGraph() {
       const d = new Date(start);
       d.setDate(start.getDate() + i);
       const dateStr = d.toISOString().split('T')[0];
-      dates.push({
+      gridDates.push({
         date: d,
         dateStr,
         dayOfWeek: d.getDay()
       });
     }
-    return dates;
-  };
 
-  const dates = getGridDates();
-  
-  // Group into 53 weeks of 7 days
-  const weeks = [];
-  for (let i = 0; i < dates.length; i += 7) {
-    weeks.push(dates.slice(i, i + 7));
-  }
+    const wk = [];
+    for (let i = 0; i < gridDates.length; i += 7) {
+      wk.push(gridDates.slice(i, i + 7));
+    }
+    return wk;
+  }, []);
 
   // Get month labels with their column index
-  const getMonthLabels = () => {
+  const monthLabels = useMemo(() => {
     const labels = [];
     let lastMonth = -1;
     
@@ -64,24 +69,15 @@ function ContributionGraph() {
       }
     });
     return labels;
-  };
-
-  const monthLabels = getMonthLabels();
-
-  // Determine shading level based on commit count
-  const getLevel = (count) => {
-    if (count === 0) return 0;
-    if (count <= 2) return 1;
-    if (count <= 4) return 2;
-    if (count <= 6) return 3;
-    return 4;
-  };
+  }, [weeks]);
 
   // Stats
-  const totalContributions = Object.values(contributions).reduce((sum, val) => sum + val, 0);
+  const totalContributions = useMemo(() => {
+    return Object.values(contributions).reduce((sum, val) => sum + val, 0);
+  }, [contributions]);
   
   // Max streak calculation
-  const getStreak = () => {
+  const streak = useMemo(() => {
     let currentStreak = 0;
     let maxStreak = 0;
     let d = new Date();
@@ -102,9 +98,7 @@ function ContributionGraph() {
       d.setDate(d.getDate() - 1);
     }
     return maxStreak;
-  };
-
-  const streak = getStreak();
+  }, [contributions]);
 
   return (
     <section className="contrib-section" aria-label="Bản đồ đóng góp học tập">
@@ -197,4 +191,4 @@ function ContributionGraph() {
   );
 }
 
-export default ContributionGraph;
+export default React.memo(ContributionGraph);

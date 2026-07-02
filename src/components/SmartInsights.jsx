@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 
 function SmartInsights({ exams = [] }) {
   const [studyLogs, setStudyLogs] = useState(() => {
@@ -393,4 +393,4 @@ function SmartInsights({ exams = [] }) {
   );
 }
 
-export default SmartInsights;
+export default React.memo(SmartInsights);

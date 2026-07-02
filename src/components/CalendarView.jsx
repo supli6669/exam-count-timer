@@ -6,13 +6,14 @@ function CalendarView({ exams, onEdit, onDelete, onCreate }) {
   const [selectedDateStr, setSelectedDateStr] = useState('');
   const [, setTick] = useState(0);
 
-  // Real-time tick for updating countdowns in details popup
+  // Real-time tick for updating countdowns in details popup (only active when modal is open)
   useEffect(() => {
+    if (!selectedDateStr) return;
     const timer = setInterval(() => {
       setTick(t => t + 1);
     }, 1000);
     return () => clearInterval(timer);
-  }, []);
+  }, [selectedDateStr]);
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();

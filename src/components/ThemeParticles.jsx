@@ -311,25 +311,30 @@ function ThemeParticles({ theme }) {
               }
             }
 
-            // Draw twinkling star
+            // Draw twinkling star with layered circles (simulating glow without shadowBlur overhead)
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, drawSize * 2, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(255, 255, 255, ${drawAlpha * 0.25})`;
+            ctx.fill();
+
             ctx.beginPath();
             ctx.arc(this.x, this.y, drawSize, 0, Math.PI * 2);
             ctx.fillStyle = `rgba(255, 255, 255, ${drawAlpha})`;
-            ctx.shadowBlur = drawSize * 3;
-            ctx.shadowColor = '#fff';
             ctx.fill();
-            ctx.shadowBlur = 0; // reset
           }
         } 
         else if (theme === 'nature-cabin') {
+          // Campfire glow using layered circles for high performance
+          const sz = Math.max(0.1, this.size);
           ctx.beginPath();
-          ctx.arc(this.x, this.y, Math.max(0.1, this.size), 0, Math.PI * 2);
-          // Campfire glow
-          ctx.fillStyle = `rgba(249, 115, 22, ${Math.max(0, this.alpha)})`;
-          ctx.shadowBlur = this.size * 2;
-          ctx.shadowColor = '#f97316';
+          ctx.arc(this.x, this.y, sz * 2.2, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(249, 115, 22, ${Math.max(0, this.alpha * 0.25)})`;
           ctx.fill();
-          ctx.shadowBlur = 0; // reset
+
+          ctx.beginPath();
+          ctx.arc(this.x, this.y, sz, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(249, 115, 22, ${Math.max(0, this.alpha)})`;
+          ctx.fill();
         }
       }
     }
