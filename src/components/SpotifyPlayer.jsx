@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 
 const PRESETS = [
   {
@@ -223,4 +223,4 @@ function SpotifyPlayer() {
   );
 }
 
-export default SpotifyPlayer;
+export default React.memo(SpotifyPlayer);

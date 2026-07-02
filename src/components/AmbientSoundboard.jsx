@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 const SOUNDS = [
   {
@@ -90,8 +90,16 @@ const SYNTH_SOUNDS = [
   }
 ];
 
+// Cache for pre-generated noise buffers (keeps data in memory to avoid recalculations)
+const noiseBufferCache = {};
+
 // Helper to pre-generate noise buffers programmatically (100% offline & client-side)
 const createNoiseBuffer = (ctx, type) => {
+  const cacheKey = `${ctx.sampleRate}_${type}`;
+  if (noiseBufferCache[cacheKey]) {
+    return noiseBufferCache[cacheKey];
+  }
+
   const bufferSize = 2 * ctx.sampleRate;
   const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
   const output = noiseBuffer.getChannelData(0);
@@ -124,6 +132,8 @@ const createNoiseBuffer = (ctx, type) => {
       output[i] *= 3.5; // compensation for volume loss
     }
   }
+
+  noiseBufferCache[cacheKey] = noiseBuffer;
   return noiseBuffer;
 };
 
@@ -614,4 +624,4 @@ function AmbientSoundboard() {
   );
 }
 
-export default AmbientSoundboard;
+export default React.memo(AmbientSoundboard);
