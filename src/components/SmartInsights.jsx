@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 
 function SmartInsights({ exams = [] }) {
   const [studyLogs, setStudyLogs] = useState(() => {
@@ -22,142 +22,129 @@ function SmartInsights({ exams = [] }) {
     };
   }, []);
 
-  // Sync logs periodically
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const saved = localStorage.getItem('pomodoro_study_logs');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (parsed.length !== studyLogs.length) {
-          setStudyLogs(parsed);
-        }
-      }
-    }, 5000);
 
-    return () => clearInterval(interval);
-  }, [studyLogs]);
-
-  // Calculate subject study time
-  const getSubjectStudyMinutes = (subjectId) => {
-    const logs = studyLogs.filter(log => log.subjectId === subjectId);
-    const totalSeconds = logs.reduce((sum, log) => sum + log.seconds, 0);
-    return Math.round(totalSeconds / 60);
-  };
-
-  // Dynamic target calculation based on credits
-  const getTargetPrepMinutes = (exam) => {
-    const FACTOR_MINUTES = {
-      final: 180,       // 3 hours per credit
-      midterm: 120,     // 2 hours per credit
-      assignment: 90,   // 1.5 hours per credit
-      quiz: 45,         // 45 mins per credit
-      other: 60         // 1 hour per credit
-    };
-    const factor = FACTOR_MINUTES[exam.category || 'other'] || 60;
-    const credits = exam.credits || 3;
-    return credits * factor;
-  };
-
-  const now = new Date();
-  const todayStr = now.toISOString().split('T')[0];
 
   // Upcoming exams analysis
-  const insights = exams
-    .filter(exam => new Date(exam.datetime) > now)
-    .map(exam => {
-      const examDate = new Date(exam.datetime);
-      const diffMs = examDate - now;
-      const daysLeft = diffMs / (1000 * 60 * 60 * 24);
-      const accumulatedMins = getSubjectStudyMinutes(exam.id);
-      const targetPrepMinutes = getTargetPrepMinutes(exam);
-      
-      const factorMinutes = {
-        final: 180,
-        midterm: 120,
-        assignment: 90,
-        quiz: 45,
-        other: 60
-      }[exam.category || 'other'] || 60;
-      
-      const credits = exam.credits || 3;
+  const insights = useMemo(() => {
+    const now = new Date();
+    const todayStr = now.toISOString().split('T')[0];
 
-      // Total actual minutes remaining until the exam starts
-      const minutesLeftUntilExam = Math.max(0, Math.floor(diffMs / (1000 * 60)));
+    const getSubjectStudyMinutes = (subjectId) => {
+      const logs = studyLogs.filter(log => log.subjectId === subjectId);
+      const totalSeconds = logs.reduce((sum, log) => sum + log.seconds, 0);
+      return Math.round(totalSeconds / 60);
+    };
 
-      // Warning assessment
-      let alertLevel = 'safe';
-      let alertText = 'Tiến độ bình thường';
-
-      if (daysLeft < 1) {
-        if (accumulatedMins < targetPrepMinutes * 0.85) {
-          alertLevel = 'danger';
-          alertText = '🚨 THI TRONG 24H - ÔN GẤP!';
-        } else {
-          alertLevel = 'safe';
-          alertText = '✅ Sẵn sàng thi';
-        }
-      } else if (daysLeft < 3) {
-        if (accumulatedMins < targetPrepMinutes * 0.6) {
-          alertLevel = 'danger';
-          alertText = '🚨 CẦN ÔN THI GẤP!';
-        } else {
-          alertLevel = 'safe';
-          alertText = '✅ Đang ôn tốt';
-        }
-      } else if (daysLeft < 7) {
-        if (accumulatedMins < targetPrepMinutes * 0.3) {
-          alertLevel = 'warning';
-          alertText = '⚠️ Ít học bài';
-        } else {
-          alertLevel = 'safe';
-          alertText = '✅ Đang ôn tốt';
-        }
-      }
-
-      // Recommended daily minutes
-      const remainingMins = Math.max(0, targetPrepMinutes - accumulatedMins);
-      let dailyRecommended = 0;
-      if (daysLeft > 0) {
-        if (daysLeft < 1) {
-          // Under 24h left, recommended is the remaining target, capped by actual minutes left
-          dailyRecommended = Math.min(remainingMins, minutesLeftUntilExam);
-        } else {
-          // More than 24h left, daily average capped by actual minutes left
-          dailyRecommended = Math.min(Math.ceil(remainingMins / daysLeft), minutesLeftUntilExam);
-        }
-      }
-
-      // Calculate how many minutes studied today for this specific subject
-      const todayLogsForSubject = studyLogs.filter(log => log.subjectId === exam.id && log.date === todayStr);
-      const todaySubjectMins = Math.round(todayLogsForSubject.reduce((sum, log) => sum + log.seconds, 0) / 60);
-      const todayRemainingRecommended = Math.max(0, dailyRecommended - todaySubjectMins);
-
-      const tasks = exam.tasks || [];
-      const completedTasks = tasks.filter(t => t.completed).length;
-      const totalTasks = tasks.length;
-      const taskPercent = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
-
-      return {
-        ...exam,
-        daysLeft,
-        accumulatedMins,
-        targetPrepMinutes,
-        factorMinutes,
-        credits,
-        alertLevel,
-        alertText,
-        dailyRecommended,
-        todayRemainingRecommended,
-        progressPercent: Math.min(100, Math.round((accumulatedMins / targetPrepMinutes) * 100)),
-        completedTasks,
-        totalTasks,
-        taskPercent
+    const getTargetPrepMinutes = (exam) => {
+      const FACTOR_MINUTES = {
+        final: 180,       // 3 hours per credit
+        midterm: 120,     // 2 hours per credit
+        assignment: 90,   // 1.5 hours per credit
+        quiz: 45,         // 45 mins per credit
+        other: 60         // 1 hour per credit
       };
-    })
-    .sort((a, b) => a.daysLeft - b.daysLeft);
+      const factor = FACTOR_MINUTES[exam.category || 'other'] || 60;
+      const credits = exam.credits || 3;
+      return credits * factor;
+    };
+
+    return exams
+      .filter(exam => new Date(exam.datetime) > now)
+      .map(exam => {
+        const examDate = new Date(exam.datetime);
+        const diffMs = examDate - now;
+        const daysLeft = diffMs / (1000 * 60 * 60 * 24);
+        const accumulatedMins = getSubjectStudyMinutes(exam.id);
+        const targetPrepMinutes = getTargetPrepMinutes(exam);
+        
+        const factorMinutes = {
+          final: 180,
+          midterm: 120,
+          assignment: 90,
+          quiz: 45,
+          other: 60
+        }[exam.category || 'other'] || 60;
+        
+        const credits = exam.credits || 3;
+
+        // Total actual minutes remaining until the exam starts
+        const minutesLeftUntilExam = Math.max(0, Math.floor(diffMs / (1000 * 60)));
+
+        // Warning assessment
+        let alertLevel = 'safe';
+        let alertText = 'Tiến độ bình thường';
+
+        if (daysLeft < 1) {
+          if (accumulatedMins < targetPrepMinutes * 0.85) {
+            alertLevel = 'danger';
+            alertText = '🚨 THI TRONG 24H - ÔN GẤP!';
+          } else {
+            alertLevel = 'safe';
+            alertText = '✅ Sẵn sàng thi';
+          }
+        } else if (daysLeft < 3) {
+          if (accumulatedMins < targetPrepMinutes * 0.6) {
+            alertLevel = 'danger';
+            alertText = '🚨 CẦN ÔN THI GẤP!';
+          } else {
+            alertLevel = 'safe';
+            alertText = '✅ Đang ôn tốt';
+          }
+        } else if (daysLeft < 7) {
+          if (accumulatedMins < targetPrepMinutes * 0.3) {
+            alertLevel = 'warning';
+            alertText = '⚠️ Ít học bài';
+          } else {
+            alertLevel = 'safe';
+            alertText = '✅ Đang ôn tốt';
+          }
+        }
+
+        // Recommended daily minutes
+        const remainingMins = Math.max(0, targetPrepMinutes - accumulatedMins);
+        let dailyRecommended = 0;
+        if (daysLeft > 0) {
+          if (daysLeft < 1) {
+            // Under 24h left, recommended is the remaining target, capped by actual minutes left
+            dailyRecommended = Math.min(remainingMins, minutesLeftUntilExam);
+          } else {
+            // More than 24h left, daily average capped by actual minutes left
+            dailyRecommended = Math.min(Math.ceil(remainingMins / daysLeft), minutesLeftUntilExam);
+          }
+        }
+
+        // Calculate how many minutes studied today for this specific subject
+        const todayLogsForSubject = studyLogs.filter(log => log.subjectId === exam.id && log.date === todayStr);
+        const todaySubjectMins = Math.round(todayLogsForSubject.reduce((sum, log) => sum + log.seconds, 0) / 60);
+        const todayRemainingRecommended = Math.max(0, dailyRecommended - todaySubjectMins);
+
+        const tasks = exam.tasks || [];
+        const completedTasks = tasks.filter(t => t.completed).length;
+        const totalTasks = tasks.length;
+        const taskPercent = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+
+        return {
+          ...exam,
+          daysLeft,
+          accumulatedMins,
+          targetPrepMinutes,
+          factorMinutes,
+          credits,
+          alertLevel,
+          alertText,
+          dailyRecommended,
+          todayRemainingRecommended,
+          progressPercent: Math.min(100, Math.round((accumulatedMins / targetPrepMinutes) * 100)),
+          completedTasks,
+          totalTasks,
+          taskPercent
+        };
+      })
+      .sort((a, b) => a.daysLeft - b.daysLeft);
+  }, [exams, studyLogs]);
 
   // Chronotype Analysis
-  const getChronotypeData = () => {
+  const chronotype = useMemo(() => {
     const hourStats = Array(24).fill(0);
     studyLogs.forEach(log => {
       const logDate = new Date(log.timestamp);
@@ -206,13 +193,13 @@ function SmartInsights({ exams = [] }) {
     }
 
     return { hourStats, type, title, emoji, description, totalStudied };
-  };
+  }, [studyLogs]);
 
-  const chronotype = getChronotypeData();
   const maxHourMins = Math.max(...chronotype.hourStats, 1);
 
   // Growth Analysis (Today vs. Yesterday)
-  const getGrowthInsight = () => {
+  const growthInsight = useMemo(() => {
+    const now = new Date();
     const todayStr = now.toISOString().split('T')[0];
     const yesterday = new Date(now);
     yesterday.setDate(now.getDate() - 1);
@@ -251,9 +238,8 @@ function SmartInsights({ exams = [] }) {
         text: `Hôm nay bạn đã ôn tập được ${todayMins} phút. Bằng chỉ số ngày hôm qua!`
       };
     }
-  };
+  }, [studyLogs]);
 
-  const growthInsight = getGrowthInsight();
 
   if (insights.length === 0) {
     return (
