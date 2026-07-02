@@ -125,7 +125,7 @@
   - Sử dụng functional state update (`setExams(prev => ...)`) để đảm bảo chỉ cập nhật state khi thực sự có môn bị xóa, tránh re-render không cần thiết.
 
 ## 3. Trạng Thế Git Hiện Tại
-- Mã SHA commit / Message gần nhất: `7de95ed` / `feat: add gamification system, stopwatch mode, tomato estimations, study quotes, and achievements panel`
+- Mã SHA commit / Message gần nhất: `923f714` / `feat: change study quotes to English`
 - Tên Branch hiện tại: `main`
 - GitHub Remote: `https://github.com/supli6669/exam-count-timer.git`
 
