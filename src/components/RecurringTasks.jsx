@@ -185,6 +185,7 @@ function RecurringTasks() {
     if (task) {
       if (!task.completed) {
         incrementContribution();
+        window.dispatchEvent(new CustomEvent('gain-xp', { detail: 30 }));
       } else {
         decrementContribution();
       }

@@ -32,6 +32,7 @@ function ExamCard({ exam, onEdit, onDelete, onAddTask, onToggleTask, onDeleteTas
   const [isTasksExpanded, setIsTasksExpanded] = useState(false);
   const [newTaskText, setNewTaskText] = useState('');
   const [newTaskDeadline, setNewTaskDeadline] = useState('');
+  const [newTaskEstPomodoros, setNewTaskEstPomodoros] = useState(1);
 
   if (exam.datetime !== prevDatetime) {
     setPrevDatetime(exam.datetime);
@@ -119,9 +120,10 @@ function ExamCard({ exam, onEdit, onDelete, onAddTask, onToggleTask, onDeleteTas
   const handleAddTaskSubmit = (e) => {
     e.preventDefault();
     if (!newTaskText.trim()) return;
-    onAddTask(exam.id, newTaskText.trim(), newTaskDeadline);
+    onAddTask(exam.id, newTaskText.trim(), newTaskDeadline, newTaskEstPomodoros);
     setNewTaskText('');
     setNewTaskDeadline('');
+    setNewTaskEstPomodoros(1);
   };
 
   const catKey = exam.category || 'other';
@@ -223,6 +225,11 @@ function ExamCard({ exam, onEdit, onDelete, onAddTask, onToggleTask, onDeleteTas
                       <span className="task-text">{task.text}</span>
                     </label>
                     <div className="task-item-right">
+                      {task.estPomodoros > 0 && (
+                        <span className="task-pomodoros-badge" title={`Dự kiến: ${task.estPomodoros} phiên Pomodoro`}>
+                          🍅 {task.estPomodoros}
+                        </span>
+                      )}
                       {task.deadline && (
                         <span className={`task-deadline-badge ${isOverdue ? 'overdue' : ''}`}>
                           {formattedDeadline}
@@ -254,16 +261,30 @@ function ExamCard({ exam, onEdit, onDelete, onAddTask, onToggleTask, onDeleteTas
               className="task-input-text"
               required
             />
-            <div className="task-add-form-row">
+            <div className="task-add-form-row" style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
               <input 
                 type="datetime-local" 
                 value={newTaskDeadline}
                 onChange={(e) => setNewTaskDeadline(e.target.value)}
                 className="task-input-date"
                 title="Hạn chót"
+                style={{ flex: 1 }}
               />
+              <div className="task-input-pomodoros-wrapper" style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', padding: '0.25rem 0.5rem', borderRadius: '8px' }}>
+                <span title="Dự kiến số phiên 🍅">🍅</span>
+                <select
+                  value={newTaskEstPomodoros}
+                  onChange={(e) => setNewTaskEstPomodoros(parseInt(e.target.value, 10))}
+                  style={{ background: 'transparent', border: 'none', color: '#fff', fontSize: '0.8rem', outline: 'none', cursor: 'pointer' }}
+                  title="Dự kiến số phiên Pomodoro"
+                >
+                  {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(n => (
+                    <option key={n} value={n} style={{ background: 'var(--bg-secondary)', color: '#fff' }}>{n}</option>
+                  ))}
+                </select>
+              </div>
               <button type="submit" className="btn btn-primary btn-add-task">
-                Thêm việc
+                Thêm
               </button>
             </div>
           </form>

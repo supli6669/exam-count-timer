@@ -20,6 +20,20 @@ const ALARM_SOUND_OPTIONS = [
   { id: 'none', name: 'No Alert', emoji: '🔕' }
 ];
 
+const STUDY_QUOTES = [
+  { text: "Học vấn do người siêng năng đạt được, tài sản do người khôn khéo sở hữu.", author: "Tục ngữ" },
+  { text: "Bản chất của thành công là sự kiên trì, nỗ lực từng ngày một.", author: "Khuyết danh" },
+  { text: "Không có con đường nào dài hơn bước chân của chính bạn, không có ngọn núi nào cao hơn đỉnh núi.", author: "Khuyết danh" },
+  { text: "Chiến thắng bản thân là chiến thắng hiển hách nhất.", author: "Plato" },
+  { text: "Học tập là hạt giống của kiến thức, kiến thức là hạt giống của hạnh phúc.", author: "Ngạn ngữ Georgia" },
+  { text: "Hôm nay làm những việc người khác không dám làm, ngày mai đạt được những điều người khác không thể.", author: "Khuyết danh" },
+  { text: "Cách duy nhất để làm tốt một việc là yêu thích những gì bạn làm.", author: "Steve Jobs" },
+  { text: "Mọi thành tựu vĩ đại đều cần có thời gian và sự kiên nhẫn.", author: "Maya Angelou" },
+  { text: "Thi cử không phải là đích đến cuối cùng, mà là một bước đệm để bạn trưởng thành.", author: "Khuyết danh" },
+  { text: "Đầu tư vào tri thức luôn mang lại lợi suất cao nhất.", author: "Benjamin Franklin" },
+  { text: "Thiên tài chỉ có 1% năng khiếu bẩm sinh, 99% còn lại là mồ hôi nước mắt.", author: "Thomas Edison" }
+];
+
 const getAlarmSoundDesc = (soundId) => {
   switch (soundId) {
     case 'sparkle':
@@ -312,6 +326,27 @@ function PomodoroTimer({ isOpen, onClose, exams = [] }) {
     localStorage.setItem('pomodoro_focus_task', focusTaskId);
   }, [focusTaskId]);
 
+  const [isStopwatch, setIsStopwatch] = useState(() => {
+    return localStorage.getItem('pomodoro_is_stopwatch') === 'true';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('pomodoro_is_stopwatch', isStopwatch.toString());
+  }, [isStopwatch]);
+
+  const [currentQuote, setCurrentQuote] = useState(() => {
+    const idx = Math.floor(Math.random() * STUDY_QUOTES.length);
+    return STUDY_QUOTES[idx];
+  });
+
+  const changeQuote = () => {
+    let nextIdx;
+    do {
+      nextIdx = Math.floor(Math.random() * STUDY_QUOTES.length);
+    } while (STUDY_QUOTES[nextIdx].text === currentQuote.text && STUDY_QUOTES.length > 1);
+    setCurrentQuote(STUDY_QUOTES[nextIdx]);
+  };
+
   // Load and state for study logs
   const [studyLogs, setStudyLogs] = useState(() => {
     const saved = localStorage.getItem('pomodoro_study_logs');
@@ -433,6 +468,12 @@ function PomodoroTimer({ isOpen, onClose, exams = [] }) {
     localStorage.setItem('pomodoro_study_logs', JSON.stringify(updatedLogs));
     window.dispatchEvent(new Event('studyLogsUpdated'));
     
+    // Dispatch custom event to award XP (100 XP per 25 mins = 1500 seconds)
+    const xpGained = Math.round((seconds / 1500) * 100);
+    if (xpGained > 0) {
+      window.dispatchEvent(new CustomEvent('gain-xp', { detail: xpGained }));
+    }
+    
     // Reset ref counter
     secondsStudiedRef.current = 0;
   };
@@ -509,13 +550,18 @@ function PomodoroTimer({ isOpen, onClose, exams = [] }) {
         if (mode === 'work') {
           secondsStudiedRef.current += 1;
         }
-        setTimeLeft((prev) => {
-          if (prev <= 1) {
-            handleSessionEndRef.current();
-            return 0;
-          }
-          return prev - 1;
-        });
+        
+        if (isStopwatch) {
+          setTimeLeft((prev) => prev + 1);
+        } else {
+          setTimeLeft((prev) => {
+            if (prev <= 1) {
+              handleSessionEndRef.current();
+              return 0;
+            }
+            return prev - 1;
+          });
+        }
       }, 1000);
     } else {
       if (timerRef.current) clearInterval(timerRef.current);
@@ -524,7 +570,7 @@ function PomodoroTimer({ isOpen, onClose, exams = [] }) {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [isActive, mode]);
+  }, [isActive, mode, isStopwatch]);
 
   const handleStartPause = () => {
     setIsActive(!isActive);
@@ -535,7 +581,7 @@ function PomodoroTimer({ isOpen, onClose, exams = [] }) {
     if (mode === 'work' && secondsStudiedRef.current > 0) {
       logAccumulatedStudyTime();
     }
-    setTimeLeft(getTotalSeconds());
+    setTimeLeft(isStopwatch ? 0 : getTotalSeconds());
   };
 
   const handleSkip = () => {
@@ -635,10 +681,15 @@ function PomodoroTimer({ isOpen, onClose, exams = [] }) {
     }
   };
 
-  // Format timeLeft to MM:SS
+  // Format timeLeft to HH:MM:SS or MM:SS
   const formatTime = (seconds) => {
-    const mins = Math.floor(seconds / 60);
+    const hrs = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
     const secs = seconds % 60;
+    
+    if (hrs > 0) {
+      return `${String(hrs).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+    }
     return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
   };
 
@@ -768,6 +819,32 @@ function PomodoroTimer({ isOpen, onClose, exams = [] }) {
             );
           })()}
 
+          {/* Countdown vs Stopwatch Toggle */}
+          <div className="pomodoro-mode-toggle-group">
+            <button 
+              type="button"
+              className={`pomodoro-mode-toggle-btn ${!isStopwatch ? 'active' : ''}`}
+              onClick={() => {
+                setIsActive(false);
+                setIsStopwatch(false);
+                setTimeLeft(getTotalSeconds());
+              }}
+            >
+              ⏳ Đếm ngược
+            </button>
+            <button 
+              type="button"
+              className={`pomodoro-mode-toggle-btn ${isStopwatch ? 'active' : ''}`}
+              onClick={() => {
+                setIsActive(false);
+                setIsStopwatch(true);
+                setTimeLeft(0);
+              }}
+            >
+              ⏱️ Bấm giờ (Đếm xuôi)
+            </button>
+          </div>
+
           {/* Main Mode Toggle Buttons */}
           <div className="pomodoro-modes">
             <button 
@@ -808,50 +885,60 @@ function PomodoroTimer({ isOpen, onClose, exams = [] }) {
             <div className="pomodoro-timer-large">{formatTime(timeLeft)}</div>
             <span className="pomodoro-timer-label" style={{ marginTop: '0.4rem', marginBottom: '1rem' }}>{getModeLabel()}</span>
             
-            <div className="pomodoro-timer-progress-container" style={{ width: '100%', maxWidth: '300px', margin: '0 auto 1rem auto' }} title={`${totalSeconds > 0 ? Math.round(((totalSeconds - timeLeft) / totalSeconds) * 100) : 0}% hoàn thành`}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.74rem', color: 'rgba(255,255,255,0.6)', marginBottom: '5px', fontWeight: '600' }}>
-                <span>Tiến độ phiên</span>
-                <span>{totalSeconds > 0 ? Math.round(((totalSeconds - timeLeft) / totalSeconds) * 100) : 0}%</span>
+            {!isStopwatch && (
+              <div className="pomodoro-timer-progress-container" style={{ width: '100%', maxWidth: '300px', margin: '0 auto 1rem auto' }} title={`${totalSeconds > 0 ? Math.round(((totalSeconds - timeLeft) / totalSeconds) * 100) : 0}% hoàn thành`}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.74rem', color: 'rgba(255,255,255,0.6)', marginBottom: '5px', fontWeight: '600' }}>
+                  <span>Tiến độ phiên</span>
+                  <span>{totalSeconds > 0 ? Math.round(((totalSeconds - timeLeft) / totalSeconds) * 100) : 0}%</span>
+                </div>
+                <div className="pomodoro-timer-progress-track" style={{ height: '6px', width: '100%', backgroundColor: 'rgba(255, 255, 255, 0.15)', borderRadius: '3px', overflow: 'hidden' }}>
+                  <div 
+                    className="pomodoro-timer-progress-fill" 
+                    style={{ 
+                      height: '100%', 
+                      width: `${totalSeconds > 0 ? Math.round(((totalSeconds - timeLeft) / totalSeconds) * 100) : 0}%`, 
+                      backgroundColor: getThemeColor(), 
+                      borderRadius: '3px',
+                      transition: 'width 0.3s linear',
+                      boxShadow: `0 0 10px ${getThemeColor()}`
+                    }} 
+                  />
+                </div>
               </div>
-              <div className="pomodoro-timer-progress-track" style={{ height: '6px', width: '100%', backgroundColor: 'rgba(255, 255, 255, 0.15)', borderRadius: '3px', overflow: 'hidden' }}>
-                <div 
-                  className="pomodoro-timer-progress-fill" 
-                  style={{ 
-                    height: '100%', 
-                    width: `${totalSeconds > 0 ? Math.round(((totalSeconds - timeLeft) / totalSeconds) * 100) : 0}%`, 
-                    backgroundColor: getThemeColor(), 
-                    borderRadius: '3px',
-                    transition: 'width 0.3s linear',
-                    boxShadow: `0 0 10px ${getThemeColor()}`
-                  }} 
-                />
-              </div>
-            </div>
+            )}
           </div>
 
           {/* Session Progress Dots */}
-          <div className="pomodoro-progress-dots-container">
-            <div className="pomodoro-dots-indicator">
-              {[0, 1, 2].map((idx) => (
+          {!isStopwatch && (
+            <div className="pomodoro-progress-dots-container">
+              <div className="pomodoro-dots-indicator">
+                {[0, 1, 2].map((idx) => (
+                  <span 
+                    key={idx} 
+                    className={`indicator-dot ${idx < completedWorkSessions ? 'active' : ''}`}
+                    style={{ backgroundColor: idx < completedWorkSessions ? getThemeColor() : '' }}
+                    title={`Phiên tập trung ${idx + 1}`}
+                  ></span>
+                ))}
                 <span 
-                  key={idx} 
-                  className={`indicator-dot ${idx < completedWorkSessions ? 'active' : ''}`}
-                  style={{ backgroundColor: idx < completedWorkSessions ? getThemeColor() : '' }}
-                  title={`Phiên tập trung ${idx + 1}`}
+                  className={`indicator-dot long-break-dot ${completedWorkSessions === 3 ? 'next' : ''}`}
+                  title="Nghỉ dài"
                 ></span>
-              ))}
-              <span 
-                className={`indicator-dot long-break-dot ${completedWorkSessions === 3 ? 'next' : ''}`}
-                title="Nghỉ dài"
-              ></span>
+              </div>
+              <div className="pomodoro-remaining-text">
+                {completedWorkSessions < 3 ? (
+                  <>Còn <strong>{3 - completedWorkSessions}</strong> lần Nghỉ ngắn nữa đến Nghỉ dài</>
+                ) : (
+                  <>Đợt nghỉ tiếp theo sẽ là <strong>Nghỉ dài</strong>! ☕</>
+                )}
+              </div>
             </div>
-            <div className="pomodoro-remaining-text">
-              {completedWorkSessions < 3 ? (
-                <>Còn <strong>{3 - completedWorkSessions}</strong> lần Nghỉ ngắn nữa đến Nghỉ dài</>
-              ) : (
-                <>Đợt nghỉ tiếp theo sẽ là <strong>Nghỉ dài</strong>! ☕</>
-              )}
-            </div>
+          )}
+
+          {/* Motivation Quote Banner */}
+          <div className="pomodoro-quote-container" onClick={changeQuote} title="Nhấp để đổi câu châm ngôn">
+            <p className="pomodoro-quote-text">“{currentQuote.text}”</p>
+            <p className="pomodoro-quote-author">— {currentQuote.author || 'Khuyết danh'}</p>
           </div>
 
           {/* Main Timer Controls */}

@@ -252,6 +252,47 @@ const FocusStatsTab = React.memo(({ studyLogs, breakLogs, exams, themeColor, onC
     return { minutes, hours, sessions, logs };
   }, [studyLogs, statsMode, statsDateOffset]);
 
+  // Badges calculations memoized
+  const unlockedBadges = useMemo(() => {
+    const unlocked = {};
+
+    // 1. Cú Đêm Ôn Luyện 🦉: Học bài sau 22h tối
+    const hasNightStudy = studyLogs.some(log => {
+      const logHour = new Date(log.timestamp).getHours();
+      return logHour >= 22 || logHour < 4;
+    });
+    if (hasNightStudy) unlocked.nightOwl = true;
+
+    // 2. Sơn Ca Chăm Chỉ 🌅: Học bài trước 8h sáng
+    const hasMorningStudy = studyLogs.some(log => {
+      const logHour = new Date(log.timestamp).getHours();
+      return logHour >= 5 && logHour < 8;
+    });
+    if (hasMorningStudy) unlocked.earlyBird = true;
+
+    // 3. Siêu Chiến Binh ⚔️: Học liên tục 3 phiên Pomodoro (sessions) trong ngày
+    const sessionsPerDate = {};
+    studyLogs.forEach(log => {
+      sessionsPerDate[log.date] = (sessionsPerDate[log.date] || 0) + 1;
+    });
+    const hasThreeSessions = Object.values(sessionsPerDate).some(count => count >= 3);
+    if (hasThreeSessions) unlocked.warrior = true;
+
+    // 4. Kỷ Lục Gia 🏆: Đạt streak học tập từ 5 ngày trở lên
+    if (streak.longest >= 5) unlocked.streakMaster = true;
+
+    // 5. Dọn Sạch Đề Cương 🧹: Hoàn thành tổng cộng 10 việc cần làm
+    let totalCompletedTasks = 0;
+    exams.forEach(exam => {
+      (exam.tasks || []).forEach(task => {
+        if (task.completed) totalCompletedTasks++;
+      });
+    });
+    if (totalCompletedTasks >= 10) unlocked.taskSlayer = true;
+
+    return unlocked;
+  }, [studyLogs, streak.longest, exams]);
+
   // Subject breakdown stats memoized
   const subjectBreakdown = useMemo(() => {
     const subjectMap = {};
@@ -739,6 +780,31 @@ const FocusStatsTab = React.memo(({ studyLogs, breakLogs, exams, themeColor, onC
         ) : (
           <p className="breakdown-empty-text">Chưa có dữ liệu học tập cho chu kỳ này.</p>
         )}
+      </div>
+
+      {/* Section: Bảng Huy Hiệu Thành Tích (Focus Badges) */}
+      <div className="focus-badges-section" style={{ background: 'rgba(10, 14, 23, 0.35)', border: '1px solid var(--border-glass)', borderRadius: '16px', padding: '1.25rem' }}>
+        <h4 className="stats-section-title">🏆 Huy hiệu Thành thích</h4>
+        <p className="stats-section-subtitle">Chinh phục các thử thách học tập để mở khóa huy hiệu danh giá.</p>
+        
+        <div className="focus-badges-grid">
+          {[
+            { id: 'nightOwl', name: 'Cú Đêm Ôn Luyện', desc: 'Học bài sau 22:00 đêm', icon: '🦉' },
+            { id: 'earlyBird', name: 'Sơn Ca Chăm Chỉ', desc: 'Học bài từ 05:00 - 08:00 sáng', icon: '🌅' },
+            { id: 'warrior', name: 'Siêu Chiến Binh', desc: 'Học 3 phiên Pomodoro trong 1 ngày', icon: '⚔️' },
+            { id: 'streakMaster', name: 'Kỷ Lục Gia', desc: 'Duy trì học liên tục 5 ngày trở lên', icon: '🏆' },
+            { id: 'taskSlayer', name: 'Dọn Sạch Đề Cương', desc: 'Hoàn thành 10 nhiệm vụ môn học', icon: '🧹' }
+          ].map(badge => {
+            const isUnlocked = unlockedBadges[badge.id];
+            return (
+              <div key={badge.id} className={`focus-badge-item ${isUnlocked ? 'unlocked' : ''}`} title={badge.desc}>
+                <span className="focus-badge-icon">{badge.icon}</span>
+                <span className="focus-badge-name">{badge.name}</span>
+                <span className="focus-badge-desc">{badge.desc}</span>
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       {/* Section 4: Focus History */}

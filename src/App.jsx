@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import ExamCard from './components/ExamCard';
 import ExamForm from './components/ExamForm';
 import NotificationSettings from './components/NotificationSettings';
@@ -63,6 +63,150 @@ function App() {
   useEffect(() => {
     localStorage.setItem('exams_countdown_list', JSON.stringify(exams));
   }, [exams]);
+
+  const [username, setUsername] = useState(() => {
+    return localStorage.getItem('pomodoro_username') || '';
+  });
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [tempName, setTempName] = useState(username);
+
+  const [userXP, setUserXP] = useState(() => {
+    const saved = localStorage.getItem('pomodoro_user_xp');
+    return saved ? parseInt(saved, 10) : 0;
+  });
+
+  const [userLevel, setUserLevel] = useState(() => {
+    const saved = localStorage.getItem('pomodoro_user_level');
+    return saved ? parseInt(saved, 10) : 1;
+  });
+
+  const getGreetingPrefix = () => {
+    const hr = new Date().getHours();
+    if (hr >= 5 && hr < 12) return 'Chào buổi sáng, ';
+    if (hr >= 12 && hr < 18) return 'Chào buổi chiều, ';
+    return 'Chào buổi tối, ';
+  };
+
+  const getXPProgress = () => {
+    let level = 1;
+    let xpNeeded = level * 500;
+    let accumulated = userXP;
+    while (accumulated >= xpNeeded) {
+      accumulated -= xpNeeded;
+      level++;
+      xpNeeded = level * 500;
+    }
+    return {
+      current: accumulated,
+      needed: xpNeeded,
+      percent: Math.min(100, Math.round((accumulated / xpNeeded) * 100))
+    };
+  };
+
+  const handleSaveName = () => {
+    const name = tempName.trim();
+    setUsername(name);
+    localStorage.setItem('pomodoro_username', name);
+    setIsEditingName(false);
+  };
+
+  const gainXP = useCallback((amount) => {
+    setUserXP(prevXP => {
+      const nextXP = prevXP + amount;
+      localStorage.setItem('pomodoro_user_xp', nextXP.toString());
+      
+      let level = 1;
+      let xpNeeded = level * 500;
+      let tempXP = nextXP;
+      while (tempXP >= xpNeeded) {
+        tempXP -= xpNeeded;
+        level++;
+        xpNeeded = level * 500;
+      }
+      
+      setUserLevel(prevLevel => {
+        if (level > prevLevel) {
+          localStorage.setItem('pomodoro_user_level', level.toString());
+          playLevelUpSound();
+          alert(`Chúc mừng! Bạn đã thăng cấp lên Cấp ${level}! 🏆`);
+        }
+        return level;
+      });
+      
+      return nextXP;
+    });
+  }, []);
+
+  const playLevelUpSound = () => {
+    try {
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContextClass) return;
+      const ctx = new AudioContextClass();
+      const now = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(261.63, now);
+      osc.frequency.setValueAtTime(329.63, now + 0.1);
+      osc.frequency.setValueAtTime(392.00, now + 0.2);
+      osc.frequency.setValueAtTime(523.25, now + 0.3);
+      
+      gain.gain.setValueAtTime(0.3, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.6);
+      
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.6);
+      
+      setTimeout(() => ctx.close().catch(() => {}), 1000);
+    } catch (e) {
+      console.warn(e);
+    }
+  };
+
+  const playSuccessChime = () => {
+    try {
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContextClass) return;
+      const ctx = new AudioContextClass();
+      const now = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(523.25, now);
+      osc.frequency.setValueAtTime(659.25, now + 0.08);
+      
+      gain.gain.setValueAtTime(0.15, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+      
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.25);
+      
+      setTimeout(() => ctx.close().catch(() => {}), 500);
+    } catch (e) {
+      console.warn(e);
+    }
+  };
+
+  // Sync XP and listen to global gain-xp events
+  useEffect(() => {
+    const handleGainXP = (e) => {
+      const amount = e.detail || 0;
+      if (amount > 0) {
+        gainXP(amount);
+        playSuccessChime();
+      }
+    };
+    window.addEventListener('gain-xp', handleGainXP);
+    return () => {
+      window.removeEventListener('gain-xp', handleGainXP);
+    };
+  }, [gainXP]);
 
   // Auto-remove exams that have already passed
   useEffect(() => {
@@ -167,14 +311,15 @@ function App() {
   };
 
   // Handle adding a sub-task for an exam
-  const handleAddTask = (examId, text, deadline) => {
+  const handleAddTask = (examId, text, deadline, estPomodoros = 1) => {
     setExams(exams.map(exam => {
       if (exam.id === examId) {
         const newTask = {
           id: `task-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
           text,
           completed: false,
-          deadline: deadline || ''
+          deadline: deadline || '',
+          estPomodoros: parseInt(estPomodoros, 10) || 1
         };
         return {
           ...exam,
@@ -193,6 +338,7 @@ function App() {
       if (task) {
         if (!task.completed) {
           incrementContribution();
+          window.dispatchEvent(new CustomEvent('gain-xp', { detail: 50 }));
         } else {
           decrementContribution();
         }
@@ -287,8 +433,52 @@ function App() {
             </svg>
           </div>
           <div>
-            <h1 className="brand-title">Đồng Hồ Lịch Thi</h1>
-            <div className="brand-subtitle">Exam Countdown Dashboard</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+              <h1 className="brand-title" style={{ margin: 0 }}>Đồng Hồ Lịch Thi</h1>
+              <span className="level-badge">Cấp {userLevel}</span>
+            </div>
+            <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.2rem', marginTop: '0.15rem', flexWrap: 'wrap' }}>
+              <span>{getGreetingPrefix()}</span>
+              {isEditingName ? (
+                <input
+                  type="text"
+                  value={tempName}
+                  onChange={(e) => setTempName(e.target.value)}
+                  onBlur={handleSaveName}
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleSaveName(); }}
+                  autoFocus
+                  className="username-input-inline"
+                  maxLength={15}
+                  aria-label="Tên hiển thị"
+                />
+              ) : (
+                <span 
+                  className="editable-username" 
+                  onClick={() => { setTempName(username); setIsEditingName(true); }}
+                  title="Nhấp để đổi tên"
+                >
+                  {username || 'Người học'}
+                </span>
+              )}
+              <span>! Chúc ôn tập tốt. 📝</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Level XP Progress Bar */}
+        <div className="header-xp-container">
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.70rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
+            <span>Tiến độ kinh nghiệm</span>
+            <span>{getXPProgress().current} / {getXPProgress().needed} XP</span>
+          </div>
+          <div style={{ height: '5px', width: '100%', backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: '3px', overflow: 'hidden' }}>
+            <div style={{
+              height: '100%',
+              width: `${getXPProgress().percent}%`,
+              background: 'linear-gradient(90deg, #8b5cf6, #ec4899)',
+              borderRadius: '3px',
+              transition: 'width 0.4s ease'
+            }} />
           </div>
         </div>
         <div className="header-actions">
