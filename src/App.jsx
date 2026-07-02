@@ -64,6 +64,28 @@ function App() {
     localStorage.setItem('exams_countdown_list', JSON.stringify(exams));
   }, [exams]);
 
+  // Auto-remove exams that have already passed
+  useEffect(() => {
+    const cleanupPassed = () => {
+      const now = new Date();
+      setExams(prev => {
+        const remaining = prev.filter(exam => new Date(exam.datetime) > now);
+        // Only update if something was actually removed
+        if (remaining.length < prev.length) {
+          return remaining;
+        }
+        return prev;
+      });
+    };
+
+    // Check immediately on mount
+    cleanupPassed();
+
+    // Then check every 30 seconds
+    const interval = setInterval(cleanupPassed, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
   // Save notification setting
   useEffect(() => {
     localStorage.setItem('notifications_enabled', notificationsEnabled.toString());

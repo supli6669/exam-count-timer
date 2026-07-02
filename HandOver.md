@@ -34,6 +34,7 @@
 - [x] Nâng cấp tab Thống kê học tập thành bảng điều khiển Focus Stats toàn diện (Today, 1 Week, 4 Weeks) và Focus History chi tiết (Trạng thái: Đã xong)
 - [x] Tái thiết kế giao diện Focus Stats với 5 thẻ gradient rực rỡ và biểu đồ đường cong SVG (Bezier Curve) mượt mà (Trạng thái: Đã xong)
 - [x] Hiển thị thời gian đếm ngược Pomodoro & favicon động trên thanh tab/taskbar (Trạng thái: Đã xong)
+- [x] Tự động xóa môn thi đã diễn ra khỏi danh sách (Trạng thái: Đã xong)
 
 ## 2. Chi Tiết Các Phần Đã Triển Khai Gần Đây
 - **Tối Ưu Hóa Toàn Diện & Tính Năng Nâng Cao**:
@@ -90,9 +91,13 @@
   - Tự động thay đổi biểu tượng (favicon SVG) và emoji theo trạng thái của bộ đếm: `⚡` (Tập trung), `☕` (Nghỉ ngắn), `🍃` (Nghỉ dài).
   - Hỗ trợ hiển thị ký hiệu tạm dừng `⏸️` trước tiêu đề khi người dùng tạm dừng đếm ngược.
   - Tự động khôi phục tiêu đề gốc `Đồng Hồ Đếm Ngược Lịch Thi - Theo Dõi Lịch Thi Thời Gian Thực` và biểu tượng mặc định `⏱️` khi reset hoặc chưa chạy.
+- **Tự động xóa môn thi đã qua (Auto-Remove Passed Exams)**:
+  - Thêm `useEffect` trong `App.jsx` để tự động lọc bỏ các môn thi có thời gian đã qua khỏi danh sách ngay khi mở ứng dụng.
+  - Kiểm tra định kỳ mỗi 30 giây để xóa các môn vừa hết giờ thi, thay vì hiển thị đếm ngược `0 Ngày - 0 Giờ - 0 Phút - 0 Giây` gây rối mắt.
+  - Sử dụng functional state update (`setExams(prev => ...)`) để đảm bảo chỉ cập nhật state khi thực sự có môn bị xóa, tránh re-render không cần thiết.
 
 ## 3. Trạng Thế Git Hiện Tại
-- Mã SHA commit / Message gần nhất: `560be26` / `opt: full optimizations (CPU visibility API, keyboard shortcuts, backup/restore JSON, Pomodoro tasks)`
+- Mã SHA commit / Message gần nhất: `7c9dfea` / `feat: auto-remove passed exams from countdown list`
 - Tên Branch hiện tại: `main`
 - GitHub Remote: `https://github.com/supli6669/exam-count-timer.git`
 
