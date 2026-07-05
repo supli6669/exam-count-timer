@@ -264,7 +264,7 @@ const playSynthAlarm = (soundId, volumePercent) => {
   }
 };
 
-function PomodoroTimer({ isOpen, onClose, exams = [] }) {
+function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [], onToggleTask }) {
   // Load custom time settings (in minutes) or default values
   const [workTime, setWorkTime] = useState(() => {
     const saved = localStorage.getItem('pomodoro_work');
@@ -456,6 +456,11 @@ function PomodoroTimer({ isOpen, onClose, exams = [] }) {
           const task = (exam.tasks || []).find(t => t.id === focusTaskId);
           if (task) taskText = task.text;
         }
+      }
+    } else {
+      if (focusTaskId !== 'general' && generalTasks) {
+        const task = generalTasks.find(t => t.id === focusTaskId);
+        if (task) taskText = task.text;
       }
     }
 
@@ -831,14 +836,21 @@ function PomodoroTimer({ isOpen, onClose, exams = [] }) {
           </div>
 
           {/* Focus Task Selector */}
-          {focusSubjectId !== 'general' && (() => {
-            const selectedExam = exams.find(e => e.id === focusSubjectId);
-            const tasks = selectedExam?.tasks || [];
+          {(() => {
+            let tasks = [];
+            let label = "📋 Chọn nhiệm vụ cần hoàn thành:";
+            if (focusSubjectId !== 'general') {
+              const selectedExam = exams.find(e => e.id === focusSubjectId);
+              tasks = selectedExam?.tasks || [];
+            } else {
+              tasks = generalTasks || [];
+              label = "📋 Chọn nhiệm vụ chung cần hoàn thành:";
+            }
             if (tasks.length === 0) return null;
             return (
               <div className="focus-task-selector" style={{ marginTop: '0.6rem', marginBottom: '0.2rem' }}>
                 <label htmlFor="focus-task-select" style={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.7)', fontWeight: '600' }}>
-                  📋 Chọn nhiệm vụ cần hoàn thành:
+                  {label}
                 </label>
                 <select 
                   id="focus-task-select"

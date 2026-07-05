@@ -33,6 +33,7 @@ function ExamCard({ exam, onEdit, onDelete, onAddTask, onToggleTask, onDeleteTas
   const [newTaskText, setNewTaskText] = useState('');
   const [newTaskDeadline, setNewTaskDeadline] = useState('');
   const [newTaskEstPomodoros, setNewTaskEstPomodoros] = useState(1);
+  const [newTaskPriority, setNewTaskPriority] = useState('q2');
 
   if (exam.datetime !== prevDatetime) {
     setPrevDatetime(exam.datetime);
@@ -120,10 +121,13 @@ function ExamCard({ exam, onEdit, onDelete, onAddTask, onToggleTask, onDeleteTas
   const handleAddTaskSubmit = (e) => {
     e.preventDefault();
     if (!newTaskText.trim()) return;
-    onAddTask(exam.id, newTaskText.trim(), newTaskDeadline, newTaskEstPomodoros);
+    const urgent = newTaskPriority === 'q1' || newTaskPriority === 'q3';
+    const important = newTaskPriority === 'q1' || newTaskPriority === 'q2';
+    onAddTask(exam.id, newTaskText.trim(), newTaskDeadline, newTaskEstPomodoros, urgent, important);
     setNewTaskText('');
     setNewTaskDeadline('');
     setNewTaskEstPomodoros(1);
+    setNewTaskPriority('q2');
   };
 
   const catKey = exam.category || 'other';
@@ -213,6 +217,23 @@ function ExamCard({ exam, onEdit, onDelete, onAddTask, onToggleTask, onDeleteTas
               {tasks.map(task => {
                 const isOverdue = task.deadline && new Date(task.deadline) < new Date() && !task.completed;
                 const formattedDeadline = task.deadline ? formatTaskDeadline(task.deadline) : '';
+                
+                // Priority details
+                const urgent = task.urgent !== undefined ? task.urgent : false;
+                const important = task.important !== undefined ? task.important : true;
+                let priorityClass = 'priority-dot-q2';
+                let priorityLabel = 'Q2: Lên lịch';
+                if (urgent && important) {
+                  priorityClass = 'priority-dot-q1';
+                  priorityLabel = 'Q1: Làm ngay';
+                } else if (urgent && !important) {
+                  priorityClass = 'priority-dot-q3';
+                  priorityLabel = 'Q3: Ủy quyền/Làm nhanh';
+                } else if (!urgent && !important) {
+                  priorityClass = 'priority-dot-q4';
+                  priorityLabel = 'Q4: Loại bỏ/Hạn chế';
+                }
+
                 return (
                   <div key={task.id} className={`task-item ${task.completed ? 'completed' : ''}`}>
                     <label className="task-item-left">
@@ -222,7 +243,10 @@ function ExamCard({ exam, onEdit, onDelete, onAddTask, onToggleTask, onDeleteTas
                         onChange={() => onToggleTask(exam.id, task.id)}
                         className="task-checkbox"
                       />
-                      <span className="task-text">{task.text}</span>
+                      <span className="task-text" style={{ display: 'flex', alignItems: 'center' }}>
+                        <span className={`priority-dot-indicator ${priorityClass}`} title={priorityLabel}></span>
+                        {task.text}
+                      </span>
                     </label>
                     <div className="task-item-right">
                       {task.estPomodoros > 0 && (
@@ -281,6 +305,21 @@ function ExamCard({ exam, onEdit, onDelete, onAddTask, onToggleTask, onDeleteTas
                   {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(n => (
                     <option key={n} value={n} style={{ background: 'var(--bg-secondary)', color: '#fff' }}>{n}</option>
                   ))}
+                </select>
+              </div>
+              <div className="priority-badge-input-wrapper" style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', padding: '0.25rem 0.5rem', borderRadius: '8px' }}>
+                <span title="Độ ưu tiên">🎯</span>
+                <select
+                  value={newTaskPriority}
+                  onChange={(e) => setNewTaskPriority(e.target.value)}
+                  className="priority-select-mini"
+                  style={{ background: 'transparent', border: 'none', color: '#fff', fontSize: '0.8rem', outline: 'none', cursor: 'pointer' }}
+                  title="Độ ưu tiên (Eisenhower Matrix)"
+                >
+                  <option value="q2" style={{ background: 'var(--bg-secondary)', color: '#fff' }}>Q2: Lên lịch</option>
+                  <option value="q1" style={{ background: 'var(--bg-secondary)', color: '#fff' }}>Q1: Làm ngay</option>
+                  <option value="q3" style={{ background: 'var(--bg-secondary)', color: '#fff' }}>Q3: Ủy quyền</option>
+                  <option value="q4" style={{ background: 'var(--bg-secondary)', color: '#fff' }}>Q4: Hạn chế</option>
                 </select>
               </div>
               <button type="submit" className="btn btn-primary btn-add-task">

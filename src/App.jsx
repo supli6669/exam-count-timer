@@ -11,6 +11,7 @@ import SmartInsights from './components/SmartInsights';
 import ContributionGraph from './components/ContributionGraph';
 import { incrementContribution, decrementContribution } from './utils/contributions';
 import OnboardingTour from './components/OnboardingTour';
+import PriorityMatrix from './components/PriorityMatrix';
 
 // Initial mock data set relative to current date (June 2026)
 const getInitialMockData = () => {
@@ -59,11 +60,19 @@ function App() {
   });
   const [viewMode, setViewMode] = useState('card'); // 'card' or 'calendar'
   const [isPomodoroOpen, setIsPomodoroOpen] = useState(false);
+  const [generalTasks, setGeneralTasks] = useState(() => {
+    const saved = localStorage.getItem('exams_general_tasks');
+    return saved ? JSON.parse(saved) : [];
+  });
 
   // Save to LocalStorage
   useEffect(() => {
     localStorage.setItem('exams_countdown_list', JSON.stringify(exams));
   }, [exams]);
+
+  useEffect(() => {
+    localStorage.setItem('exams_general_tasks', JSON.stringify(generalTasks));
+  }, [generalTasks]);
 
   const [username, setUsername] = useState(() => {
     return localStorage.getItem('pomodoro_username') || '';
@@ -311,31 +320,38 @@ function App() {
     }
   };
 
-  // Handle adding a sub-task for an exam
-  const handleAddTask = (examId, text, deadline, estPomodoros = 1) => {
-    setExams(exams.map(exam => {
-      if (exam.id === examId) {
-        const newTask = {
-          id: `task-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
-          text,
-          completed: false,
-          deadline: deadline || '',
-          estPomodoros: parseInt(estPomodoros, 10) || 1
-        };
-        return {
-          ...exam,
-          tasks: [...(exam.tasks || []), newTask]
-        };
-      }
-      return exam;
-    }));
+  // Handle adding a sub-task for an exam or general tasks
+  const handleAddTask = (examId, text, deadline, estPomodoros = 1, urgent = false, important = true) => {
+    const newTask = {
+      id: `task-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+      text,
+      completed: false,
+      deadline: deadline || '',
+      estPomodoros: parseInt(estPomodoros, 10) || 1,
+      urgent,
+      important,
+      completedAt: null
+    };
+
+    if (examId === 'general') {
+      setGeneralTasks(prev => [...prev, newTask]);
+    } else {
+      setExams(exams.map(exam => {
+        if (exam.id === examId) {
+          return {
+            ...exam,
+            tasks: [...(exam.tasks || []), newTask]
+          };
+        }
+        return exam;
+      }));
+    }
   };
 
   // Handle toggling sub-task completed status
   const handleToggleTask = (examId, taskId) => {
-    const exam = exams.find(e => e.id === examId);
-    if (exam) {
-      const task = (exam.tasks || []).find(t => t.id === taskId);
+    if (examId === 'general') {
+      const task = generalTasks.find(t => t.id === taskId);
       if (task) {
         if (!task.completed) {
           incrementContribution();
@@ -344,35 +360,85 @@ function App() {
           decrementContribution();
         }
       }
-    }
-
-    setExams(exams.map(exam => {
-      if (exam.id === examId) {
-        return {
-          ...exam,
-          tasks: (exam.tasks || []).map(task => {
-            if (task.id === taskId) {
-              return { ...task, completed: !task.completed, completedAt: !task.completed ? Date.now() : null };
-            }
-            return task;
-          })
-        };
+      setGeneralTasks(generalTasks.map(task => {
+        if (task.id === taskId) {
+          return { ...task, completed: !task.completed, completedAt: !task.completed ? Date.now() : null };
+        }
+        return task;
+      }));
+    } else {
+      const exam = exams.find(e => e.id === examId);
+      if (exam) {
+        const task = (exam.tasks || []).find(t => t.id === taskId);
+        if (task) {
+          if (!task.completed) {
+            incrementContribution();
+            window.dispatchEvent(new CustomEvent('gain-xp', { detail: 50 }));
+          } else {
+            decrementContribution();
+          }
+        }
       }
-      return exam;
-    }));
+
+      setExams(exams.map(exam => {
+        if (exam.id === examId) {
+          return {
+            ...exam,
+            tasks: (exam.tasks || []).map(task => {
+              if (task.id === taskId) {
+                return { ...task, completed: !task.completed, completedAt: !task.completed ? Date.now() : null };
+              }
+              return task;
+            })
+          };
+        }
+        return exam;
+      }));
+    }
   };
 
   // Handle deleting a sub-task
   const handleDeleteTask = (examId, taskId) => {
-    setExams(exams.map(exam => {
-      if (exam.id === examId) {
-        return {
-          ...exam,
-          tasks: (exam.tasks || []).filter(task => task.id !== taskId)
-        };
-      }
-      return exam;
-    }));
+    if (examId === 'general') {
+      setGeneralTasks(generalTasks.filter(task => task.id !== taskId));
+    } else {
+      setExams(exams.map(exam => {
+        if (exam.id === examId) {
+          return {
+            ...exam,
+            tasks: (exam.tasks || []).filter(task => task.id !== taskId)
+          };
+        }
+        return exam;
+      }));
+    }
+  };
+
+  // Handle updating a sub-task's priority
+  const handleUpdateTaskPriority = (examId, taskId, urgent, important) => {
+    if (examId === 'general') {
+      setGeneralTasks(generalTasks.map(task => {
+        if (task.id === taskId) {
+          return { ...task, urgent, important };
+        }
+        return task;
+      }));
+    } else {
+      setExams(exams.map(exam => {
+        if (exam.id === examId) {
+          return {
+            ...exam,
+            tasks: (exam.tasks || []).map(task => {
+              if (task.id === taskId) {
+                return { ...task, urgent, important };
+              }
+              return task;
+            })
+          };
+        }
+        return exam;
+      }));
+    }
   };
 
   // Dynamic status counts
@@ -497,28 +563,42 @@ function App() {
           >
             <span style={{ fontSize: '1.2rem', display: 'flex', alignItems: 'center' }}>🍅</span>
           </button>
-          <button 
-            className={`btn-icon ${viewMode === 'calendar' ? 'active' : ''}`} 
-            onClick={() => setViewMode(viewMode === 'card' ? 'calendar' : 'card')}
-            title={viewMode === 'card' ? 'Xem lịch' : 'Xem danh sách'}
-            aria-label={viewMode === 'card' ? 'Xem lịch' : 'Xem danh sách'}
-          >
-            {viewMode === 'card' ? (
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-                <line x1="16" y1="2" x2="16" y2="6"></line>
-                <line x1="8" y1="2" x2="8" y2="6"></line>
-                <line x1="3" y1="10" x2="21" y2="10"></line>
-              </svg>
-            ) : (
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <div className="view-mode-tabs">
+            <button
+              className={`view-tab-btn ${viewMode === 'card' ? 'active' : ''}`}
+              onClick={() => setViewMode('card')}
+              title="Xem dạng thẻ môn thi"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <rect x="3" y="3" width="7" height="7"></rect>
                 <rect x="14" y="3" width="7" height="7"></rect>
                 <rect x="14" y="14" width="7" height="7"></rect>
                 <rect x="3" y="14" width="7" height="7"></rect>
               </svg>
-            )}
-          </button>
+              Danh sách
+            </button>
+            <button
+              className={`view-tab-btn ${viewMode === 'calendar' ? 'active' : ''}`}
+              onClick={() => setViewMode('calendar')}
+              title="Xem lịch thi"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="16" y1="2" x2="16" y2="6"></line>
+                <line x1="8" y1="2" x2="8" y2="6"></line>
+                <line x1="3" y1="10" x2="21" y2="10"></line>
+              </svg>
+              Lịch thi
+            </button>
+            <button
+              className={`view-tab-btn ${viewMode === 'matrix' ? 'active' : ''}`}
+              onClick={() => setViewMode('matrix')}
+              title="Xem ma trận ưu tiên công việc"
+            >
+              <span style={{ fontSize: '0.9rem', display: 'inline-flex', alignItems: 'center' }}>🎯</span>
+              Ma trận ưu tiên
+            </button>
+          </div>
           <button className="btn btn-primary" onClick={handleCreateOpen}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <line x1="12" y1="5" x2="12" y2="19"></line>
@@ -678,7 +758,7 @@ function App() {
       </section>
 
       {/* Main Grid View */}
-      {viewMode === 'card' ? (
+      {viewMode === 'card' && (
         <main className="exams-grid">
           {sortedExams.length > 0 ? (
             sortedExams.map(exam => (
@@ -715,12 +795,25 @@ function App() {
             </div>
           )}
         </main>
-      ) : (
+      )}
+
+      {viewMode === 'calendar' && (
         <CalendarView 
           exams={sortedExams} 
           onEdit={handleEditOpen}
           onDelete={handleDeleteExam}
           onCreate={handleCreateOpen}
+        />
+      )}
+
+      {viewMode === 'matrix' && (
+        <PriorityMatrix
+          exams={exams}
+          generalTasks={generalTasks}
+          onAddTask={handleAddTask}
+          onToggleTask={handleToggleTask}
+          onDeleteTask={handleDeleteTask}
+          onUpdateTaskPriority={handleUpdateTaskPriority}
         />
       )}
 
@@ -744,6 +837,8 @@ function App() {
         isOpen={isPomodoroOpen}
         onClose={() => setIsPomodoroOpen(false)}
         exams={exams}
+        generalTasks={generalTasks}
+        onToggleTask={handleToggleTask}
       />
     </div>
   );

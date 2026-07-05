@@ -47,6 +47,7 @@
 - [x] Bảng Huy hiệu Thành tích tự động mở khóa theo lịch sử học tập (Trạng thái: Đã xong)
 - [x] Tối ưu hóa pin: Chế độ Tiết kiệm pin tối đa (Low Power Mode) cho canvas hạt, giới hạn tần số quét canvas 30 FPS và đồng bộ hóa cài đặt (Trạng thái: Đã xong)
 - [x] Cải tiến trải nghiệm người dùng (UX): Tích hợp onboarding chào mừng, phím tắt Pomodoro và presets âm thanh nhanh (Trạng thái: Đã xong)
+- [x] Tích hợp Ma trận ưu tiên công việc (Eisenhower Matrix) cho các nhiệm vụ ôn tập và nhiệm vụ chung (Trạng thái: Đã xong)
 
 
 ## 2. Chi Tiết Các Phần Đã Triển Khai Gần Đây
@@ -134,6 +135,13 @@
   - Thêm `useEffect` trong `App.jsx` để tự động lọc bỏ các môn thi có thời gian đã qua khỏi danh sách ngay khi mở ứng dụng.
   - Kiểm tra định kỳ mỗi 30 giây để xóa các môn vừa hết giờ thi, thay vì hiển thị đếm ngược `0 Ngày - 0 Giờ - 0 Phút - 0 Giây` gây rối mắt.
   - Sử dụng functional state update (`setExams(prev => ...)`) để đảm bảo chỉ cập nhật state khi thực sự có môn bị xóa, tránh re-render không cần thiết.
+- **Ma trận ưu tiên công việc (Eisenhower Priority Matrix)**:
+  - **Thanh chọn 3 chế độ xem**: Thiết kế lại menu điều khiển ở Header thành dạng tab 3 chế độ xem (Danh sách, Lịch thi, Ma trận ưu tiên) bo góc, mờ đục và có hiệu ứng neon nhẹ.
+  - **Giao diện ma trận 2x2 Glassmorphism**: Phân chia công việc thành 4 góc phần tư: Q1 (Làm ngay - Đỏ), Q2 (Lên lịch - Tím), Q3 (Làm nhanh - Xanh lá), Q4 (Loại bỏ - Xám) với hiệu ứng bóng mờ và viền màu neon tinh tế.
+  - **Nhiệm vụ chung (General Tasks)**: Bổ sung state `generalTasks` và bộ nhớ LocalStorage riêng biệt để người học có thể tạo các đầu việc độc lập không gắn với môn thi nào.
+  - **Form thêm nhanh & Đổi quadrant**: Cho phép thêm trực tiếp công việc mới vào bất kỳ góc phần tư nào, cũng như di chuyển linh hoạt công việc giữa các góc phần tư qua menu select mini.
+  - **Chấm chỉ báo độ ưu tiên**: Hiển thị chấm tròn phát sáng màu tương ứng bên cạnh tên nhiệm vụ trong danh sách việc cần làm của từng Exam Card.
+  - **Đồng bộ Pomodoro**: Cho phép chọn và ghi nhận việc tập trung cho các Nhiệm vụ chung ngay trong sidebar Pomodoro Timer.
 
 ## 3. Trạng Thế Git Hiện Tại
 - Mã SHA commit / Message gần nhất: `923f714` / `feat: change study quotes to English`
