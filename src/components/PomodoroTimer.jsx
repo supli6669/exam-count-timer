@@ -996,7 +996,37 @@ function PomodoroTimer({ isOpen, onClose, exams = [] }) {
 
           {/* Theme Selector Section */}
           <div className="pomodoro-theme-selector">
-            <span className="theme-selector-label">🖼️ Không gian học tập:</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.6rem' }}>
+              <span className="theme-selector-label" style={{ margin: 0 }}>🖼️ Không gian học tập:</span>
+              <button 
+                type="button"
+                className="low-power-toggle-btn"
+                onClick={() => {
+                  const newVal = !lowPowerMode;
+                  setLowPowerMode(newVal);
+                  setInputLowPower(newVal);
+                  localStorage.setItem('pomodoro_low_power', newVal.toString());
+                }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.3rem',
+                  background: lowPowerMode ? 'rgba(16, 185, 129, 0.2)' : 'rgba(255, 255, 255, 0.08)',
+                  border: `1px solid ${lowPowerMode ? '#10b981' : 'rgba(255, 255, 255, 0.15)'}`,
+                  borderRadius: '12px',
+                  padding: '4px 10px',
+                  fontSize: '0.75rem',
+                  color: lowPowerMode ? '#34d399' : 'rgba(255, 255, 255, 0.7)',
+                  cursor: 'pointer',
+                  fontWeight: '600',
+                  transition: 'all 0.2s ease',
+                  boxShadow: lowPowerMode ? '0 0 10px rgba(16, 185, 129, 0.2)' : 'none'
+                }}
+                title={lowPowerMode ? "Tắt tiết kiệm pin để hiển thị hiệu ứng động" : "Bật tiết kiệm pin để tắt hiệu ứng động"}
+              >
+                {lowPowerMode ? '🔋 Tiết kiệm pin: BẬT' : '🔌 Tiết kiệm pin: TẮT'}
+              </button>
+            </div>
             <div className="theme-options">
               {[
                 { id: 'default', name: 'Mặc định', emoji: '🌌' },
