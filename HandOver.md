@@ -46,6 +46,7 @@
 - [x] Khung danh ngôn học tập động lực click-to-change (Trạng thái: Đã xong)
 - [x] Bảng Huy hiệu Thành tích tự động mở khóa theo lịch sử học tập (Trạng thái: Đã xong)
 - [x] Tối ưu hóa pin: Chế độ Tiết kiệm pin tối đa (Low Power Mode) cho canvas hạt, giới hạn tần số quét canvas 30 FPS và đồng bộ hóa cài đặt (Trạng thái: Đã xong)
+- [x] Cải tiến trải nghiệm người dùng (UX): Tích hợp onboarding chào mừng, phím tắt Pomodoro và presets âm thanh nhanh (Trạng thái: Đã xong)
 
 
 ## 2. Chi Tiết Các Phần Đã Triển Khai Gần Đây
@@ -69,6 +70,11 @@
   - **Bảng Huy hiệu Thành tích (Focus Badges)**: Tự động mở khóa các danh hiệu như Cú Đêm🦉, Sơn Ca🌅, Siêu Chiến Binh⚔️, Kỷ Lục Gia🏆, Dọn Sạch Đề Cương🧹 dựa trên hành vi học tập thực tế.
   - **Chuông hoàn thành việc (Success Chime)**: Kích hoạt âm thanh "Ding" Dopamine tổng hợp qua Web Audio API (hoàn toàn offline) khi check-off việc cần làm.
   - **Khung danh ngôn truyền động lực**: Hiển thị châm ngôn ôn thi dạng kính mờ, click để đổi câu danh ngôn ngẫu nhiên.
+  - **Tối ưu hóa trải nghiệm người dùng nâng cao (UX Upgrades)**:
+    - **Welcome Onboarding Tour**: Tự động hiển thị thẻ kính mờ giới thiệu 4 bước với giao diện carousel khi người dùng truy cập lần đầu.
+    - **Bảng phím tắt Pomodoro**: Nút hỗ trợ phím tắt ở header Pomodoro, hiển thị cheatsheet các phím (Space, Esc, S, L). Bổ sung phím tắt `L`/`l` để kích hoạt nhanh chế độ tiết kiệm pin.
+    - **Soundboard Presets**: Hàng nút chọn nhanh preset âm thanh (Tập trung sâu, Quán Cafe, Vũ trụ, Rừng mưa) tự động kích hoạt tổ hợp loa môi trường và sóng não.
+    - **Nâng cấp hoạt ảnh Hover**: Cải tiến hoạt ảnh 3D-tilt nhẹ khi hover các thẻ môn thi `ExamCard`.
 
 - **Tối Ưu Hóa Toàn Diện & Tính Năng Nâng Cao**:
   - **Tối ưu năng lượng (Page Visibility API)**: Tự động dừng vòng lặp Canvas hạt của `ThemeParticles` khi tab ẩn để tiết kiệm 100% tài nguyên CPU/GPU và khôi phục khi tab hiển thị lại.

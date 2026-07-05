@@ -359,6 +359,7 @@ function PomodoroTimer({ isOpen, onClose, exams = [] }) {
   // Time left in seconds
   const [timeLeft, setTimeLeft] = useState(() => workTime * 60);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isShortcutHelpOpen, setIsShortcutHelpOpen] = useState(false);
   
   const [lowPowerMode, setLowPowerMode] = useState(() => {
     return localStorage.getItem('pomodoro_low_power') === 'true';
@@ -631,6 +632,12 @@ function PomodoroTimer({ isOpen, onClose, exams = [] }) {
       } else if (e.key === 's' || e.key === 'S') {
         e.preventDefault();
         handleSkip();
+      } else if (e.key === 'l' || e.key === 'L') {
+        e.preventDefault();
+        const newVal = !lowPowerMode;
+        setLowPowerMode(newVal);
+        setInputLowPower(newVal);
+        localStorage.setItem('pomodoro_low_power', newVal.toString());
       }
     };
 
@@ -638,7 +645,7 @@ function PomodoroTimer({ isOpen, onClose, exams = [] }) {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [isOpen, handleStartPause, handleSkip, onClose]);
+  }, [isOpen, handleStartPause, handleSkip, onClose, lowPowerMode]);
 
   // Save customized time configurations
   const handleSaveSettings = (e) => {
@@ -754,9 +761,33 @@ function PomodoroTimer({ isOpen, onClose, exams = [] }) {
       <div className={`pomodoro-sidebar-content tab-${activeTab}`}>
         {/* Sidebar Header */}
       <div className="pomodoro-header">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <span style={{ fontSize: '1.25rem' }}>🍅</span>
-          <h2 className="pomodoro-title">Trạm Tập Trung Pomodoro</h2>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <span style={{ fontSize: '1.25rem' }}>🍅</span>
+            <h2 className="pomodoro-title">Trạm Tập Trung Pomodoro</h2>
+          </div>
+          <button 
+            type="button"
+            className="keyboard-help-btn"
+            onClick={() => setIsShortcutHelpOpen(true)}
+            style={{
+              background: 'rgba(255,255,255,0.08)',
+              border: '1px solid rgba(255,255,255,0.15)',
+              borderRadius: '8px',
+              padding: '4px 8px',
+              fontSize: '0.75rem',
+              color: 'rgba(255,255,255,0.8)',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.25rem',
+              fontWeight: '600',
+              transition: 'var(--transition-smooth)'
+            }}
+            title="Xem danh sách phím tắt"
+          >
+            ⌨️ Phím tắt
+          </button>
         </div>
       </div>
 
@@ -1212,6 +1243,57 @@ function PomodoroTimer({ isOpen, onClose, exams = [] }) {
         />
       )}
       </div>
+      {isShortcutHelpOpen && (
+        <div className="modal-overlay" onClick={() => setIsShortcutHelpOpen(false)} style={{ zIndex: 2100 }}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '380px', padding: '1.75rem', gap: '1.25rem' }}>
+            <div className="modal-header">
+              <h3 className="modal-title" style={{ fontSize: '1.25rem' }}>⌨️ Phím tắt Trạm Pomodoro</h3>
+              <button 
+                type="button" 
+                onClick={() => setIsShortcutHelpOpen(false)} 
+                style={{ background: 'transparent', border: 'none', color: '#6b7280', fontSize: '1.5rem', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+              >
+                &times;
+              </button>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+              {[
+                { keys: ['Space'], desc: 'Bắt đầu / Tạm dừng đồng hồ' },
+                { keys: ['Esc'], desc: 'Đóng Trạm tập trung' },
+                { keys: ['S'], desc: 'Bỏ qua (Skip) phiên học' },
+                { keys: ['L'], desc: 'Bật / Tắt nhanh Tiết kiệm pin' }
+              ].map(item => (
+                <div key={item.desc} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.5rem 0', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                  <span style={{ fontSize: '0.85rem', color: '#9ca3af' }}>{item.desc}</span>
+                  <div style={{ display: 'flex', gap: '0.2rem' }}>
+                    {item.keys.map(k => (
+                      <kbd key={k} style={{
+                        background: 'rgba(255,255,255,0.08)',
+                        border: '1px solid rgba(255,255,255,0.18)',
+                        borderRadius: '5px',
+                        padding: '2px 8px',
+                        fontSize: '0.78rem',
+                        color: '#a78bfa',
+                        fontFamily: 'inherit',
+                        boxShadow: '0 2px 0 rgba(0,0,0,0.3)',
+                        fontWeight: '600'
+                      }}>{k}</kbd>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <button 
+              type="button" 
+              className="btn btn-primary" 
+              onClick={() => setIsShortcutHelpOpen(false)} 
+              style={{ width: '100%', backgroundColor: getThemeColor(), borderColor: getThemeColor() }}
+            >
+              Đóng bảng trợ giúp
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

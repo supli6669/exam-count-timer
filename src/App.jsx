@@ -10,6 +10,7 @@ import RecurringTasks from './components/RecurringTasks';
 import SmartInsights from './components/SmartInsights';
 import ContributionGraph from './components/ContributionGraph';
 import { incrementContribution, decrementContribution } from './utils/contributions';
+import OnboardingTour from './components/OnboardingTour';
 
 // Initial mock data set relative to current date (June 2026)
 const getInitialMockData = () => {
@@ -424,6 +425,7 @@ function App() {
 
   return (
     <div className="app-container">
+      <OnboardingTour />
       {/* App Header */}
       <header className="app-header">
         <div className="brand-section">

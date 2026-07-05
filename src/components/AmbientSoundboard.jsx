@@ -137,6 +137,41 @@ const createNoiseBuffer = (ctx, type) => {
   return noiseBuffer;
 };
 
+const AMBIENT_PRESETS = [
+  {
+    id: 'deep-focus',
+    name: '🧘 Tập trung sâu',
+    mix: {
+      sound: { forest: 0.35 },
+      synth: { alpha: 0.4 }
+    }
+  },
+  {
+    id: 'cozy-cafe',
+    name: '☕ Quán Café',
+    mix: {
+      sound: { rain: 0.4, fire: 0.3 },
+      synth: { pink: 0.25 }
+    }
+  },
+  {
+    id: 'space-zen',
+    name: '🚀 Vũ trụ thiền',
+    mix: {
+      sound: { ocean: 0.25 },
+      synth: { theta: 0.35, brown: 0.2 }
+    }
+  },
+  {
+    id: 'rainy-cabin',
+    name: '🌲 Nhà trong rừng',
+    mix: {
+      sound: { rain: 0.5, fire: 0.4, forest: 0.3 },
+      synth: {}
+    }
+  }
+];
+
 function AmbientSoundboard() {
   const [isOpen, setIsOpen] = useState(false);
   
@@ -272,6 +307,81 @@ function AmbientSoundboard() {
     }
   };
 
+  const startSynthSound = (soundId, volume = 0.3) => {
+    try {
+      if (synthInstances.current[soundId]) {
+        const instance = synthInstances.current[soundId];
+        if (instance && instance.gainNode) {
+          instance.gainNode.gain.setValueAtTime(volume * masterVolume, audioCtxRef.current?.currentTime || 0);
+        }
+        return;
+      }
+      
+      const sound = SYNTH_SOUNDS.find(s => s.id === soundId);
+      if (sound) {
+        const ctx = getAudioContext();
+        const gainNode = ctx.createGain();
+        gainNode.gain.setValueAtTime(volume * masterVolume, ctx.currentTime);
+
+        if (sound.type === 'binaural') {
+          const oscL = ctx.createOscillator();
+          oscL.type = 'sine';
+          oscL.frequency.setValueAtTime(sound.baseFreq, ctx.currentTime);
+
+          const pannerL = ctx.createStereoPanner ? ctx.createStereoPanner() : null;
+          if (pannerL) {
+            pannerL.pan.setValueAtTime(-1, ctx.currentTime);
+            oscL.connect(pannerL);
+            pannerL.connect(gainNode);
+          } else {
+            oscL.connect(gainNode);
+          }
+
+          const oscR = ctx.createOscillator();
+          oscR.type = 'sine';
+          oscR.frequency.setValueAtTime(sound.baseFreq + sound.beatFreq, ctx.currentTime);
+
+          const pannerR = ctx.createStereoPanner ? ctx.createStereoPanner() : null;
+          if (pannerR) {
+            pannerR.pan.setValueAtTime(1, ctx.currentTime);
+            oscR.connect(pannerR);
+            pannerR.connect(gainNode);
+          } else {
+            oscR.connect(gainNode);
+          }
+
+          gainNode.connect(ctx.destination);
+          oscL.start();
+          oscR.start();
+
+          synthInstances.current[soundId] = {
+            oscillators: [oscL, oscR],
+            panners: pannerL && pannerR ? [pannerL, pannerR] : [],
+            gainNode,
+            type: 'binaural'
+          };
+        } else if (sound.type === 'noise') {
+          const buffer = createNoiseBuffer(ctx, soundId);
+          const source = ctx.createBufferSource();
+          source.buffer = buffer;
+          source.loop = true;
+
+          source.connect(gainNode);
+          gainNode.connect(ctx.destination);
+          source.start();
+
+          synthInstances.current[soundId] = {
+            source,
+            gainNode,
+            type: 'noise'
+          };
+        }
+      }
+    } catch (err) {
+      console.error('Failed to start synthesized sound:', err);
+    }
+  };
+
   const handleToggleSound = (soundId) => {
     setSoundMix((prev) => {
       const current = prev[soundId] || { playing: false, volume: 0.5 };
@@ -309,73 +419,7 @@ function AmbientSoundboard() {
       const nextPlaying = !current.playing;
 
       if (nextPlaying) {
-        try {
-          const sound = SYNTH_SOUNDS.find(s => s.id === soundId);
-          if (sound) {
-            const ctx = getAudioContext();
-            const gainNode = ctx.createGain();
-            gainNode.gain.setValueAtTime(current.volume * masterVolume, ctx.currentTime);
-
-            if (sound.type === 'binaural') {
-              // Left channel oscillator
-              const oscL = ctx.createOscillator();
-              oscL.type = 'sine';
-              oscL.frequency.setValueAtTime(sound.baseFreq, ctx.currentTime);
-
-              const pannerL = ctx.createStereoPanner ? ctx.createStereoPanner() : null;
-              if (pannerL) {
-                pannerL.pan.setValueAtTime(-1, ctx.currentTime);
-                oscL.connect(pannerL);
-                pannerL.connect(gainNode);
-              } else {
-                oscL.connect(gainNode);
-              }
-
-              // Right channel oscillator
-              const oscR = ctx.createOscillator();
-              oscR.type = 'sine';
-              oscR.frequency.setValueAtTime(sound.baseFreq + sound.beatFreq, ctx.currentTime);
-
-              const pannerR = ctx.createStereoPanner ? ctx.createStereoPanner() : null;
-              if (pannerR) {
-                pannerR.pan.setValueAtTime(1, ctx.currentTime);
-                oscR.connect(pannerR);
-                pannerR.connect(gainNode);
-              } else {
-                oscR.connect(gainNode);
-              }
-
-              gainNode.connect(ctx.destination);
-              oscL.start();
-              oscR.start();
-
-              synthInstances.current[soundId] = {
-                oscillators: [oscL, oscR],
-                panners: pannerL && pannerR ? [pannerL, pannerR] : [],
-                gainNode,
-                type: 'binaural'
-              };
-            } else if (sound.type === 'noise') {
-              const buffer = createNoiseBuffer(ctx, soundId);
-              const source = ctx.createBufferSource();
-              source.buffer = buffer;
-              source.loop = true;
-
-              source.connect(gainNode);
-              gainNode.connect(ctx.destination);
-              source.start();
-
-              synthInstances.current[soundId] = {
-                source,
-                gainNode,
-                type: 'noise'
-              };
-            }
-          }
-        } catch (err) {
-          console.error('Failed to play synthesized sound:', err);
-          return prev;
-        }
+        startSynthSound(soundId, current.volume);
       } else {
         stopSynthSound(soundId);
       }
@@ -387,6 +431,42 @@ function AmbientSoundboard() {
           playing: nextPlaying
         }
       };
+    });
+  };
+
+  const applyPreset = (presetMix) => {
+    // Stop all active synths first
+    Object.keys(synthInstances.current).forEach((key) => {
+      stopSynthSound(key);
+    });
+
+    // Apply nature loop configuration
+    setSoundMix(() => {
+      const next = {};
+      SOUNDS.forEach((s) => {
+        const vol = presetMix.sound[s.id];
+        if (vol !== undefined) {
+          next[s.id] = { playing: true, volume: vol };
+        } else {
+          next[s.id] = { playing: false, volume: 0.5 };
+        }
+      });
+      return next;
+    });
+
+    // Apply synthesizer configuration
+    setSynthMix(() => {
+      const next = {};
+      SYNTH_SOUNDS.forEach((s) => {
+        const vol = presetMix.synth[s.id];
+        if (vol !== undefined) {
+          next[s.id] = { playing: true, volume: vol };
+          startSynthSound(s.id, vol);
+        } else {
+          next[s.id] = { playing: false, volume: 0.3 };
+        }
+      });
+      return next;
     });
   };
 
@@ -523,6 +603,43 @@ function AmbientSoundboard() {
               aria-label="Âm lượng tổng"
             />
             <span className="master-vol-percent">{Math.round(masterVolume * 100)}%</span>
+          </div>
+
+          {/* Quick Audio Presets */}
+          <div className="soundboard-presets" style={{
+            marginTop: '0.8rem',
+            padding: '0.6rem',
+            background: 'rgba(255, 255, 255, 0.03)',
+            borderRadius: '8px',
+            border: '1px solid rgba(255, 255, 255, 0.05)',
+            marginBottom: '0.8rem'
+          }}>
+            <span style={{ fontSize: '0.78rem', color: 'rgba(255, 255, 255, 0.6)', fontWeight: '600', display: 'block', marginBottom: '0.4rem', textAlign: 'left' }}>
+              🎧 Tổ hợp âm thanh nhanh (Presets):
+            </span>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', justifyContent: 'flex-start' }}>
+              {AMBIENT_PRESETS.map((p) => (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => applyPreset(p.mix)}
+                  className="preset-btn"
+                  style={{
+                    background: 'rgba(255, 255, 255, 0.07)',
+                    border: '1px solid rgba(255, 255, 255, 0.12)',
+                    borderRadius: '8px',
+                    padding: '4px 8px',
+                    fontSize: '0.75rem',
+                    color: '#fff',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    fontWeight: '500'
+                  }}
+                >
+                  {p.name}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Nature Loops */}
