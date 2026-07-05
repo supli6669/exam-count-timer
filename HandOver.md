@@ -144,7 +144,7 @@
   - **Đồng bộ Pomodoro**: Cho phép chọn và ghi nhận việc tập trung cho các Nhiệm vụ chung ngay trong sidebar Pomodoro Timer.
 
 ## 3. Trạng Thế Git Hiện Tại
-- Mã SHA commit / Message gần nhất: `923f714` / `feat: change study quotes to English`
+- Mã SHA commit / Message gần nhất: `2544c5f` / `feat: integrate eisenhower priority matrix for study tasks`
 - Tên Branch hiện tại: `main`
 - GitHub Remote: `https://github.com/supli6669/exam-count-timer.git`
 
