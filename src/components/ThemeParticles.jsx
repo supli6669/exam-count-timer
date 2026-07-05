@@ -1,9 +1,10 @@
 import { useEffect, useRef } from 'react';
 
-function ThemeParticles({ theme }) {
+function ThemeParticles({ theme, lowPowerMode }) {
   const canvasRef = useRef(null);
 
   useEffect(() => {
+    if (lowPowerMode) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
 
@@ -366,15 +367,26 @@ function ThemeParticles({ theme }) {
     };
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
-    // Loop
+    // Loop with 30 FPS throttling to optimize battery life
+    const fps = 30;
+    const fpsInterval = 1000 / fps;
+    let then = Date.now();
+
     const animate = () => {
       if (!isTabVisible) return;
-      ctx.clearRect(0, 0, width, height);
-      particles.forEach((p) => {
-        p.update();
-        p.draw();
-      });
       animationFrameId = requestAnimationFrame(animate);
+
+      const now = Date.now();
+      const elapsed = now - then;
+
+      if (elapsed > fpsInterval) {
+        then = now - (elapsed % fpsInterval);
+        ctx.clearRect(0, 0, width, height);
+        particles.forEach((p) => {
+          p.update();
+          p.draw();
+        });
+      }
     };
 
     animate();
@@ -387,9 +399,9 @@ function ThemeParticles({ theme }) {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       resizeObserver.disconnect();
     };
-  }, [theme]);
+  }, [theme, lowPowerMode]);
 
-  if (theme === 'default') return null;
+  if (theme === 'default' || lowPowerMode) return null;
 
   return (
     <canvas

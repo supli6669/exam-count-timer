@@ -360,12 +360,17 @@ function PomodoroTimer({ isOpen, onClose, exams = [] }) {
   const [timeLeft, setTimeLeft] = useState(() => workTime * 60);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   
+  const [lowPowerMode, setLowPowerMode] = useState(() => {
+    return localStorage.getItem('pomodoro_low_power') === 'true';
+  });
+
   // Custom inputs for settings form
   const [inputWork, setInputWork] = useState(workTime);
   const [inputShort, setInputShort] = useState(shortBreakTime);
   const [inputLong, setInputLong] = useState(longBreakTime);
   const [inputAlarmVolume, setInputAlarmVolume] = useState(alarmVolume);
   const [inputAlarmSound, setInputAlarmSound] = useState(alarmSound);
+  const [inputLowPower, setInputLowPower] = useState(lowPowerMode);
 
   const timerRef = useRef(null);
 
@@ -644,18 +649,21 @@ function PomodoroTimer({ isOpen, onClose, exams = [] }) {
     const l = Math.max(1, Math.min(60, parseInt(inputLong, 10) || 15));
     const vol = Math.max(0, Math.min(100, parseInt(inputAlarmVolume, 10) || 50));
     const snd = inputAlarmSound;
+    const lowPower = inputLowPower;
 
     setWorkTime(w);
     setShortBreakTime(s);
     setLongBreakTime(l);
     setAlarmVolume(vol);
     setAlarmSound(snd);
+    setLowPowerMode(lowPower);
 
     localStorage.setItem('pomodoro_work', w.toString());
     localStorage.setItem('pomodoro_short_break', s.toString());
     localStorage.setItem('pomodoro_long_break', l.toString());
     localStorage.setItem('pomodoro_alarm_volume', vol.toString());
     localStorage.setItem('pomodoro_alarm_sound', snd);
+    localStorage.setItem('pomodoro_low_power', lowPower.toString());
 
     setIsSettingsOpen(false);
   };
@@ -666,6 +674,7 @@ function PomodoroTimer({ isOpen, onClose, exams = [] }) {
     setInputLong(longBreakTime);
     setInputAlarmVolume(alarmVolume);
     setInputAlarmSound(alarmSound);
+    setInputLowPower(lowPowerMode);
     setIsSettingsOpen(false);
   };
 
@@ -729,7 +738,7 @@ function PomodoroTimer({ isOpen, onClose, exams = [] }) {
       )}
       
       {/* Canvas particle effect overlay */}
-      <ThemeParticles theme={activeTheme} />
+      <ThemeParticles theme={activeTheme} lowPowerMode={lowPowerMode} />
       
       {/* Dark overlay for contrast */}
       <div className="pomodoro-tint-overlay" />
@@ -1096,6 +1105,19 @@ function PomodoroTimer({ isOpen, onClose, exams = [] }) {
                       width: '100%',
                       background: `linear-gradient(to right, #8b5cf6 0%, #8b5cf6 ${inputAlarmVolume}%, rgba(255, 255, 255, 0.12) ${inputAlarmVolume}%, rgba(255, 255, 255, 0.12) 100%)`
                     }}
+                  />
+                </div>
+
+                <div className="settings-field" style={{ justifyContent: 'space-between', alignItems: 'center', flexDirection: 'row', gap: '0.5rem', marginTop: '0.4rem', marginBottom: '0.4rem' }}>
+                  <label htmlFor="settings-low-power" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer', fontSize: '0.9rem', color: 'rgba(255, 255, 255, 0.85)' }}>
+                    🔋 Tiết kiệm pin tối đa (Tắt Canvas hạt)
+                  </label>
+                  <input 
+                    id="settings-low-power"
+                    type="checkbox" 
+                    checked={inputLowPower} 
+                    onChange={(e) => setInputLowPower(e.target.checked)}
+                    style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: '#8b5cf6' }}
                   />
                 </div>
 

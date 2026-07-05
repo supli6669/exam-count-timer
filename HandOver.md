@@ -45,6 +45,7 @@
 - [x] Âm thanh Dopamine check-off task tạo trực tiếp bằng Web Audio API (Trạng thái: Đã xong)
 - [x] Khung danh ngôn học tập động lực click-to-change (Trạng thái: Đã xong)
 - [x] Bảng Huy hiệu Thành tích tự động mở khóa theo lịch sử học tập (Trạng thái: Đã xong)
+- [x] Tối ưu hóa pin: Chế độ Tiết kiệm pin tối đa (Low Power Mode) cho canvas hạt, giới hạn tần số quét canvas 30 FPS và đồng bộ hóa cài đặt (Trạng thái: Đã xong)
 
 
 ## 2. Chi Tiết Các Phần Đã Triển Khai Gần Đây
@@ -56,6 +57,10 @@
   - **Bảo vệ chống trễ nhập liệu (Keystroke Input Lag Protection)**: Bọc các component phụ (`ContributionGraph`, `RecurringTasks`, `SmartInsights`) bằng `React.memo` và bọc toàn bộ thuật toán xử lý dữ liệu nặng trong `useMemo`. Giúp tránh tình trạng re-render và tính toán thừa khi người dùng gõ từ khóa tìm kiếm môn thi trên Dashboard.
   - **Tối ưu hóa bộ đếm trong Lịch (CalendarView)**: Đồng hồ đếm ngược chỉ chạy khi mở popup xem chi tiết ngày thi, tự động dọn dẹp (clear) khi đóng popup giúp lịch không bị re-render định kỳ mỗi giây.
   - **Tối ưu hóa soundboard & phát nhạc**: Thêm cơ chế cache `noiseBufferCache` cho các bộ tạo tiếng ồn ngẫu nhiên (White, Pink, Brown Noise) trong `AmbientSoundboard.jsx` để tránh tạo mới mảng float khi tắt/bật; bọc cả `AmbientSoundboard` và `SpotifyPlayer` trong `React.memo` để tránh bị re-render từng giây một theo nhịp đếm ngược của đồng hồ Pomodoro.
+  - **Tối ưu hóa năng lượng tối đa (Low Power Mode & 30 FPS Lock)**:
+    - Bổ sung tùy chọn gạt *"🔋 Tiết kiệm pin tối đa (Tắt Canvas hạt)"* vào menu Cài đặt Pomodoro, lưu cấu hình vào `localStorage` dưới tên `pomodoro_low_power`. Khi chế độ này được kích hoạt, Canvas hạt trong `ThemeParticles.jsx` sẽ được tắt hoàn toàn và không khởi tạo tài nguyên hay chạy vòng lặp vẽ.
+    - Giới hạn tốc độ hoạt ảnh hạt cố định ở tối đa **30 FPS** (thay vì tự chạy 60/120/144 FPS theo tần số quét màn hình) bằng kỹ thuật Delta-time throttling khi chế độ tiết kiệm pin bị tắt, giúp giảm tải GPU tối đa cho các màn hình ProMotion/high-refresh-rate.
+    - Tích hợp đồng bộ khóa `pomodoro_low_power` vào bộ Backup & Restore JSON để dễ dàng phục hồi cấu hình.
 - **Game hóa & Trải nghiệm học tập (Gamification & Study UX)**:
   - **Lời chào động & Tên inline**: Lời chào buổi sáng/chiều/tối kết hợp tên tùy chỉnh cho phép chỉnh sửa trực tiếp (inline edit) tại Header.
   - **Hệ thống cấp độ Scholar & Tích lũy XP**: Nhận điểm kinh nghiệm từ các hoạt động học tập (Pomodoro/Stopwatch, hoàn thành task môn thi hoặc mục tiêu định kỳ), thăng cấp tự động kèm âm thanh Level-Up và thông báo chúc mừng.

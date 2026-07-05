@@ -23,7 +23,8 @@ function BackupRestore() {
         'pomodoro_ambient_mix',
         'pomodoro_synth_mix',
         'productivity_contributions',
-        'recurring_tasks_rule_of_3'
+        'recurring_tasks_rule_of_3',
+        'pomodoro_low_power'
       ];
 
       keysToBackup.forEach(key => {
