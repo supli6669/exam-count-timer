@@ -352,7 +352,9 @@ function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [], onToggl
       const s = customThemeData ? customThemeData.s : 0.75;
       const l = customThemeData ? customThemeData.l : 0.58;
       
-      const hComp = (h + 180) % 360;
+      // Shift hue by -40 degrees (analogous) to create a harmonious, artistic dual-tone look
+      // (e.g. dark pink background with a glowing violet-purple highlight, or dark blue background with glowing cyan highlight)
+      const hComp = (h - 40 + 360) % 360;
       const primaryColor = `hsl(${hComp}, 85%, 58%)`;
       const primaryGlow = `hsla(${hComp}, 85%, 58%, 0.45)`;
 
