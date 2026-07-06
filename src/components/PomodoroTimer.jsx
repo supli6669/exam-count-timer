@@ -998,7 +998,13 @@ function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [], onToggl
         }
       });
 
-      const upscaledSrc = await upscaler.upscale(customBg);
+      const upscaledSrc = await upscaler.upscale(customBg, {
+        patchSize: 128,
+        padding: 8,
+        progress: (percent) => {
+          setEnhanceStatus(`Đang chạy AI xử lý: ${Math.round(percent * 100)}%`);
+        }
+      });
 
       setEnhanceStatus('Đang nén tối ưu hóa dung lượng...');
       const finalUpscaledSrc = await compressImageBase64(upscaledSrc, 1920, 0.8);
