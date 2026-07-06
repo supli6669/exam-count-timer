@@ -734,7 +734,9 @@ function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [], onToggl
       
       let bestColor = null;
       let maxVibrancy = -1;
+      const hueBuckets = new Array(360).fill(0);
       let rSum = 0, gSum = 0, bSum = 0, count = 0;
+      let maxS = 0;
 
       for (let i = 0; i < imgData.length; i += 4) {
         const r = imgData[i];
@@ -742,48 +744,106 @@ function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [], onToggl
         const b = imgData[i+2];
         const a = imgData[i+3];
         
-        if (a < 200) continue;
+        if (a < 150) continue;
 
         rSum += r;
         gSum += g;
         bSum += b;
         count++;
 
-        const max = Math.max(r, g, b) / 255;
-        const min = Math.min(r, g, b) / 255;
-        const l = (max + min) / 2;
+        const rNorm = r / 255;
+        const gNorm = g / 255;
+        const bNorm = b / 255;
+        const max = Math.max(rNorm, gNorm, bNorm);
+        const min = Math.min(rNorm, gNorm, bNorm);
+        const delta = max - min;
         
+        const l = (max + min) / 2;
         let s = 0;
         if (max !== min) {
-          s = l > 0.5 ? (max - min) / (2 - max - min) : (max - min) / (max + min);
+          s = l > 0.5 ? delta / (2 - max - min) : delta / (max + min);
+        }
+        
+        let h = 0;
+        if (delta !== 0) {
+          if (max === rNorm) {
+            h = ((gNorm - bNorm) / delta) % 6;
+          } else if (max === gNorm) {
+            h = (bNorm - rNorm) / delta + 2;
+          } else {
+            h = (rNorm - gNorm) / delta + 4;
+          }
+          h = Math.round(h * 60);
+          if (h < 0) h += 360;
         }
 
-        // Search for vibrant, readable colors for dark mode accents (lightness between 0.40 and 0.75)
-        if (s > 0.3 && l > 0.4 && l < 0.75) {
+        if (s > maxS) maxS = s;
+
+        if (s > 0.05) {
+          hueBuckets[h]++;
+        }
+
+        // Search for vibrant, readable colors for dark mode accents (lightness between 0.35 and 0.75)
+        if (s > 0.25 && l > 0.35 && l < 0.75) {
           const vibrancy = s * (1 - Math.abs(2 * l - 1));
           if (vibrancy > maxVibrancy) {
             maxVibrancy = vibrancy;
-            bestColor = { r, g, b };
+            bestColor = { r, g, b, h, s, l };
           }
         }
       }
 
+      // 1. If we found a vibrant, readable color directly, return it
       if (bestColor) {
+        if (bestColor.s < 0.5) {
+          return hslToHex(bestColor.h, 0.75, 0.58);
+        }
         return rgbToHex(bestColor.r, bestColor.g, bestColor.b);
       }
-      
-      if (count > 0) {
-        const avgR = Math.round(rSum / count);
-        const avgG = Math.round(gSum / count);
-        const avgB = Math.round(bSum / count);
-        return rgbToHex(avgR, avgG, avgB);
+
+      // 2. If no highly vibrant pixel, let's find the most common Hue in the image
+      let dominantHue = -1;
+      let maxHueCount = 0;
+      for (let h = 0; h < 360; h++) {
+        if (hueBuckets[h] > maxHueCount) {
+          maxHueCount = hueBuckets[h];
+          dominantHue = h;
+        }
+      }
+
+      // 3. If there is a dominant hue and the image is not purely grayscale (maxS > 0.1)
+      if (dominantHue !== -1 && maxS > 0.1) {
+        return hslToHex(dominantHue, 0.75, 0.58);
       }
       
-      return '#a855f7';
+      // 4. If purely grayscale (black & white image), return a beautiful vibrant violet accent color
+      return '#a855f7'; 
     } catch (e) {
       console.warn('Error extracting color:', e);
       return '#a855f7';
     }
+  };
+
+  const hslToHex = (h, s, l) => {
+    let r, g, b;
+    if (s === 0) {
+      r = g = b = l; // achromatic
+    } else {
+      const hue2rgb = (p, q, t) => {
+        if (t < 0) t += 1;
+        if (t > 1) t -= 1;
+        if (t < 1/6) return p + (q - p) * 6 * t;
+        if (t < 1/2) return q;
+        if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+        return p;
+      };
+      const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+      const p = 2 * l - q;
+      r = hue2rgb(p, q, h / 360 + 1/3);
+      g = hue2rgb(p, q, h / 360);
+      b = hue2rgb(p, q, h / 360 - 1/3);
+    }
+    return rgbToHex(Math.round(r * 255), Math.round(g * 255), Math.round(b * 255));
   };
 
   const rgbToHex = (r, g, b) => {
