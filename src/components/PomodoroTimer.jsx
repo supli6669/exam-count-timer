@@ -310,8 +310,9 @@ function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [], onToggl
     return localStorage.getItem('pomodoro_custom_bg') || '';
   });
 
-  const [customColor, setCustomColor] = useState(() => {
-    return localStorage.getItem('pomodoro_custom_color') || '';
+  const [customThemeData, setCustomThemeData] = useState(() => {
+    const saved = localStorage.getItem('pomodoro_custom_theme_data');
+    return saved ? JSON.parse(saved) : null;
   });
 
   const customBgInputRef = useRef(null);
@@ -344,22 +345,49 @@ function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [], onToggl
     localStorage.setItem('pomodoro_is_stopwatch', isStopwatch.toString());
   }, [isStopwatch]);
 
-  // Sync extracted custom color with global CSS variables when custom theme is active
+  // Sync extracted custom color theme with global CSS variables when custom theme is active
   useEffect(() => {
     if (activeTheme === 'custom') {
-      const color = customColor || '#a855f7';
-      document.documentElement.style.setProperty('--color-primary', color);
-      document.documentElement.style.setProperty('--color-primary-glow', `${color}66`);
+      const h = customThemeData ? customThemeData.h : 270;
+      const s = customThemeData ? customThemeData.s : 0.75;
+      const l = customThemeData ? customThemeData.l : 0.58;
+      
+      const hComp = (h + 180) % 360;
+      const primaryColor = `hsl(${hComp}, 85%, 58%)`;
+      const primaryGlow = `hsla(${hComp}, 85%, 58%, 0.45)`;
+
+      const bgPrimary = `hsl(${h}, 15%, 5%)`;
+      const bgSecondary = `hsl(${h}, 15%, 8%)`;
+      const bgGlass = `hsla(${h}, 20%, 12%, 0.45)`;
+      const borderGlass = `hsla(${h}, 30%, 50%, 0.15)`;
+
+      document.documentElement.style.setProperty('--color-primary', primaryColor);
+      document.documentElement.style.setProperty('--color-primary-glow', primaryGlow);
+      document.documentElement.style.setProperty('--bg-primary', bgPrimary);
+      document.documentElement.style.setProperty('--bg-secondary', bgSecondary);
+      document.documentElement.style.setProperty('--bg-glass', bgGlass);
+      document.documentElement.style.setProperty('--border-glass', borderGlass);
+      document.body.style.backgroundColor = bgPrimary;
     } else {
       document.documentElement.style.removeProperty('--color-primary');
       document.documentElement.style.removeProperty('--color-primary-glow');
+      document.documentElement.style.removeProperty('--bg-primary');
+      document.documentElement.style.removeProperty('--bg-secondary');
+      document.documentElement.style.removeProperty('--bg-glass');
+      document.documentElement.style.removeProperty('--border-glass');
+      document.body.style.backgroundColor = '';
     }
 
     return () => {
       document.documentElement.style.removeProperty('--color-primary');
       document.documentElement.style.removeProperty('--color-primary-glow');
+      document.documentElement.style.removeProperty('--bg-primary');
+      document.documentElement.style.removeProperty('--bg-secondary');
+      document.documentElement.style.removeProperty('--bg-glass');
+      document.documentElement.style.removeProperty('--border-glass');
+      document.body.style.backgroundColor = '';
     };
-  }, [activeTheme, customColor]);
+  }, [activeTheme, customThemeData]);
 
   const [currentQuote, setCurrentQuote] = useState(() => {
     const idx = Math.floor(Math.random() * STUDY_QUOTES.length);
@@ -783,25 +811,19 @@ function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [], onToggl
           hueBuckets[h]++;
         }
 
-        // Search for vibrant, readable colors for dark mode accents (lightness between 0.35 and 0.75)
         if (s > 0.25 && l > 0.35 && l < 0.75) {
           const vibrancy = s * (1 - Math.abs(2 * l - 1));
           if (vibrancy > maxVibrancy) {
             maxVibrancy = vibrancy;
-            bestColor = { r, g, b, h, s, l };
+            bestColor = { h, s, l };
           }
         }
       }
 
-      // 1. If we found a vibrant, readable color directly, return it
       if (bestColor) {
-        if (bestColor.s < 0.5) {
-          return hslToHex(bestColor.h, 0.75, 0.58);
-        }
-        return rgbToHex(bestColor.r, bestColor.g, bestColor.b);
+        return { h: bestColor.h, s: bestColor.s, l: bestColor.l };
       }
 
-      // 2. If no highly vibrant pixel, let's find the most common Hue in the image
       let dominantHue = -1;
       let maxHueCount = 0;
       for (let h = 0; h < 360; h++) {
@@ -811,46 +833,15 @@ function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [], onToggl
         }
       }
 
-      // 3. If there is a dominant hue and the image is not purely grayscale (maxS > 0.1)
       if (dominantHue !== -1 && maxS > 0.1) {
-        return hslToHex(dominantHue, 0.75, 0.58);
+        return { h: dominantHue, s: 0.75, l: 0.58 };
       }
       
-      // 4. If purely grayscale (black & white image), return a beautiful vibrant violet accent color
-      return '#a855f7'; 
+      return { h: 270, s: 0.75, l: 0.58 };
     } catch (e) {
       console.warn('Error extracting color:', e);
-      return '#a855f7';
+      return { h: 270, s: 0.75, l: 0.58 };
     }
-  };
-
-  const hslToHex = (h, s, l) => {
-    let r, g, b;
-    if (s === 0) {
-      r = g = b = l; // achromatic
-    } else {
-      const hue2rgb = (p, q, t) => {
-        if (t < 0) t += 1;
-        if (t > 1) t -= 1;
-        if (t < 1/6) return p + (q - p) * 6 * t;
-        if (t < 1/2) return q;
-        if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
-        return p;
-      };
-      const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
-      const p = 2 * l - q;
-      r = hue2rgb(p, q, h / 360 + 1/3);
-      g = hue2rgb(p, q, h / 360);
-      b = hue2rgb(p, q, h / 360 - 1/3);
-    }
-    return rgbToHex(Math.round(r * 255), Math.round(g * 255), Math.round(b * 255));
-  };
-
-  const rgbToHex = (r, g, b) => {
-    return "#" + [r, g, b].map(x => {
-      const hex = x.toString(16);
-      return hex.length === 1 ? "0" + hex : hex;
-    }).join('');
   };
 
   const handleCustomBgUpload = (e) => {
@@ -888,14 +879,13 @@ function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [], onToggl
 
         const compressedBase64 = canvas.toDataURL('image/jpeg', 0.65);
         
-        // Extract dominant color from image
-        const colorHex = extractDominantColor(img);
+        const themeData = extractDominantColor(img);
 
         try {
           localStorage.setItem('pomodoro_custom_bg', compressedBase64);
-          localStorage.setItem('pomodoro_custom_color', colorHex);
+          localStorage.setItem('pomodoro_custom_theme_data', JSON.stringify(themeData));
           setCustomBg(compressedBase64);
-          setCustomColor(colorHex);
+          setCustomThemeData(themeData);
         } catch (err) {
           console.error('Failed to save to localStorage:', err);
           alert('Không thể lưu ảnh do dung lượng quá lớn hoặc trình duyệt đầy bộ nhớ. Vui lòng chọn ảnh khác nhỏ hơn.');
@@ -908,9 +898,9 @@ function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [], onToggl
 
   const handleRemoveCustomBg = () => {
     localStorage.removeItem('pomodoro_custom_bg');
-    localStorage.removeItem('pomodoro_custom_color');
+    localStorage.removeItem('pomodoro_custom_theme_data');
     setCustomBg('');
-    setCustomColor('');
+    setCustomThemeData(null);
   };
 
   const handleClearStats = () => {
