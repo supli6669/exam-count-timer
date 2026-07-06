@@ -133,14 +133,12 @@
   - Thiết lập hook đồng bộ hóa thời gian đếm ngược của Pomodoro lên tiêu đề trang (`document.title`) và favicon của trình duyệt theo thời gian thực.
   - Tự động thay đổi biểu tượng (favicon SVG) và emoji theo trạng thái của bộ đếm: `⚡` (Tập trung), `☕` (Nghỉ ngắn), `🍃` (Nghỉ dài).
   - Hỗ trợ hiển thị ký hiệu tạm dừng `⏸️` trước tiêu đề khi người dùng tạm dừng đếm ngược.
-  - Tự động khôi phục tiêu đề gốc `Đồng Hồ Đếm Ngược Lịch Thi - Theo Dõi Lịch Thi Thời Gian Thực` và biểu tượng mặc định `⏱️` khi reset hoặc chưa chạy.
-- **Tự động xóa môn thi đã qua (Auto-Remove Passed Exams)**:
-  - Thêm `useEffect` trong `App.jsx` để tự động lọc bỏ các môn thi có thời gian đã qua khỏi danh sách ngay khi mở ứng dụng.
-  - Kiểm tra định kỳ mỗi 30 giây để xóa các môn vừa hết giờ thi, thay vì hiển thị đếm ngược `0 Ngày - 0 Giờ - 0 Phút - 0 Giây` gây rối mắt.
-  - Sử dụng functional state update (`setExams(prev => ...)`) để đảm bảo chỉ cập nhật state khi thực sự có môn bị xóa, tránh re-render không cần thiết.
-- **Ma trận ưu tiên công việc (Eisenhower Priority Matrix)**:
-  - **Thanh chọn 3 chế độ xem**: Thiết kế lại menu điều khiển ở Header thành dạng tab 3 chế độ xem (Danh sách, Lịch thi, Ma trận ưu tiên) bo góc, mờ đục và có hiệu ứng neon nhẹ.
-  - **Giao diện ma trận 2x2 Glassmorphism**: Phân chia công việc thành 4 góc phần tư: Q1 (Làm ngay - Đỏ), Q2 (Lên lịch - Tím), Q3 (Làm nhanh - Xanh lá), Q4 (Loại bỏ - Xám) với hiệu ứng bóng mờ và viền màu neon tinh tế.
+  - Tự động khôi phục tiêu đề gốc `Đồng Hồ Đếm Ngược Lịch Thi - Theo Dõi Lịch Thi Thời Gian Thực` và biểu tượng mặc định `⏱️` khi reset hoặc  - **Đồng bộ màu sắc toàn bộ Tab & Giao diện (Dynamic Theme Adaption)**: Khi chọn chủ đề Tùy chỉnh, màu sắc trích xuất được dùng để nhuộm tối toàn bộ hình nền, các tấm kính mờ (glass panels) và viền phản chiếu. Đồng thời, hệ thống dịch chuyển màu gốc đi -40 độ (màu tương đồng - analogous) để tạo ra tông màu nhấn rực rỡ và hài hòa nhất (ví dụ nền hồng đen đi với tab màu tím hoa oải hương phát sáng), thay thế cho màu tương phản trực tiếp dễ gây chói mắt. Các biến CSS `--color-primary`, `--bg-primary`, `--bg-secondary`, `--bg-glass` được đồng bộ động lập tức.
+  - **Đồng bộ hóa & Hiệu ứng hạt**: Hỗ trợ đầy đủ tính năng xóa ảnh tùy chỉnh. Khi sử dụng hình nền tùy chỉnh, hệ thống tự động ánh xạ hiển thị các hạt bụi sáng ấm (lofi cozy sun dust) chuyển động mượt mà để tăng chiều sâu nghệ thuật.
+  - **Sao lưu hoàn chỉnh**: Cả mã ảnh base64 (`pomodoro_custom_bg`) và dữ liệu màu sắc dạng HSL (`pomodoro_custom_theme_data`) đều được tích hợp vào mảng `keysToBackup` của bộ Backup JSON để đồng bộ hóa và khôi phục khi cần thiết.
+ 
+## 3. Trạng Thế Git Hiện Tại
+- Mã SHA commit / Message gần nhất: `88ecf94` / `style: shift custom theme color matching from complementary to analogous for artistic dual-tone look`��), Q2 (Lên lịch - Tím), Q3 (Làm nhanh - Xanh lá), Q4 (Loại bỏ - Xám) với hiệu ứng bóng mờ và viền màu neon tinh tế.
   - **Nhiệm vụ chung (General Tasks)**: Bổ sung state `generalTasks` và bộ nhớ LocalStorage riêng biệt để người học có thể tạo các đầu việc độc lập không gắn với môn thi nào.
   - **Form thêm nhanh & Đổi quadrant**: Cho phép thêm trực tiếp công việc mới vào bất kỳ góc phần tư nào, cũng như di chuyển linh hoạt công việc giữa các góc phần tư qua menu select mini.
   - **Chấm chỉ báo độ ưu tiên**: Hiển thị chấm tròn phát sáng màu tương ứng bên cạnh tên nhiệm vụ trong danh sách việc cần làm của từng Exam Card.
