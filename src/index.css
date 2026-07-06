@@ -5221,13 +5221,84 @@ body {
   background-size: cover;
   background-position: center;
   opacity: 0.78;
-  filter: brightness(0.75) contrast(1.05);
 }
 
 .theme-custom .pomodoro-tint-overlay {
   background: radial-gradient(circle at center, rgba(10, 14, 23, 0.15) 0%, rgba(8, 11, 19, 0.6) 100%);
 }
 
+/* AI Enhance Button & Sliders styling */
+.ai-enhance-btn {
+  background: linear-gradient(135deg, #10b981, #3b82f6) !important;
+  border: none !important;
+  color: #fff !important;
+  border-radius: 10px !important;
+  cursor: pointer;
+  transition: all 0.2s ease !important;
+}
 
+.ai-enhance-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35);
+  filter: brightness(1.1);
+}
 
+.ai-enhance-btn:disabled {
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: rgba(255, 255, 255, 0.4) !important;
+  cursor: not-allowed;
+}
 
+.spinner-icon {
+  display: inline-block;
+  animation: spin 1.2s linear infinite;
+  margin-right: 4px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Custom range input styling */
+.custom-bg-controls input[type="range"] {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.1) !important;
+  border-radius: 3px !important;
+  outline: none;
+  margin: 6px 0;
+  transition: background 0.2s ease;
+}
+
+.custom-bg-controls input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--color-primary, #a855f7) !important;
+  cursor: pointer;
+  box-shadow: 0 0 6px var(--color-primary-glow, rgba(168, 85, 247, 0.45));
+  transition: transform 0.1s ease;
+}
+
+.custom-bg-controls input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+}
+
+.custom-bg-controls input[type="range"]::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border: none;
+  border-radius: 50%;
+  background: var(--color-primary, #a855f7) !important;
+  cursor: pointer;
+  box-shadow: 0 0 6px var(--color-primary-glow, rgba(168, 85, 247, 0.45));
+  transition: transform 0.1s ease;
+}
+
+.custom-bg-controls input[type="range"]::-moz-range-thumb:hover {
+  transform: scale(1.2);
+}

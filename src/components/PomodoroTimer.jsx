@@ -315,6 +315,27 @@ function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [], onToggl
     return saved ? JSON.parse(saved) : null;
   });
 
+  const [customBgBlur, setCustomBgBlur] = useState(() => {
+    const saved = localStorage.getItem('pomodoro_custom_bg_blur');
+    return saved !== null ? parseInt(saved, 10) : 0;
+  });
+
+  const [customBgBrightness, setCustomBgBrightness] = useState(() => {
+    const saved = localStorage.getItem('pomodoro_custom_bg_brightness');
+    return saved !== null ? parseFloat(saved) : 0.75;
+  });
+
+  const [isEnhancing, setIsEnhancing] = useState(false);
+  const [enhanceStatus, setEnhanceStatus] = useState('');
+
+  useEffect(() => {
+    localStorage.setItem('pomodoro_custom_bg_blur', customBgBlur.toString());
+  }, [customBgBlur]);
+
+  useEffect(() => {
+    localStorage.setItem('pomodoro_custom_bg_brightness', customBgBrightness.toString());
+  }, [customBgBrightness]);
+
   const customBgInputRef = useRef(null);
 
   // Focus Subject ID: 'general' or exam.id
@@ -886,7 +907,7 @@ function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [], onToggl
         const ctx = canvas.getContext('2d');
         ctx.drawImage(img, 0, 0, width, height);
 
-        const compressedBase64 = canvas.toDataURL('image/jpeg', 0.65);
+        const compressedBase64 = canvas.toDataURL('image/jpeg', 0.85);
         
         const themeData = extractDominantColor(img);
 
@@ -910,6 +931,103 @@ function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [], onToggl
     localStorage.removeItem('pomodoro_custom_theme_data');
     setCustomBg('');
     setCustomThemeData(null);
+  };
+
+  const loadScript = (src) => {
+    return new Promise((resolve, reject) => {
+      if (document.querySelector(`script[src="${src}"]`)) {
+        resolve();
+        return;
+      }
+      const script = document.createElement('script');
+      script.src = src;
+      script.async = true;
+      script.onload = () => resolve();
+      script.onerror = (err) => reject(err);
+      document.body.appendChild(script);
+    });
+  };
+
+  const compressImageBase64 = (base64Str, maxDim = 1920, quality = 0.8) => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        let width = img.width;
+        let height = img.height;
+        if (width > maxDim || height > maxDim) {
+          if (width > height) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          } else {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.src = base64Str;
+    });
+  };
+
+  const handleAIEnhance = async () => {
+    if (!customBg) return;
+    setIsEnhancing(true);
+    setEnhanceStatus('Đang tải thư viện AI (TensorFlow.js)...');
+    try {
+      await loadScript('https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.20.0/dist/tf.min.js');
+      
+      setEnhanceStatus('Đang tải mô hình làm nét (UpscalerJS)...');
+      await loadScript('https://cdn.jsdelivr.net/npm/@upscalerjs/default-model@1.0.0-beta.16/dist/umd/index.min.js');
+      await loadScript('https://cdn.jsdelivr.net/npm/upscaler@1.0.0-beta.16/dist/browser/umd/upscaler.min.js');
+
+      setEnhanceStatus('Đang chạy AI xử lý hình ảnh...');
+      
+      if (!window.Upscaler || !window.DefaultUpscalerJSModel) {
+        throw new Error('Thư viện AI chưa được tải đầy đủ. Vui lòng thử lại.');
+      }
+
+      const upscaler = new window.Upscaler({
+        model: window.DefaultUpscalerJSModel
+      });
+
+      const upscaledSrc = await upscaler.upscale(customBg);
+
+      setEnhanceStatus('Đang nén tối ưu hóa dung lượng...');
+      const finalUpscaledSrc = await compressImageBase64(upscaledSrc, 1920, 0.8);
+
+      const img = new Image();
+      img.onload = () => {
+        const themeData = extractDominantColor(img);
+        
+        try {
+          localStorage.setItem('pomodoro_custom_bg', finalUpscaledSrc);
+          localStorage.setItem('pomodoro_custom_theme_data', JSON.stringify(themeData));
+          setCustomBg(finalUpscaledSrc);
+          setCustomThemeData(themeData);
+          setEnhanceStatus('Làm nét ảnh bằng AI thành công!');
+          setTimeout(() => setEnhanceStatus(''), 3000);
+        } catch (err) {
+          console.error('Failed to save upscaled image to localStorage:', err);
+          alert('Không thể lưu ảnh đã nâng cấp do dung lượng quá lớn đối với bộ nhớ trình duyệt.');
+        }
+        setIsEnhancing(false);
+      };
+      img.onerror = () => {
+        throw new Error('Không thể xử lý hình ảnh sau nâng cấp.');
+      };
+      img.src = finalUpscaledSrc;
+
+    } catch (err) {
+      console.error('AI Enhancement error:', err);
+      alert('Đã xảy ra lỗi trong quá trình làm nét ảnh: ' + (err.message || err));
+      setIsEnhancing(false);
+      setEnhanceStatus('');
+    }
   };
 
   const handleClearStats = () => {
@@ -977,7 +1095,10 @@ function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [], onToggl
           style={{ 
             backgroundImage: activeTheme === 'custom' 
               ? (customBg ? `url(${customBg})` : 'none') 
-              : `url(/${activeTheme}.png)` 
+              : `url(/${activeTheme}.png)`,
+            filter: activeTheme === 'custom'
+              ? `blur(${customBgBlur}px) brightness(${customBgBrightness}) contrast(1.05)`
+              : undefined
           }} 
         />
       )}
@@ -1364,9 +1485,73 @@ function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [], onToggl
                   accept="image/*"
                   style={{ display: 'none' }}
                 />
-                <p className="custom-bg-tip">
+                 <p className="custom-bg-tip">
                   Dùng ảnh JPG/PNG phong cảnh. Ảnh sẽ được tối ưu hóa để lưu offline.
                 </p>
+
+                {customBg && (
+                  <div className="custom-bg-controls" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '0.5rem', borderTop: '1px solid rgba(255, 255, 255, 0.08)', paddingTop: '0.75rem' }}>
+                    <div className="control-group" style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                        <span>Độ mờ:</span>
+                        <span>{customBgBlur}px</span>
+                      </div>
+                      <input 
+                        type="range" 
+                        min="0" 
+                        max="15" 
+                        value={customBgBlur} 
+                        onChange={(e) => setCustomBgBlur(parseInt(e.target.value, 10))}
+                        style={{ width: '100%', accentColor: 'var(--color-primary)' }}
+                      />
+                    </div>
+                    
+                    <div className="control-group" style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                        <span>Độ sáng:</span>
+                        <span>{Math.round(customBgBrightness * 100)}%</span>
+                      </div>
+                      <input 
+                        type="range" 
+                        min="0.1" 
+                        max="1.0" 
+                        step="0.05"
+                        value={customBgBrightness} 
+                        onChange={(e) => setCustomBgBrightness(parseFloat(e.target.value))}
+                        style={{ width: '100%', accentColor: 'var(--color-primary)' }}
+                      />
+                    </div>
+
+                    <button
+                      type="button"
+                      className="btn btn-secondary ai-enhance-btn"
+                      onClick={handleAIEnhance}
+                      disabled={isEnhancing}
+                      style={{
+                        width: '100%',
+                        padding: '8px 12px',
+                        fontSize: '0.8rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '0.35rem',
+                        marginTop: '0.25rem',
+                        background: 'linear-gradient(135deg, #10b981, #3b82f6)',
+                        border: 'none',
+                        color: 'white',
+                        fontWeight: '600'
+                      }}
+                    >
+                      {isEnhancing ? (
+                        <>
+                          <span className="spinner-icon">⌛</span> {enhanceStatus}
+                        </>
+                      ) : (
+                        '✨ Làm nét ảnh bằng AI (2x)'
+                      )}
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </div>
