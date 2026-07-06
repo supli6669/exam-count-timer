@@ -310,6 +310,10 @@ function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [], onToggl
     return localStorage.getItem('pomodoro_custom_bg') || '';
   });
 
+  const [customColor, setCustomColor] = useState(() => {
+    return localStorage.getItem('pomodoro_custom_color') || '';
+  });
+
   const customBgInputRef = useRef(null);
 
   // Focus Subject ID: 'general' or exam.id
@@ -339,6 +343,23 @@ function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [], onToggl
   useEffect(() => {
     localStorage.setItem('pomodoro_is_stopwatch', isStopwatch.toString());
   }, [isStopwatch]);
+
+  // Sync extracted custom color with global CSS variables when custom theme is active
+  useEffect(() => {
+    if (activeTheme === 'custom') {
+      const color = customColor || '#a855f7';
+      document.documentElement.style.setProperty('--color-primary', color);
+      document.documentElement.style.setProperty('--color-primary-glow', `${color}66`);
+    } else {
+      document.documentElement.style.removeProperty('--color-primary');
+      document.documentElement.style.removeProperty('--color-primary-glow');
+    }
+
+    return () => {
+      document.documentElement.style.removeProperty('--color-primary');
+      document.documentElement.style.removeProperty('--color-primary-glow');
+    };
+  }, [activeTheme, customColor]);
 
   const [currentQuote, setCurrentQuote] = useState(() => {
     const idx = Math.floor(Math.random() * STUDY_QUOTES.length);
@@ -701,6 +722,77 @@ function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [], onToggl
     localStorage.setItem('pomodoro_theme', themeId);
   };
 
+  const extractDominantColor = (imgElement) => {
+    try {
+      const canvas = document.createElement('canvas');
+      canvas.width = 16;
+      canvas.height = 16;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(imgElement, 0, 0, 16, 16);
+      
+      const imgData = ctx.getImageData(0, 0, 16, 16).data;
+      
+      let bestColor = null;
+      let maxVibrancy = -1;
+      let rSum = 0, gSum = 0, bSum = 0, count = 0;
+
+      for (let i = 0; i < imgData.length; i += 4) {
+        const r = imgData[i];
+        const g = imgData[i+1];
+        const b = imgData[i+2];
+        const a = imgData[i+3];
+        
+        if (a < 200) continue;
+
+        rSum += r;
+        gSum += g;
+        bSum += b;
+        count++;
+
+        const max = Math.max(r, g, b) / 255;
+        const min = Math.min(r, g, b) / 255;
+        const l = (max + min) / 2;
+        
+        let s = 0;
+        if (max !== min) {
+          s = l > 0.5 ? (max - min) / (2 - max - min) : (max - min) / (max + min);
+        }
+
+        // Search for vibrant, readable colors for dark mode accents (lightness between 0.40 and 0.75)
+        if (s > 0.3 && l > 0.4 && l < 0.75) {
+          const vibrancy = s * (1 - Math.abs(2 * l - 1));
+          if (vibrancy > maxVibrancy) {
+            maxVibrancy = vibrancy;
+            bestColor = { r, g, b };
+          }
+        }
+      }
+
+      if (bestColor) {
+        return rgbToHex(bestColor.r, bestColor.g, bestColor.b);
+      }
+      
+      if (count > 0) {
+        const avgR = Math.round(rSum / count);
+        const avgG = Math.round(gSum / count);
+        const avgB = Math.round(bSum / count);
+        return rgbToHex(avgR, avgG, avgB);
+      }
+      
+      return '#a855f7';
+    } catch (e) {
+      console.warn('Error extracting color:', e);
+      return '#a855f7';
+    }
+  };
+
+  const rgbToHex = (r, g, b) => {
+    return "#" + [r, g, b].map(x => {
+      const hex = x.toString(16);
+      return hex.length === 1 ? "0" + hex : hex;
+    }).join('');
+  };
+
   const handleCustomBgUpload = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -736,9 +828,14 @@ function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [], onToggl
 
         const compressedBase64 = canvas.toDataURL('image/jpeg', 0.65);
         
+        // Extract dominant color from image
+        const colorHex = extractDominantColor(img);
+
         try {
           localStorage.setItem('pomodoro_custom_bg', compressedBase64);
+          localStorage.setItem('pomodoro_custom_color', colorHex);
           setCustomBg(compressedBase64);
+          setCustomColor(colorHex);
         } catch (err) {
           console.error('Failed to save to localStorage:', err);
           alert('Không thể lưu ảnh do dung lượng quá lớn hoặc trình duyệt đầy bộ nhớ. Vui lòng chọn ảnh khác nhỏ hơn.');
@@ -751,7 +848,9 @@ function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [], onToggl
 
   const handleRemoveCustomBg = () => {
     localStorage.removeItem('pomodoro_custom_bg');
+    localStorage.removeItem('pomodoro_custom_color');
     setCustomBg('');
+    setCustomColor('');
   };
 
   const handleClearStats = () => {
