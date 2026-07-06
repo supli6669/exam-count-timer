@@ -164,7 +164,7 @@
   - **Sao lưu hoàn chỉnh**: Cả mã ảnh base64 (`pomodoro_custom_bg`) và mã màu trích xuất (`pomodoro_custom_color`) đều được tích hợp vào mảng `keysToBackup` của bộ Backup JSON để đồng bộ hóa và khôi phục khi cần thiết.
 
 ## 3. Trạng Thế Git Hiện Tại
-- Mã SHA commit / Message gần nhất: `a0a418b` / `feat: extract matching color from custom Pomodoro background and sync with tabs`
+- Mã SHA commit / Message gần nhất: `1ef645e` / `feat: enhance color extractor to boost saturation and avoid gray colors`
 - Tên Branch hiện tại: `main`
 - GitHub Remote: `https://github.com/supli6669/exam-count-timer.git`
 
