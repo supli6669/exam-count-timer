@@ -48,6 +48,8 @@
 - [x] Tối ưu hóa pin: Chế độ Tiết kiệm pin tối đa (Low Power Mode) cho canvas hạt, giới hạn tần số quét canvas 30 FPS và đồng bộ hóa cài đặt (Trạng thái: Đã xong)
 - [x] Cải tiến trải nghiệm người dùng (UX): Tích hợp onboarding chào mừng, phím tắt Pomodoro và presets âm thanh nhanh (Trạng thái: Đã xong)
 - [x] Tích hợp Ma trận ưu tiên công việc (Eisenhower Matrix) cho các nhiệm vụ ôn tập và nhiệm vụ chung (Trạng thái: Đã xong)
+- [x] Việc Cần Làm Hằng Ngày (Daily Habits) tự động reset trạng thái lúc 00:00 (Trạng thái: Đã xong)
+- [x] Tối ưu hóa bố cục Dashboard dạng 3 tab chuyên biệt (Lịch thi, Kế hoạch & Thói quen, Phân tích & Tiến độ) tránh chồng chéo các tính năng (Trạng thái: Đã xong)
 
 
 ## 2. Chi Tiết Các Phần Đã Triển Khai Gần Đây
@@ -142,9 +144,19 @@
   - **Form thêm nhanh & Đổi quadrant**: Cho phép thêm trực tiếp công việc mới vào bất kỳ góc phần tư nào, cũng như di chuyển linh hoạt công việc giữa các góc phần tư qua menu select mini.
   - **Chấm chỉ báo độ ưu tiên**: Hiển thị chấm tròn phát sáng màu tương ứng bên cạnh tên nhiệm vụ trong danh sách việc cần làm của từng Exam Card.
   - **Đồng bộ Pomodoro**: Cho phép chọn và ghi nhận việc tập trung cho các Nhiệm vụ chung ngay trong sidebar Pomodoro Timer.
+- **Thói Quen Hằng Ngày (Daily Habits)**:
+  - **Định nghĩa danh sách việc**: Cho phép người học tự định nghĩa và tùy chỉnh các thói quen lặp lại hàng ngày (thêm, xóa, nhấp đúp để chỉnh sửa).
+  - **Tự động đặt lại trạng thái**: Sử dụng LocalStorage (`daily_tasks_list`, `daily_tasks_last_reset`) để tự động reset toàn bộ checkbox về trạng thái chưa hoàn thành vào lúc 00:00 hàng ngày dựa trên múi giờ thực tế, trong khi giữ nguyên nội dung công việc.
+  - **Gamification & Dopamine Chime**: Kết nối trực tiếp với hệ thống XP học tập (+25 XP cho mỗi đầu việc hoàn thành kèm theo chuông Dopamine âm nhạc tổng hợp bằng Web Audio API) và tự động cộng dồn vào Bản đồ đóng góp (Study Commits Map).
+- **Tối Ưu Hóa Bố Cục Tránh Chồng Chéo (Dashboard Layout Decoupling)**:
+  - **Cấu trúc 3 tab chuyên biệt**: Tái kiến trúc giao diện Dashboard cuộn dọc dài (>4200px) thành 3 không gian làm việc tập trung cao ở Header:
+    - **Lịch Thi (Exams)**: Chỉ hiển thị Stats Bar, bộ lọc Filter Panel và danh sách thi. Tích hợp thanh chọn tab phụ "Thẻ 📇" / "Lịch 📅" ngay bên trong Filter Panel giúp thao tác cực nhanh.
+    - **Kế Hoạch & Thói Quen (Tasks & Habits)**: Chứa Ma trận ưu tiên Eisenhower, Mục tiêu Rule of 3 và Thói quen hàng ngày Daily Habits ở vị trí dễ nhìn, rộng rãi.
+    - **Phân Tích & Tiến Độ (Analytics & Commits)**: Chứa Smart Insights học tập và Bản đồ đóng góp GitHub Heatmap để người dùng chuyên tâm phân tích hiệu suất học mà không bị xao nhãng bởi bộ đếm thời gian.
+  - **Bảo vệ tiêu điểm**: Nút "Thêm môn thi" chỉ hiển thị khi người dùng đang mở tab Lịch Thi, giảm thiểu diện tích thừa trên Header.
 
 ## 3. Trạng Thế Git Hiện Tại
-- Mã SHA commit / Message gần nhất: `2544c5f` / `feat: integrate eisenhower priority matrix for study tasks`
+- Mã SHA commit / Message gần nhất: `71dae0b` / `feat: add daily habits feature and optimize dashboard into tabbed navigation`
 - Tên Branch hiện tại: `main`
 - GitHub Remote: `https://github.com/supli6669/exam-count-timer.git`
 

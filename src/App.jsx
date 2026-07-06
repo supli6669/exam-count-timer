@@ -7,6 +7,7 @@ import CalendarView from './components/CalendarView';
 import { CATEGORIES } from './constants';
 import PomodoroTimer from './components/PomodoroTimer';
 import RecurringTasks from './components/RecurringTasks';
+import DailyTasks from './components/DailyTasks';
 import SmartInsights from './components/SmartInsights';
 import ContributionGraph from './components/ContributionGraph';
 import { incrementContribution, decrementContribution } from './utils/contributions';
@@ -58,7 +59,8 @@ function App() {
   const [notificationsEnabled, setNotificationsEnabled] = useState(() => {
     return localStorage.getItem('notifications_enabled') === 'true';
   });
-  const [viewMode, setViewMode] = useState('card'); // 'card' or 'calendar'
+  const [viewMode, setViewMode] = useState('exams'); // 'exams', 'tasks', or 'analytics'
+  const [examsView, setExamsView] = useState('card'); // 'card' or 'calendar'
   const [isPomodoroOpen, setIsPomodoroOpen] = useState(false);
   const [generalTasks, setGeneralTasks] = useState(() => {
     const saved = localStorage.getItem('exams_general_tasks');
@@ -565,263 +567,311 @@ function App() {
           </button>
           <div className="view-mode-tabs">
             <button
-              className={`view-tab-btn ${viewMode === 'card' ? 'active' : ''}`}
-              onClick={() => setViewMode('card')}
-              title="Xem dạng thẻ môn thi"
+              className={`view-tab-btn ${viewMode === 'exams' ? 'active' : ''}`}
+              onClick={() => setViewMode('exams')}
+              title="Quản lý lịch thi"
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="3" y="3" width="7" height="7"></rect>
-                <rect x="14" y="3" width="7" height="7"></rect>
-                <rect x="14" y="14" width="7" height="7"></rect>
-                <rect x="3" y="14" width="7" height="7"></rect>
-              </svg>
-              Danh sách
-            </button>
-            <button
-              className={`view-tab-btn ${viewMode === 'calendar' ? 'active' : ''}`}
-              onClick={() => setViewMode('calendar')}
-              title="Xem lịch thi"
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-                <line x1="16" y1="2" x2="16" y2="6"></line>
-                <line x1="8" y1="2" x2="8" y2="6"></line>
-                <line x1="3" y1="10" x2="21" y2="10"></line>
-              </svg>
+              <span style={{ fontSize: '0.9rem', display: 'inline-flex', alignItems: 'center', marginRight: '0.35rem' }}>📅</span>
               Lịch thi
             </button>
             <button
-              className={`view-tab-btn ${viewMode === 'matrix' ? 'active' : ''}`}
-              onClick={() => setViewMode('matrix')}
-              title="Xem ma trận ưu tiên công việc"
+              className={`view-tab-btn ${viewMode === 'tasks' ? 'active' : ''}`}
+              onClick={() => setViewMode('tasks')}
+              title="Kế hoạch & Thói quen học tập"
             >
-              <span style={{ fontSize: '0.9rem', display: 'inline-flex', alignItems: 'center' }}>🎯</span>
-              Ma trận ưu tiên
+              <span style={{ fontSize: '0.9rem', display: 'inline-flex', alignItems: 'center', marginRight: '0.35rem' }}>🎯</span>
+              Kế hoạch & Thói quen
+            </button>
+            <button
+              className={`view-tab-btn ${viewMode === 'analytics' ? 'active' : ''}`}
+              onClick={() => setViewMode('analytics')}
+              title="Phân tích & Tiến độ học tập"
+            >
+              <span style={{ fontSize: '0.9rem', display: 'inline-flex', alignItems: 'center', marginRight: '0.35rem' }}>📊</span>
+              Phân tích & Tiến độ
             </button>
           </div>
-          <button className="btn btn-primary" onClick={handleCreateOpen}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="12" y1="5" x2="12" y2="19"></line>
-              <line x1="5" y1="12" x2="19" y2="12"></line>
-            </svg>
-            Thêm môn thi
-          </button>
+          {viewMode === 'exams' && (
+            <button className="btn btn-primary" onClick={handleCreateOpen}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+              Thêm môn thi
+            </button>
+          )}
         </div>
       </header>
 
-      {/* Statistics Bar */}
-      <section className="stats-bar" aria-label="Thống kê lịch thi">
-        <div className="stat-card">
-          <div className="stat-icon primary">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
-              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
-            </svg>
-          </div>
-          <div className="stat-details">
-            <span className="stat-value">{stats.total}</span>
-            <span className="stat-label">Tổng số môn</span>
-          </div>
-        </div>
+      {/* TAB 1: LỊCH THI */}
+      {viewMode === 'exams' && (
+        <>
+          {/* Statistics Bar */}
+          <section className="stats-bar" aria-label="Thống kê lịch thi">
+            <div className="stat-card">
+              <div className="stat-icon primary">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                  <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                </svg>
+              </div>
+              <div className="stat-details">
+                <span className="stat-value">{stats.total}</span>
+                <span className="stat-label">Tổng số môn</span>
+              </div>
+            </div>
 
-        <div className="stat-card">
-          <div className="stat-icon urgent">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="10"></circle>
-              <line x1="12" y1="8" x2="12" y2="12"></line>
-              <line x1="12" y1="16" x2="12.01" y2="16"></line>
-            </svg>
-          </div>
-          <div className="stat-details">
-            <span className="stat-value">{stats.urgent}</span>
-            <span className="stat-label">Khẩn cấp (&lt; 2 ngày)</span>
-          </div>
-        </div>
-
-        <div className="stat-card">
-          <div className="stat-icon warning">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
-              <line x1="12" y1="9" x2="12" y2="13"></line>
-              <line x1="12" y1="17" x2="12.01" y2="17"></line>
-            </svg>
-          </div>
-          <div className="stat-details">
-            <span className="stat-value">{stats.warning}</span>
-            <span className="stat-label">Sắp diễn ra (&lt; 7 ngày)</span>
-          </div>
-        </div>
-
-        <div className="stat-card">
-          <div className="stat-icon safe">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-              <polyline points="22 4 12 14.01 9 11.01"></polyline>
-            </svg>
-          </div>
-          <div className="stat-details">
-            <span className="stat-value">{stats.safe}</span>
-            <span className="stat-label">Thời gian an toàn</span>
-          </div>
-        </div>
-      </section>
-
-      {/* Mục Tiêu Định Kỳ (Rule of 3) */}
-      <RecurringTasks />
-
-      {/* Search & Sort Panel */}
-      <section 
-        className="filter-panel" 
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          gap: '1rem',
-          flexWrap: 'wrap',
-          background: 'var(--bg-glass)',
-          border: '1px solid var(--border-glass)',
-          padding: '1rem 1.5rem',
-          borderRadius: '16px',
-          backdropFilter: 'blur(10px)',
-          WebkitBackdropFilter: 'blur(10px)'
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flex: 1, minWidth: '260px' }}>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="11" cy="11" r="8"></circle>
-            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-          </svg>
-          <input
-            type="text"
-            placeholder="Tìm kiếm môn thi..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              color: '#fff',
-              fontSize: '0.95rem',
-              width: '100%',
-              outline: 'none'
-            }}
-            aria-label="Tìm kiếm môn thi"
-          />
-        </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Phân loại:</span>
-            <select
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-              style={{
-                background: 'var(--bg-secondary)',
-                border: '1px solid var(--border-glass)',
-                color: '#fff',
-                borderRadius: '8px',
-                padding: '0.4rem 0.8rem',
-                fontSize: '0.9rem',
-                outline: 'none',
-                cursor: 'pointer'
-              }}
-              aria-label="Phân loại môn thi"
-            >
-              <option value="all">Tất cả</option>
-              {Object.entries(CATEGORIES).map(([key, cat]) => (
-                <option key={key} value={key}>{cat.name}</option>
-              ))}
-            </select>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Sắp xếp:</span>
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
-              style={{
-                background: 'var(--bg-secondary)',
-                border: '1px solid var(--border-glass)',
-                color: '#fff',
-                borderRadius: '8px',
-                padding: '0.4rem 0.8rem',
-                fontSize: '0.9rem',
-                outline: 'none',
-                cursor: 'pointer'
-              }}
-              aria-label="Tiêu chí sắp xếp"
-            >
-              <option value="date-asc">Thời gian thi (gần nhất)</option>
-              <option value="date-desc">Thời gian thi (xa nhất)</option>
-              <option value="name-asc">Tên môn thi (A-Z)</option>
-            </select>
-          </div>
-        </div>
-      </section>
-
-      {/* Main Grid View */}
-      {viewMode === 'card' && (
-        <main className="exams-grid">
-          {sortedExams.length > 0 ? (
-            sortedExams.map(exam => (
-              <ExamCard
-                key={exam.id}
-                exam={exam}
-                onEdit={handleEditOpen}
-                onDelete={handleDeleteExam}
-                onAddTask={handleAddTask}
-                onToggleTask={handleToggleTask}
-                onDeleteTask={handleDeleteTask}
-              />
-            ))
-          ) : (
-            <div className="empty-state">
-              <div className="empty-icon">
+            <div className="stat-card">
+              <div className="stat-icon urgent">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <circle cx="12" cy="12" r="10"></circle>
                   <line x1="12" y1="8" x2="12" y2="12"></line>
                   <line x1="12" y1="16" x2="12.01" y2="16"></line>
                 </svg>
               </div>
-              <h2 className="empty-text">Không tìm thấy lịch thi nào</h2>
-              <p className="empty-subtext">
-                {searchQuery 
-                  ? 'Hãy thử tìm kiếm với từ khóa khác hoặc xóa bộ lọc.' 
-                  : 'Bắt đầu bằng cách thêm một môn thi mới vào danh sách theo dõi của bạn!'}
-              </p>
-              {!searchQuery && (
-                <button className="btn btn-primary" onClick={handleCreateOpen}>
-                  Thêm môn thi đầu tiên
-                </button>
-              )}
+              <div className="stat-details">
+                <span className="stat-value">{stats.urgent}</span>
+                <span className="stat-label">Khẩn cấp (&lt; 2 ngày)</span>
+              </div>
             </div>
+
+            <div className="stat-card">
+              <div className="stat-icon warning">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                  <line x1="12" y1="9" x2="12" y2="13"></line>
+                  <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                </svg>
+              </div>
+              <div className="stat-details">
+                <span className="stat-value">{stats.warning}</span>
+                <span className="stat-label">Sắp diễn ra (&lt; 7 ngày)</span>
+              </div>
+            </div>
+
+            <div className="stat-card">
+              <div className="stat-icon safe">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                  <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                </svg>
+              </div>
+              <div className="stat-details">
+                <span className="stat-value">{stats.safe}</span>
+                <span className="stat-label">Thời gian an toàn</span>
+              </div>
+            </div>
+          </section>
+
+          {/* Search, Sort & View Mode Toggle Panel */}
+          <section 
+            className="filter-panel" 
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              gap: '1rem',
+              flexWrap: 'wrap',
+              background: 'var(--bg-glass)',
+              border: '1px solid var(--border-glass)',
+              padding: '1rem 1.5rem',
+              borderRadius: '16px',
+              backdropFilter: 'blur(10px)',
+              WebkitBackdropFilter: 'blur(10px)'
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flex: 1, minWidth: '260px' }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+              <input
+                type="text"
+                placeholder="Tìm kiếm môn thi..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: '#fff',
+                  fontSize: '0.95rem',
+                  width: '100%',
+                  outline: 'none'
+                }}
+                aria-label="Tìm kiếm môn thi"
+              />
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Phân loại:</span>
+                <select
+                  value={selectedCategory}
+                  onChange={(e) => setSelectedCategory(e.target.value)}
+                  style={{
+                    background: 'var(--bg-secondary)',
+                    border: '1px solid var(--border-glass)',
+                    color: '#fff',
+                    borderRadius: '8px',
+                    padding: '0.4rem 0.8rem',
+                    fontSize: '0.9rem',
+                    outline: 'none',
+                    cursor: 'pointer'
+                  }}
+                  aria-label="Phân loại môn thi"
+                >
+                  <option value="all">Tất cả</option>
+                  {Object.entries(CATEGORIES).map(([key, cat]) => (
+                    <option key={key} value={key}>{cat.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Sắp xếp:</span>
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  style={{
+                    background: 'var(--bg-secondary)',
+                    border: '1px solid var(--border-glass)',
+                    color: '#fff',
+                    borderRadius: '8px',
+                    padding: '0.4rem 0.8rem',
+                    fontSize: '0.9rem',
+                    outline: 'none',
+                    cursor: 'pointer'
+                  }}
+                  aria-label="Tiêu chí sắp xếp"
+                >
+                  <option value="date-asc">Thời gian thi (gần nhất)</option>
+                  <option value="date-desc">Thời gian thi (xa nhất)</option>
+                  <option value="name-asc">Tên môn thi (A-Z)</option>
+                </select>
+              </div>
+
+              {/* Sub-view Toggle */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', borderLeft: '1px solid rgba(255,255,255,0.1)', paddingLeft: '0.75rem', marginLeft: '0.25rem' }}>
+                <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Xem:</span>
+                <div style={{ display: 'flex', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', padding: '2px', border: '1px solid var(--border-glass)' }}>
+                  <button
+                    type="button"
+                    onClick={() => setExamsView('card')}
+                    style={{
+                      background: examsView === 'card' ? 'linear-gradient(135deg, #3b82f6, #8b5cf6)' : 'transparent',
+                      border: 'none',
+                      color: '#fff',
+                      padding: '0.3rem 0.6rem',
+                      borderRadius: '6px',
+                      fontSize: '0.8rem',
+                      cursor: 'pointer',
+                      fontWeight: 600,
+                      transition: 'all 0.2s',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.25rem'
+                    }}
+                  >
+                    📇 Thẻ
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setExamsView('calendar')}
+                    style={{
+                      background: examsView === 'calendar' ? 'linear-gradient(135deg, #3b82f6, #8b5cf6)' : 'transparent',
+                      border: 'none',
+                      color: '#fff',
+                      padding: '0.3rem 0.6rem',
+                      borderRadius: '6px',
+                      fontSize: '0.8rem',
+                      cursor: 'pointer',
+                      fontWeight: 600,
+                      transition: 'all 0.2s',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.25rem'
+                    }}
+                  >
+                    📅 Lịch
+                  </button>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Main Exams Display */}
+          {examsView === 'card' ? (
+            <main className="exams-grid">
+              {sortedExams.length > 0 ? (
+                sortedExams.map(exam => (
+                  <ExamCard
+                    key={exam.id}
+                    exam={exam}
+                    onEdit={handleEditOpen}
+                    onDelete={handleDeleteExam}
+                    onAddTask={handleAddTask}
+                    onToggleTask={handleToggleTask}
+                    onDeleteTask={handleDeleteTask}
+                  />
+                ))
+              ) : (
+                <div className="empty-state">
+                  <div className="empty-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="12" cy="12" r="10"></circle>
+                      <line x1="12" y1="8" x2="12" y2="12"></line>
+                      <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                    </svg>
+                  </div>
+                  <h2 className="empty-text">Không tìm thấy lịch thi nào</h2>
+                  <p className="empty-subtext">
+                    {searchQuery 
+                      ? 'Hãy thử tìm kiếm với từ khóa khác hoặc xóa bộ lọc.' 
+                      : 'Bắt đầu bằng cách thêm một môn thi mới vào danh sách theo dõi của bạn!'}
+                  </p>
+                  {!searchQuery && (
+                    <button className="btn btn-primary" onClick={handleCreateOpen}>
+                      Thêm môn thi đầu tiên
+                    </button>
+                  )}
+                </div>
+              )}
+            </main>
+          ) : (
+            <CalendarView 
+              exams={sortedExams} 
+              onEdit={handleEditOpen}
+              onDelete={handleDeleteExam}
+              onCreate={handleCreateOpen}
+            />
           )}
-        </main>
+        </>
       )}
 
-      {viewMode === 'calendar' && (
-        <CalendarView 
-          exams={sortedExams} 
-          onEdit={handleEditOpen}
-          onDelete={handleDeleteExam}
-          onCreate={handleCreateOpen}
-        />
+      {/* TAB 2: KẾ HOẠCH & THÓI QUEN */}
+      {viewMode === 'tasks' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+          <PriorityMatrix
+            exams={exams}
+            generalTasks={generalTasks}
+            onAddTask={handleAddTask}
+            onToggleTask={handleToggleTask}
+            onDeleteTask={handleDeleteTask}
+            onUpdateTaskPriority={handleUpdateTaskPriority}
+          />
+          <div className="goals-and-daily-container">
+            <RecurringTasks />
+            <DailyTasks />
+          </div>
+        </div>
       )}
 
-      {viewMode === 'matrix' && (
-        <PriorityMatrix
-          exams={exams}
-          generalTasks={generalTasks}
-          onAddTask={handleAddTask}
-          onToggleTask={handleToggleTask}
-          onDeleteTask={handleDeleteTask}
-          onUpdateTaskPriority={handleUpdateTaskPriority}
-        />
+      {/* TAB 3: PHÂN TÍCH & TIẾN ĐỘ */}
+      {viewMode === 'analytics' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+          <SmartInsights exams={exams} />
+          <ContributionGraph />
+        </div>
       )}
-
-      {/* Trình Phân Tích & Cảnh Báo Học Tập Thông Minh */}
-      <SmartInsights exams={exams} />
-
-      {/* Lịch Sử Đóng Góp Học Tập (GitHub-style Commit Graph) */}
-      <ContributionGraph />
 
       {/* Add / Edit Modal Form */}
       {isModalOpen && (
