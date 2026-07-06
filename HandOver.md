@@ -50,6 +50,7 @@
 - [x] Tích hợp Ma trận ưu tiên công việc (Eisenhower Matrix) cho các nhiệm vụ ôn tập và nhiệm vụ chung (Trạng thái: Đã xong)
 - [x] Việc Cần Làm Hằng Ngày (Daily Habits) tự động reset trạng thái lúc 00:00 (Trạng thái: Đã xong)
 - [x] Tối ưu hóa bố cục Dashboard dạng 3 tab chuyên biệt (Lịch thi, Kế hoạch & Thói quen, Phân tích & Tiến độ) tránh chồng chéo các tính năng (Trạng thái: Đã xong)
+- [x] Tải ảnh nền tùy chỉnh từ máy tính cho chế độ Pomodoro, tự động nén ảnh bằng canvas (Trạng thái: Đã xong)
 
 
 ## 2. Chi Tiết Các Phần Đã Triển Khai Gần Đây
@@ -154,6 +155,11 @@
     - **Kế Hoạch & Thói Quen (Tasks & Habits)**: Chứa Ma trận ưu tiên Eisenhower, Mục tiêu Rule of 3 và Thói quen hàng ngày Daily Habits ở vị trí dễ nhìn, rộng rãi.
     - **Phân Tích & Tiến Độ (Analytics & Commits)**: Chứa Smart Insights học tập và Bản đồ đóng góp GitHub Heatmap để người dùng chuyên tâm phân tích hiệu suất học mà không bị xao nhãng bởi bộ đếm thời gian.
   - **Bảo vệ tiêu điểm**: Nút "Thêm môn thi" chỉ hiển thị khi người dùng đang mở tab Lịch Thi, giảm thiểu diện tích thừa trên Header.
+- **Tải Ảnh Nền Tùy Chỉnh Cho Pomodoro (Custom Background Upload)**:
+  - **Tải ảnh ngoại tuyến (Offline Upload)**: Bổ sung tùy chọn "Tùy chỉnh" vào thanh lựa chọn chủ đề Pomodoro. Cho phép người dùng tải lên bất kỳ hình ảnh nào từ máy tính (`.jpg`, `.png`).
+  - **Nén ảnh bằng HTML5 Canvas**: Để tránh lỗi tràn bộ nhớ LocalStorage (giới hạn 5MB), ảnh tải lên sẽ tự động được vẽ lại trên một Canvas ẩn để điều chỉnh độ phân giải tối đa về 1280px và nén JPEG chất lượng 0.65. Ảnh sau nén thường chỉ nặng khoảng 80KB-150KB, lưu trữ cực kỳ an toàn.
+  - **Đồng bộ hóa & Hiệu ứng hạt**: Hỗ trợ đầy đủ tính năng xóa ảnh tùy chỉnh. Khi sử dụng hình nền tùy chỉnh, hệ thống tự động ánh xạ hiển thị các hạt bụi sáng ấm (lofi cozy sun dust) chuyển động mượt mà để tăng chiều sâu nghệ thuật.
+  - **Sao lưu hoàn chỉnh**: Khóa `pomodoro_custom_bg` được tích hợp vào mảng `keysToBackup` của bộ Backup JSON để đồng bộ hóa và khôi phục khi cần thiết.
 
 ## 3. Trạng Thế Git Hiện Tại
 - Mã SHA commit / Message gần nhất: `93804a6` / `style: fix Rule of 3 text wrapping and format Daily Habits in a grid`

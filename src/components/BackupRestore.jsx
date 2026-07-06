@@ -26,7 +26,8 @@ function BackupRestore() {
         'recurring_tasks_rule_of_3',
         'pomodoro_low_power',
         'daily_tasks_list',
-        'daily_tasks_last_reset'
+        'daily_tasks_last_reset',
+        'pomodoro_custom_bg'
       ];
 
       keysToBackup.forEach(key => {

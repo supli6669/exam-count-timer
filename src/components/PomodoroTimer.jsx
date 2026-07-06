@@ -301,10 +301,16 @@ function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [], onToggl
   // Active Tab: 'timer' | 'stats'
   const [activeTab, setActiveTab] = useState('timer');
 
-  // Active Theme: 'default' | 'lofi-cafe' | 'cyberpunk-alley' | 'sakura-library' | 'space-odyssey' | 'nature-cabin'
+  // Active Theme: 'default' | 'lofi-cafe' | 'cyberpunk-alley' | 'sakura-library' | 'space-odyssey' | 'nature-cabin' | 'custom'
   const [activeTheme, setActiveTheme] = useState(() => {
     return localStorage.getItem('pomodoro_theme') || 'default';
   });
+
+  const [customBg, setCustomBg] = useState(() => {
+    return localStorage.getItem('pomodoro_custom_bg') || '';
+  });
+
+  const customBgInputRef = useRef(null);
 
   // Focus Subject ID: 'general' or exam.id
   const [focusSubjectId, setFocusSubjectId] = useState(() => {
@@ -695,6 +701,59 @@ function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [], onToggl
     localStorage.setItem('pomodoro_theme', themeId);
   };
 
+  const handleCustomBgUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      alert('Vui lòng chọn file hình ảnh hợp lệ.');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const maxDim = 1280;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > maxDim || height > maxDim) {
+          if (width > height) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          } else {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+
+        const compressedBase64 = canvas.toDataURL('image/jpeg', 0.65);
+        
+        try {
+          localStorage.setItem('pomodoro_custom_bg', compressedBase64);
+          setCustomBg(compressedBase64);
+        } catch (err) {
+          console.error('Failed to save to localStorage:', err);
+          alert('Không thể lưu ảnh do dung lượng quá lớn hoặc trình duyệt đầy bộ nhớ. Vui lòng chọn ảnh khác nhỏ hơn.');
+        }
+      };
+      img.src = event.target.result;
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemoveCustomBg = () => {
+    localStorage.removeItem('pomodoro_custom_bg');
+    setCustomBg('');
+  };
+
   const handleClearStats = () => {
     if (window.confirm('Bạn có chắc chắn muốn xóa toàn bộ lịch sử thống kê học tập không?')) {
       setStudyLogs([]);
@@ -735,6 +794,7 @@ function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [], onToggl
       case 'sakura-library': return '#f472b6';   // Sakura pink
       case 'space-odyssey': return '#06b6d4';    // Neon cyan
       case 'nature-cabin': return '#10b981';     // Forest green
+      case 'custom': return '#a855f7';           // Premium purple
       default: return '#ef4444';                 // Default red
     }
   };
@@ -745,12 +805,16 @@ function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [], onToggl
       {activeTheme !== 'default' && (
         <div 
           className="pomodoro-theme-bg" 
-          style={{ backgroundImage: `url(/${activeTheme}.png)` }} 
+          style={{ 
+            backgroundImage: activeTheme === 'custom' 
+              ? (customBg ? `url(${customBg})` : 'none') 
+              : `url(/${activeTheme}.png)` 
+          }} 
         />
       )}
       
       {/* Canvas particle effect overlay */}
-      <ThemeParticles theme={activeTheme} lowPowerMode={lowPowerMode} />
+      <ThemeParticles theme={activeTheme === 'custom' ? 'lofi-cafe' : activeTheme} lowPowerMode={lowPowerMode} />
       
       {/* Dark overlay for contrast */}
       <div className="pomodoro-tint-overlay" />
@@ -1077,7 +1141,8 @@ function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [], onToggl
                 { id: 'cyberpunk-alley', name: 'Cyberpunk', emoji: '🌃' },
                 { id: 'sakura-library', name: 'Sakura', emoji: '🌸' },
                 { id: 'space-odyssey', name: 'Vũ trụ', emoji: '🚀' },
-                { id: 'nature-cabin', name: 'Nhà gỗ', emoji: '🌲' }
+                { id: 'nature-cabin', name: 'Nhà gỗ', emoji: '🌲' },
+                { id: 'custom', name: 'Tùy chỉnh', emoji: '🖼️' }
               ].map(t => (
                 <button 
                   key={t.id}
@@ -1094,6 +1159,42 @@ function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [], onToggl
                 </button>
               ))}
             </div>
+
+            {activeTheme === 'custom' && (
+              <div className="custom-theme-upload-container">
+                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', width: '100%' }}>
+                  <button
+                    type="button"
+                    className="btn btn-secondary custom-bg-upload-btn"
+                    onClick={() => customBgInputRef.current?.click()}
+                    style={{ flex: 1, padding: '8px 12px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem' }}
+                  >
+                    📁 Chọn ảnh nền
+                  </button>
+                  {customBg && (
+                    <button
+                      type="button"
+                      className="btn-icon-tiny delete-custom-bg-btn"
+                      onClick={handleRemoveCustomBg}
+                      title="Xóa ảnh nền tùy chỉnh"
+                      style={{ width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.9rem', padding: 0 }}
+                    >
+                      🗑️
+                    </button>
+                  )}
+                </div>
+                <input
+                  type="file"
+                  ref={customBgInputRef}
+                  onChange={handleCustomBgUpload}
+                  accept="image/*"
+                  style={{ display: 'none' }}
+                />
+                <p className="custom-bg-tip">
+                  Dùng ảnh JPG/PNG phong cảnh. Ảnh sẽ được tối ưu hóa để lưu offline.
+                </p>
+              </div>
+            )}
           </div>
 
           {isOpen && <SpotifyPlayer />}

@@ -5161,5 +5161,68 @@ body {
   color: #fff;
 }
 
+/* Custom Background Pomodoro Styles */
+.custom-theme-upload-container {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px dashed rgba(255, 255, 255, 0.15);
+  border-radius: 16px;
+  padding: 1rem;
+  margin-top: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.custom-bg-upload-btn {
+  background: linear-gradient(135deg, #a855f7, #3b82f6) !important;
+  border: none !important;
+  border-radius: 10px !important;
+  color: #fff !important;
+  font-weight: 600 !important;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.custom-bg-upload-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(168, 85, 247, 0.25);
+  background: linear-gradient(135deg, #b86dfc, #4f93ff) !important;
+}
+
+.delete-custom-bg-btn {
+  background: rgba(239, 68, 68, 0.1) !important;
+  border: 1px solid rgba(239, 68, 68, 0.3) !important;
+  color: #ef4444 !important;
+  border-radius: 10px !important;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.delete-custom-bg-btn:hover {
+  background: #ef4444 !important;
+  color: #fff !important;
+  border-color: transparent !important;
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.4);
+}
+
+.custom-bg-tip {
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.4;
+  font-style: italic;
+  text-align: center;
+}
+
+/* Custom background adjustments for theme overlay */
+.theme-custom .pomodoro-theme-bg {
+  background-size: cover;
+  background-position: center;
+  opacity: 0.65;
+  filter: brightness(0.6) contrast(1.1);
+}
+
 
 
