@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 
-function ThemeParticles({ theme, lowPowerMode }) {
+function ThemeParticles({ theme, customColor, lowPowerMode }) {
   const canvasRef = useRef(null);
 
   useEffect(() => {
@@ -63,14 +63,20 @@ function ThemeParticles({ theme, lowPowerMode }) {
       reset() {
         this.x = Math.random() * width;
         
-        if (theme === 'lofi-cafe') {
+        if (theme === 'lofi-cafe' || theme === 'custom') {
           // Warm dust motes floating upwards
           this.y = height + Math.random() * 20;
           this.size = Math.random() * 3 + 1;
           this.speedY = -(Math.random() * 0.5 + 0.2);
           this.speedX = (Math.random() - 0.5) * 0.3;
           this.alpha = Math.random() * 0.5 + 0.1;
-          this.color = `rgba(245, 158, 11, ${this.alpha})`; // Amber
+          
+          if (theme === 'custom' && customColor) {
+            const baseColor = customColor.replace('hsl', 'hsla');
+            this.color = baseColor.replace(')', `, ${this.alpha})`);
+          } else {
+            this.color = `rgba(245, 158, 11, ${this.alpha})`; // Amber
+          }
           this.fadeSpeed = 0.001;
         } 
         else if (theme === 'cyberpunk-alley') {
@@ -166,7 +172,7 @@ function ThemeParticles({ theme, lowPowerMode }) {
           }
         }
 
-        if (theme === 'lofi-cafe') {
+        if (theme === 'lofi-cafe' || theme === 'custom') {
           this.y += this.speedY;
           this.x += this.speedX;
           
@@ -242,10 +248,12 @@ function ThemeParticles({ theme, lowPowerMode }) {
       }
 
       draw() {
-        if (theme === 'lofi-cafe') {
+        if (theme === 'lofi-cafe' || theme === 'custom') {
           ctx.beginPath();
           ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-          ctx.fillStyle = `rgba(245, 158, 11, ${Math.max(0, this.alpha)})`;
+          ctx.fillStyle = theme === 'custom' && this.color 
+            ? this.color 
+            : `rgba(245, 158, 11, ${Math.max(0, this.alpha)})`;
           ctx.fill();
         } 
         else if (theme === 'cyberpunk-alley') {
@@ -345,7 +353,7 @@ function ThemeParticles({ theme, lowPowerMode }) {
       let count = 40;
       if (theme === 'space-odyssey') count = 80; // more stars
       if (theme === 'cyberpunk-alley') count = 60; // more rain drips
-      if (theme === 'lofi-cafe') count = 25; // sparse cozy dust
+      if (theme === 'lofi-cafe' || theme === 'custom') count = 25; // sparse cozy dust
 
       for (let i = 0; i < count; i++) {
         particles.push(new Particle());
@@ -399,7 +407,7 @@ function ThemeParticles({ theme, lowPowerMode }) {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       resizeObserver.disconnect();
     };
-  }, [theme, lowPowerMode]);
+  }, [theme, customColor, lowPowerMode]);
 
   if (theme === 'default' || lowPowerMode) return null;
 

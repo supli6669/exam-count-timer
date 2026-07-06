@@ -349,19 +349,26 @@ function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [], onToggl
   useEffect(() => {
     if (activeTheme === 'custom') {
       const h = customThemeData ? customThemeData.h : 270;
-      const s = customThemeData ? customThemeData.s : 0.75;
-      const l = customThemeData ? customThemeData.l : 0.58;
       
-      // Shift hue by -40 degrees (analogous) to create a harmonious, artistic dual-tone look
-      // (e.g. dark pink background with a glowing violet-purple highlight, or dark blue background with glowing cyan highlight)
-      const hComp = (h - 40 + 360) % 360;
-      const primaryColor = `hsl(${hComp}, 85%, 58%)`;
-      const primaryGlow = `hsla(${hComp}, 85%, 58%, 0.45)`;
+      // Calculate dynamic hue based on current mode
+      let modeHue = h;
+      if (mode === 'work') {
+        modeHue = (h - 30 + 360) % 360; // Analogous shift for work mode
+      } else if (mode === 'shortBreak') {
+        modeHue = (h + 90) % 360;       // Fresh triadic shift for short break
+      } else if (mode === 'longBreak') {
+        modeHue = (h + 210) % 360;      // Cool triadic shift for long break
+      }
 
-      const bgPrimary = `hsl(${h}, 15%, 5%)`;
-      const bgSecondary = `hsl(${h}, 15%, 8%)`;
-      const bgGlass = `hsla(${h}, 20%, 12%, 0.45)`;
-      const borderGlass = `hsla(${h}, 30%, 50%, 0.15)`;
+      // Bright, vibrant and premium colors ("sang" & neon glow)
+      const primaryColor = `hsl(${modeHue}, 95%, 60%)`;
+      const primaryGlow = `hsla(${modeHue}, 95%, 60%, 0.45)`;
+
+      // Rich dark backgrounds tinted with the image's dominant hue
+      const bgPrimary = `hsl(${h}, 25%, 7%)`;
+      const bgSecondary = `hsl(${h}, 28%, 10%)`;
+      const bgGlass = `hsla(${h}, 30%, 14%, 0.45)`;
+      const borderGlass = `hsla(${h}, 40%, 60%, 0.25)`;
 
       document.documentElement.style.setProperty('--color-primary', primaryColor);
       document.documentElement.style.setProperty('--color-primary-glow', primaryGlow);
@@ -389,7 +396,7 @@ function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [], onToggl
       document.documentElement.style.removeProperty('--border-glass');
       document.body.style.backgroundColor = '';
     };
-  }, [activeTheme, customThemeData]);
+  }, [activeTheme, customThemeData, mode]);
 
   const [currentQuote, setCurrentQuote] = useState(() => {
     const idx = Math.floor(Math.random() * STUDY_QUOTES.length);
@@ -936,6 +943,18 @@ function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [], onToggl
 
   // Color mapping based on theme and mode
   const getThemeColor = () => {
+    if (activeTheme === 'custom') {
+      const h = customThemeData ? customThemeData.h : 270;
+      let modeHue = h;
+      if (mode === 'work') {
+        modeHue = (h - 30 + 360) % 360;
+      } else if (mode === 'shortBreak') {
+        modeHue = (h + 90) % 360;
+      } else if (mode === 'longBreak') {
+        modeHue = (h + 210) % 360;
+      }
+      return `hsl(${modeHue}, 95%, 60%)`;
+    }
     if (mode !== 'work') {
       return mode === 'shortBreak' ? '#10b981' : '#3b82f6';
     }
@@ -945,7 +964,6 @@ function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [], onToggl
       case 'sakura-library': return '#f472b6';   // Sakura pink
       case 'space-odyssey': return '#06b6d4';    // Neon cyan
       case 'nature-cabin': return '#10b981';     // Forest green
-      case 'custom': return '#a855f7';           // Premium purple
       default: return '#ef4444';                 // Default red
     }
   };
@@ -965,7 +983,11 @@ function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [], onToggl
       )}
       
       {/* Canvas particle effect overlay */}
-      <ThemeParticles theme={activeTheme === 'custom' ? 'lofi-cafe' : activeTheme} lowPowerMode={lowPowerMode} />
+      <ThemeParticles 
+        theme={activeTheme} 
+        customColor={activeTheme === 'custom' ? getThemeColor() : undefined} 
+        lowPowerMode={lowPowerMode} 
+      />
       
       {/* Dark overlay for contrast */}
       <div className="pomodoro-tint-overlay" />
