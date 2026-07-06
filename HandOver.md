@@ -161,10 +161,10 @@
   - **Tự động trích xuất màu chủ đạo (Color Extraction)**: Phân tích pixel của ảnh nền trên canvas 16x16. Chuyển đổi mã RGB sang HSL để chọn ra màu sắc có độ rực rỡ (saturation > 30%) và độ sáng phù hợp nhất cho giao diện tối (lightness từ 40% đến 75%), giúp màu sắc hiển thị vừa khớp tông nền vừa giữ tính thẩm mỹ cao.
   - **Đồng bộ màu sắc toàn bộ Tab & Giao diện (Dynamic Theme Adaption)**: Khi chọn chủ đề Tùy chỉnh, màu sắc trích xuất được sẽ ghi đè lên các biến CSS `--color-primary` và `--color-primary-glow` toàn cục. Toàn bộ tab ở Header, viền hộp và nút bấm lập tức đổi màu đồng bộ với hình nền. Nếu đổi sang chủ đề mặc định, giao diện tự động khôi phục lại tông màu xanh nước biển gốc.
   - **Đồng bộ hóa & Hiệu ứng hạt**: Hỗ trợ đầy đủ tính năng xóa ảnh tùy chỉnh. Khi sử dụng hình nền tùy chỉnh, hệ thống tự động ánh xạ hiển thị các hạt bụi sáng ấm (lofi cozy sun dust) chuyển động mượt mà để tăng chiều sâu nghệ thuật.
-  - **Sao lưu hoàn chỉnh**: Cả mã ảnh base64 (`pomodoro_custom_bg`) và mã màu trích xuất (`pomodoro_custom_color`) đều được tích hợp vào mảng `keysToBackup` của bộ Backup JSON để đồng bộ hóa và khôi phục khi cần thiết.
+  - **Sao lưu hoàn chỉnh**: Cả mã ảnh base64 (`pomodoro_custom_bg`) và dữ liệu màu sắc dạng HSL (`pomodoro_custom_theme_data`) đều được tích hợp vào mảng `keysToBackup` của bộ Backup JSON để đồng bộ hóa và khôi phục khi cần thiết.
 
 ## 3. Trạng Thế Git Hiện Tại
-- Mã SHA commit / Message gần nhất: `1ef645e` / `feat: enhance color extractor to boost saturation and avoid gray colors`
+- Mã SHA commit / Message gần nhất: `64fcca5` / `feat: implement Peak Theme Engine to dynamically tint app and compute complementary accent colors`
 - Tên Branch hiện tại: `main`
 - GitHub Remote: `https://github.com/supli6669/exam-count-timer.git`
 
