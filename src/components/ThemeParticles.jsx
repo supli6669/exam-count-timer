@@ -1,10 +1,10 @@
 import { useEffect, useRef } from 'react';
 
-function ThemeParticles({ theme, customColor, lowPowerMode }) {
+function ThemeParticles({ theme, isOpen, customColor, lowPowerMode }) {
   const canvasRef = useRef(null);
 
   useEffect(() => {
-    if (lowPowerMode) return;
+    if (lowPowerMode || !isOpen) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
 
@@ -72,10 +72,8 @@ function ThemeParticles({ theme, customColor, lowPowerMode }) {
           this.alpha = Math.random() * 0.5 + 0.1;
           
           if (theme === 'custom' && customColor) {
-            const baseColor = customColor.replace('hsl', 'hsla');
-            this.color = baseColor.replace(')', `, ${this.alpha})`);
-          } else {
-            this.color = `rgba(245, 158, 11, ${this.alpha})`; // Amber
+            const match = customColor.match(/\d+/);
+            this.hue = match ? parseInt(match[0], 10) : 270;
           }
           this.fadeSpeed = 0.001;
         } 
@@ -251,8 +249,8 @@ function ThemeParticles({ theme, customColor, lowPowerMode }) {
         if (theme === 'lofi-cafe' || theme === 'custom') {
           ctx.beginPath();
           ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-          ctx.fillStyle = theme === 'custom' && this.color 
-            ? this.color 
+          ctx.fillStyle = theme === 'custom'
+            ? `hsla(${this.hue}, 95%, 60%, ${Math.max(0, this.alpha)})`
             : `rgba(245, 158, 11, ${Math.max(0, this.alpha)})`;
           ctx.fill();
         } 
@@ -407,9 +405,9 @@ function ThemeParticles({ theme, customColor, lowPowerMode }) {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       resizeObserver.disconnect();
     };
-  }, [theme, customColor, lowPowerMode]);
+  }, [theme, isOpen, customColor, lowPowerMode]);
 
-  if (theme === 'default' || lowPowerMode) return null;
+  if (theme === 'default' || lowPowerMode || !isOpen) return null;
 
   return (
     <canvas

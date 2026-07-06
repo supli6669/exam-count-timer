@@ -985,6 +985,7 @@ function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [], onToggl
       {/* Canvas particle effect overlay */}
       <ThemeParticles 
         theme={activeTheme} 
+        isOpen={isOpen}
         customColor={activeTheme === 'custom' ? getThemeColor() : undefined} 
         lowPowerMode={lowPowerMode} 
       />
