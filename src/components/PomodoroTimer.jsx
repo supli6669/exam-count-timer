@@ -982,17 +982,20 @@ function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [], onToggl
       await loadScript('https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.20.0/dist/tf.min.js');
       
       setEnhanceStatus('Đang tải mô hình làm nét (UpscalerJS)...');
-      await loadScript('https://cdn.jsdelivr.net/npm/@upscalerjs/default-model@1.0.0-beta.16/dist/umd/index.min.js');
       await loadScript('https://cdn.jsdelivr.net/npm/upscaler@1.0.0-beta.16/dist/browser/umd/upscaler.min.js');
 
       setEnhanceStatus('Đang chạy AI xử lý hình ảnh...');
       
-      if (!window.Upscaler || !window.DefaultUpscalerJSModel) {
+      if (!window.Upscaler) {
         throw new Error('Thư viện AI chưa được tải đầy đủ. Vui lòng thử lại.');
       }
 
       const upscaler = new window.Upscaler({
-        model: window.DefaultUpscalerJSModel
+        model: {
+          path: 'https://cdn.jsdelivr.net/npm/@upscalerjs/default-model@1.0.0-beta.16/models/model.json',
+          scale: 2,
+          modelType: 'layers'
+        }
       });
 
       const upscaledSrc = await upscaler.upscale(customBg);
