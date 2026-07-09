@@ -1225,7 +1225,9 @@ body {
   background: rgba(10, 25, 18, 0.55); /* Forest emerald pine glass tint */
 }
 .pomodoro-sidebar.theme-custom {
-  background: linear-gradient(135deg, rgba(62, 50, 96, 0.95) 0%, rgba(18, 14, 32, 0.98) 100%); /* Brighter, cleaner violet-midnight gradient overlay */
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.05) 100%); /* Clean, bright translucent white glass */
+  backdrop-filter: blur(40px) saturate(160%);
+  -webkit-backdrop-filter: blur(40px) saturate(160%);
 }
 
 .pomodoro-sidebar.open {
@@ -1357,15 +1359,15 @@ body {
 }
 
 .theme-custom .pomodoro-modes {
-  background: rgba(167, 139, 250, 0.08);
-  border-color: rgba(167, 139, 250, 0.2);
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
 }
 .theme-custom .pomodoro-mode-btn.active {
-  background: rgba(167, 139, 250, 0.25);
-  box-shadow: 0 0 10px rgba(167, 139, 250, 0.3);
+  background: rgba(255, 255, 255, 0.22);
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.25);
 }
 .theme-custom .pomodoro-mode-btn {
-  color: rgba(243, 232, 255, 0.85);
+  color: rgba(255, 255, 255, 0.85);
 }
 
 .pomodoro-display-container {
@@ -1771,15 +1773,15 @@ body {
 }
 
 .theme-custom .pomodoro-tabs {
-  background: rgba(167, 139, 250, 0.08);
-  border-color: rgba(167, 139, 250, 0.2);
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
 }
 .theme-custom .pomodoro-tab-btn.active {
-  background: rgba(167, 139, 250, 0.25);
-  box-shadow: 0 0 10px rgba(167, 139, 250, 0.3);
+  background: rgba(255, 255, 255, 0.22);
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.25);
 }
 .theme-custom .pomodoro-tab-btn {
-  color: rgba(243, 232, 255, 0.85);
+  color: rgba(255, 255, 255, 0.85);
 }
 
 /* Subject Selector & Task Selector */
@@ -1889,13 +1891,13 @@ body {
 
 .theme-custom .focus-subject-selector select,
 .theme-custom .focus-task-selector select {
-  background: rgba(167, 139, 250, 0.05);
-  border-color: rgba(167, 139, 250, 0.2);
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.2);
 }
 .theme-custom .focus-subject-selector select:focus,
 .theme-custom .focus-task-selector select:focus {
-  border-color: rgba(167, 139, 250, 0.4);
-  box-shadow: 0 0 8px rgba(167, 139, 250, 0.2);
+  border-color: rgba(255, 255, 255, 0.4);
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.2);
 }
 
 .focus-subject-selector select option,
@@ -3416,14 +3418,14 @@ body {
 }
 
 .theme-custom .soundboard-container {
-  background: rgba(167, 139, 250, 0.04);
-  border-color: rgba(167, 139, 250, 0.15);
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.15);
 }
 .theme-custom .soundboard-header {
-  background: rgba(167, 139, 250, 0.06);
+  background: rgba(255, 255, 255, 0.06);
 }
 .theme-custom .soundboard-header:hover {
-  background: rgba(167, 139, 250, 0.1);
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .soundboard-grid {
@@ -4672,15 +4674,15 @@ body {
 }
 
 .theme-custom .pomodoro-mode-toggle-group {
-  background: rgba(167, 139, 250, 0.08);
-  border-color: rgba(167, 139, 250, 0.15);
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.15);
 }
 .theme-custom .pomodoro-mode-toggle-btn.active {
-  background: rgba(167, 139, 250, 0.25);
-  box-shadow: 0 0 8px rgba(167, 139, 250, 0.3);
+  background: rgba(255, 255, 255, 0.25);
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.3);
 }
 .theme-custom .pomodoro-mode-toggle-btn {
-  color: rgba(243, 232, 255, 0.85);
+  color: rgba(255, 255, 255, 0.85);
 }
 
 .focus-badges-section {
@@ -4788,9 +4790,9 @@ body {
   color: rgba(240, 253, 250, 0.85) !important;
 }
 .theme-custom .keyboard-help-btn {
-  background: rgba(167, 139, 250, 0.08) !important;
-  border: 1px solid rgba(167, 139, 250, 0.2) !important;
-  color: rgba(243, 232, 255, 0.85) !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  color: rgba(255, 255, 255, 0.85) !important;
 }
 
 /* Preset Buttons Hover */
@@ -5701,7 +5703,7 @@ body {
 }
 
 .theme-custom .pomodoro-tint-overlay {
-  background: radial-gradient(circle at center, rgba(120, 100, 180, 0.15) 0%, rgba(18, 14, 32, 0.7) 100%); /* Brighter, lighter violet tint */
+  background: radial-gradient(circle at center, rgba(255, 255, 255, 0.08) 0%, rgba(10, 10, 15, 0.45) 100%); /* Clean, bright overlay */
 }
 
 /* AI Enhance Button & Sliders styling */
