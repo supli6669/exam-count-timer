@@ -1165,7 +1165,7 @@ body {
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: rgba(8, 11, 19, 0.95); /* Deepest dark glass overlay for high focus */
+  background: linear-gradient(135deg, rgba(20, 15, 38, 0.96) 0%, rgba(8, 7, 16, 0.98) 100%); /* Elegant deep violet-midnight gradient overlay */
   backdrop-filter: blur(35px);
   -webkit-backdrop-filter: blur(35px);
   padding: 4rem 1.5rem 2rem 1.5rem;
@@ -1205,13 +1205,27 @@ body {
   border-radius: 3px;
 }
 
-/* Semi-transparent backgrounds for active themes */
-.pomodoro-sidebar.theme-lofi-cafe,
-.pomodoro-sidebar.theme-cyberpunk-alley,
-.pomodoro-sidebar.theme-sakura-library,
-.pomodoro-sidebar.theme-space-odyssey,
+/* Custom theme-specific glass tints instead of plain grey/black overlay */
+.pomodoro-sidebar.theme-default {
+  background: linear-gradient(135deg, rgba(20, 15, 38, 0.96) 0%, rgba(8, 7, 16, 0.99) 100%);
+}
+.pomodoro-sidebar.theme-lofi-cafe {
+  background: rgba(43, 27, 23, 0.55); /* Warm coffee glass tint */
+}
+.pomodoro-sidebar.theme-cyberpunk-alley {
+  background: rgba(28, 10, 36, 0.55); /* Neon magenta glass tint */
+}
+.pomodoro-sidebar.theme-sakura-library {
+  background: rgba(45, 18, 30, 0.55); /* Cherry blossom rose glass tint */
+}
+.pomodoro-sidebar.theme-space-odyssey {
+  background: rgba(10, 20, 35, 0.55); /* Deep cosmic navy glass tint */
+}
 .pomodoro-sidebar.theme-nature-cabin {
-  background: rgba(8, 11, 19, 0.5); /* Let background image shine through */
+  background: rgba(10, 25, 18, 0.55); /* Forest emerald pine glass tint */
+}
+.pomodoro-sidebar.theme-custom {
+  background: rgba(15, 15, 25, 0.6); /* Soft dark glass tint */
 }
 
 .pomodoro-sidebar.open {
@@ -1237,12 +1251,13 @@ body {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 0.5rem;
-  background: rgba(0, 0, 0, 0.25);
+  background: rgba(255, 255, 255, 0.03);
   padding: 0.3rem;
   border-radius: 12px;
-  border: 1px solid var(--border-glass);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   width: 100%;
   max-width: 480px;
+  transition: var(--transition-smooth);
 }
 
 .pomodoro-mode-btn {
@@ -1253,7 +1268,7 @@ body {
   font-weight: 600;
   padding: 0.5rem 0.25rem;
   border-radius: 8px;
-  color: var(--text-secondary);
+  color: rgba(255, 255, 255, 0.6);
   transition: all 0.2s ease;
   text-align: center;
 }
@@ -1263,9 +1278,94 @@ body {
 }
 
 .pomodoro-mode-btn.active {
-  background: var(--bg-glass);
+  background: rgba(255, 255, 255, 0.1);
   color: #fff;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Theme-specific styles for main modes button group */
+.theme-default .pomodoro-modes {
+  background: rgba(59, 130, 246, 0.08);
+  border-color: rgba(59, 130, 246, 0.2);
+}
+.theme-default .pomodoro-mode-btn.active {
+  background: rgba(59, 130, 246, 0.25);
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.3);
+}
+.theme-default .pomodoro-mode-btn {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.theme-lofi-cafe .pomodoro-modes {
+  background: rgba(245, 158, 11, 0.08);
+  border-color: rgba(245, 158, 11, 0.2);
+}
+.theme-lofi-cafe .pomodoro-mode-btn.active {
+  background: rgba(245, 158, 11, 0.25);
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.3);
+}
+.theme-lofi-cafe .pomodoro-mode-btn {
+  color: rgba(254, 243, 199, 0.75);
+}
+
+.theme-cyberpunk-alley .pomodoro-modes {
+  background: rgba(236, 72, 153, 0.08);
+  border-color: rgba(236, 72, 153, 0.2);
+}
+.theme-cyberpunk-alley .pomodoro-mode-btn.active {
+  background: rgba(236, 72, 153, 0.25);
+  box-shadow: 0 0 10px rgba(236, 72, 153, 0.3);
+}
+.theme-cyberpunk-alley .pomodoro-mode-btn {
+  color: rgba(253, 242, 248, 0.75);
+}
+
+.theme-sakura-library .pomodoro-modes {
+  background: rgba(244, 114, 182, 0.08);
+  border-color: rgba(244, 114, 182, 0.2);
+}
+.theme-sakura-library .pomodoro-mode-btn.active {
+  background: rgba(244, 114, 182, 0.25);
+  box-shadow: 0 0 10px rgba(244, 114, 182, 0.3);
+}
+.theme-sakura-library .pomodoro-mode-btn {
+  color: rgba(253, 242, 248, 0.75);
+}
+
+.theme-space-odyssey .pomodoro-modes {
+  background: rgba(6, 182, 212, 0.08);
+  border-color: rgba(6, 182, 212, 0.2);
+}
+.theme-space-odyssey .pomodoro-mode-btn.active {
+  background: rgba(6, 182, 212, 0.25);
+  box-shadow: 0 0 10px rgba(6, 182, 212, 0.3);
+}
+.theme-space-odyssey .pomodoro-mode-btn {
+  color: rgba(236, 254, 255, 0.75);
+}
+
+.theme-nature-cabin .pomodoro-modes {
+  background: rgba(16, 185, 129, 0.08);
+  border-color: rgba(16, 185, 129, 0.2);
+}
+.theme-nature-cabin .pomodoro-mode-btn.active {
+  background: rgba(16, 185, 129, 0.25);
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.3);
+}
+.theme-nature-cabin .pomodoro-mode-btn {
+  color: rgba(240, 253, 250, 0.75);
+}
+
+.theme-custom .pomodoro-modes {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+.theme-custom .pomodoro-mode-btn.active {
+  background: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+}
+.theme-custom .pomodoro-mode-btn {
+  color: rgba(255, 255, 255, 0.75);
 }
 
 .pomodoro-display-container {
@@ -1560,12 +1660,13 @@ body {
 .pomodoro-tabs {
   display: flex;
   gap: 0.5rem;
-  background: rgba(0, 0, 0, 0.3);
+  background: rgba(255, 255, 255, 0.03);
   padding: 0.25rem;
   border-radius: 12px;
-  border: 1px solid var(--border-glass);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   width: 100%;
   max-width: 480px;
+  transition: var(--transition-smooth);
 }
 
 .pomodoro-tab-btn {
@@ -1577,7 +1678,7 @@ body {
   font-weight: 700;
   padding: 0.55rem;
   border-radius: 8px;
-  color: var(--text-secondary);
+  color: rgba(255, 255, 255, 0.6);
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   align-items: center;
@@ -1596,8 +1697,94 @@ body {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
-/* Subject Selector */
-.focus-subject-selector {
+/* Theme-specific tab styles */
+.theme-default .pomodoro-tabs {
+  background: rgba(59, 130, 246, 0.08);
+  border-color: rgba(59, 130, 246, 0.2);
+}
+.theme-default .pomodoro-tab-btn.active {
+  background: rgba(59, 130, 246, 0.25);
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.3);
+}
+.theme-default .pomodoro-tab-btn {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.theme-lofi-cafe .pomodoro-tabs {
+  background: rgba(245, 158, 11, 0.08);
+  border-color: rgba(245, 158, 11, 0.2);
+}
+.theme-lofi-cafe .pomodoro-tab-btn.active {
+  background: rgba(245, 158, 11, 0.25);
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.3);
+}
+.theme-lofi-cafe .pomodoro-tab-btn {
+  color: rgba(254, 243, 199, 0.75);
+}
+
+.theme-cyberpunk-alley .pomodoro-tabs {
+  background: rgba(236, 72, 153, 0.08);
+  border-color: rgba(236, 72, 153, 0.2);
+}
+.theme-cyberpunk-alley .pomodoro-tab-btn.active {
+  background: rgba(236, 72, 153, 0.25);
+  box-shadow: 0 0 10px rgba(236, 72, 153, 0.3);
+}
+.theme-cyberpunk-alley .pomodoro-tab-btn {
+  color: rgba(253, 242, 248, 0.75);
+}
+
+.theme-sakura-library .pomodoro-tabs {
+  background: rgba(244, 114, 182, 0.08);
+  border-color: rgba(244, 114, 182, 0.2);
+}
+.theme-sakura-library .pomodoro-tab-btn.active {
+  background: rgba(244, 114, 182, 0.25);
+  box-shadow: 0 0 10px rgba(244, 114, 182, 0.3);
+}
+.theme-sakura-library .pomodoro-tab-btn {
+  color: rgba(253, 242, 248, 0.75);
+}
+
+.theme-space-odyssey .pomodoro-tabs {
+  background: rgba(6, 182, 212, 0.08);
+  border-color: rgba(6, 182, 212, 0.2);
+}
+.theme-space-odyssey .pomodoro-tab-btn.active {
+  background: rgba(6, 182, 212, 0.25);
+  box-shadow: 0 0 10px rgba(6, 182, 212, 0.3);
+}
+.theme-space-odyssey .pomodoro-tab-btn {
+  color: rgba(236, 254, 255, 0.75);
+}
+
+.theme-nature-cabin .pomodoro-tabs {
+  background: rgba(16, 185, 129, 0.08);
+  border-color: rgba(16, 185, 129, 0.2);
+}
+.theme-nature-cabin .pomodoro-tab-btn.active {
+  background: rgba(16, 185, 129, 0.25);
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.3);
+}
+.theme-nature-cabin .pomodoro-tab-btn {
+  color: rgba(240, 253, 250, 0.75);
+}
+
+.theme-custom .pomodoro-tabs {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+.theme-custom .pomodoro-tab-btn.active {
+  background: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+}
+.theme-custom .pomodoro-tab-btn {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+/* Subject Selector & Task Selector */
+.focus-subject-selector,
+.focus-task-selector {
   width: 100%;
   max-width: 480px;
   display: flex;
@@ -1605,28 +1792,116 @@ body {
   gap: 0.4rem;
 }
 
-.focus-subject-selector label {
+.focus-subject-selector label,
+.focus-task-selector label {
   font-size: 0.82rem;
   font-weight: 700;
-  color: var(--text-secondary);
+  color: rgba(255, 255, 255, 0.7) !important;
 }
 
-.focus-subject-selector select {
+.focus-subject-selector select,
+.focus-task-selector select {
   width: 100%;
-  background: rgba(10, 14, 23, 0.6);
-  border: 1px solid var(--border-glass);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   color: #fff;
   padding: 0.6rem 0.8rem;
   border-radius: 10px;
   font-size: 0.85rem;
   cursor: pointer;
   outline: none;
-  transition: all 0.2s ease;
+  transition: var(--transition-smooth);
 }
 
-.focus-subject-selector select:focus {
-  border-color: var(--border-glass-focus);
+.focus-subject-selector select:focus,
+.focus-task-selector select:focus {
+  outline: none;
+  border-color: rgba(255, 255, 255, 0.2);
   box-shadow: 0 0 10px rgba(255, 255, 255, 0.05);
+}
+
+/* Theme-specific styles for select inputs and option dropdown menus */
+.theme-default .focus-subject-selector select,
+.theme-default .focus-task-selector select {
+  background: rgba(59, 130, 246, 0.05);
+  border-color: rgba(59, 130, 246, 0.2);
+}
+.theme-default .focus-subject-selector select:focus,
+.theme-default .focus-task-selector select:focus {
+  border-color: rgba(59, 130, 246, 0.4);
+  box-shadow: 0 0 8px rgba(59, 130, 246, 0.2);
+}
+
+.theme-lofi-cafe .focus-subject-selector select,
+.theme-lofi-cafe .focus-task-selector select {
+  background: rgba(245, 158, 11, 0.05);
+  border-color: rgba(245, 158, 11, 0.2);
+}
+.theme-lofi-cafe .focus-subject-selector select:focus,
+.theme-lofi-cafe .focus-task-selector select:focus {
+  border-color: rgba(245, 158, 11, 0.4);
+  box-shadow: 0 0 8px rgba(245, 158, 11, 0.2);
+}
+
+.theme-cyberpunk-alley .focus-subject-selector select,
+.theme-cyberpunk-alley .focus-task-selector select {
+  background: rgba(236, 72, 153, 0.05);
+  border-color: rgba(236, 72, 153, 0.2);
+}
+.theme-cyberpunk-alley .focus-subject-selector select:focus,
+.theme-cyberpunk-alley .focus-task-selector select:focus {
+  border-color: rgba(236, 72, 153, 0.4);
+  box-shadow: 0 0 8px rgba(236, 72, 153, 0.2);
+}
+
+.theme-sakura-library .focus-subject-selector select,
+.theme-sakura-library .focus-task-selector select {
+  background: rgba(244, 114, 182, 0.05);
+  border-color: rgba(244, 114, 182, 0.2);
+}
+.theme-sakura-library .focus-subject-selector select:focus,
+.theme-sakura-library .focus-task-selector select:focus {
+  border-color: rgba(244, 114, 182, 0.4);
+  box-shadow: 0 0 8px rgba(244, 114, 182, 0.2);
+}
+
+.theme-space-odyssey .focus-subject-selector select,
+.theme-space-odyssey .focus-task-selector select {
+  background: rgba(6, 182, 212, 0.05);
+  border-color: rgba(6, 182, 212, 0.2);
+}
+.theme-space-odyssey .focus-subject-selector select:focus,
+.theme-space-odyssey .focus-task-selector select:focus {
+  border-color: rgba(6, 182, 212, 0.4);
+  box-shadow: 0 0 8px rgba(6, 182, 212, 0.2);
+}
+
+.theme-nature-cabin .focus-subject-selector select,
+.theme-nature-cabin .focus-task-selector select {
+  background: rgba(16, 185, 129, 0.05);
+  border-color: rgba(16, 185, 129, 0.2);
+}
+.theme-nature-cabin .focus-subject-selector select:focus,
+.theme-nature-cabin .focus-task-selector select:focus {
+  border-color: rgba(16, 185, 129, 0.4);
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.2);
+}
+
+.theme-custom .focus-subject-selector select,
+.theme-custom .focus-task-selector select {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+.theme-custom .focus-subject-selector select:focus,
+.theme-custom .focus-task-selector select:focus {
+  border-color: rgba(255, 255, 255, 0.3);
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.1);
+}
+
+.focus-subject-selector select option,
+.focus-task-selector select option {
+  background: #111827; /* Dark background for dropdown options menu */
+  color: #fff;
 }
 
 /* Theme Selector */
@@ -3031,13 +3306,13 @@ body {
   padding: 0.85rem 1.2rem;
   cursor: pointer;
   user-select: none;
-  background: rgba(0, 0, 0, 0.15);
+  background: rgba(255, 255, 255, 0.02);
   border-bottom: 1px solid rgba(255, 255, 255, 0.03);
   transition: background 0.2s ease;
 }
 
 .soundboard-header:hover {
-  background: rgba(0, 0, 0, 0.25);
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .soundboard-title {
@@ -3066,11 +3341,89 @@ body {
 
 .soundboard-content {
   padding: 1rem;
-  background: rgba(0, 0, 0, 0.05);
+  background: transparent;
   display: flex;
   flex-direction: column;
   gap: 0.8rem;
   animation: fadeIn 0.3s ease;
+}
+
+/* Theme-specific styles for the Ambient Soundboard */
+.theme-default .soundboard-container {
+  background: rgba(59, 130, 246, 0.04);
+  border-color: rgba(59, 130, 246, 0.15);
+}
+.theme-default .soundboard-header {
+  background: rgba(59, 130, 246, 0.06);
+}
+.theme-default .soundboard-header:hover {
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.theme-lofi-cafe .soundboard-container {
+  background: rgba(245, 158, 11, 0.04);
+  border-color: rgba(245, 158, 11, 0.15);
+}
+.theme-lofi-cafe .soundboard-header {
+  background: rgba(245, 158, 11, 0.06);
+}
+.theme-lofi-cafe .soundboard-header:hover {
+  background: rgba(245, 158, 11, 0.1);
+}
+
+.theme-cyberpunk-alley .soundboard-container {
+  background: rgba(236, 72, 153, 0.04);
+  border-color: rgba(236, 72, 153, 0.15);
+}
+.theme-cyberpunk-alley .soundboard-header {
+  background: rgba(236, 72, 153, 0.06);
+}
+.theme-cyberpunk-alley .soundboard-header:hover {
+  background: rgba(236, 72, 153, 0.1);
+}
+
+.theme-sakura-library .soundboard-container {
+  background: rgba(244, 114, 182, 0.04);
+  border-color: rgba(244, 114, 182, 0.15);
+}
+.theme-sakura-library .soundboard-header {
+  background: rgba(244, 114, 182, 0.06);
+}
+.theme-sakura-library .soundboard-header:hover {
+  background: rgba(244, 114, 182, 0.1);
+}
+
+.theme-space-odyssey .soundboard-container {
+  background: rgba(6, 182, 212, 0.04);
+  border-color: rgba(6, 182, 212, 0.15);
+}
+.theme-space-odyssey .soundboard-header {
+  background: rgba(6, 182, 212, 0.06);
+}
+.theme-space-odyssey .soundboard-header:hover {
+  background: rgba(6, 182, 212, 0.1);
+}
+
+.theme-nature-cabin .soundboard-container {
+  background: rgba(16, 185, 129, 0.04);
+  border-color: rgba(16, 185, 129, 0.15);
+}
+.theme-nature-cabin .soundboard-header {
+  background: rgba(16, 185, 129, 0.06);
+}
+.theme-nature-cabin .soundboard-header:hover {
+  background: rgba(16, 185, 129, 0.1);
+}
+
+.theme-custom .soundboard-container {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+.theme-custom .soundboard-header {
+  background: rgba(255, 255, 255, 0.04);
+}
+.theme-custom .soundboard-header:hover {
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .soundboard-grid {
@@ -4219,17 +4572,19 @@ body {
 }
 .pomodoro-mode-toggle-group {
   display: flex;
-  background: rgba(255,255,255,0.06);
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.08);
   border-radius: 8px;
   padding: 0.18rem;
   margin-bottom: 1.25rem;
   width: 100%;
+  transition: var(--transition-smooth);
 }
 .pomodoro-mode-toggle-btn {
   flex: 1;
   background: transparent;
   border: none;
-  color: var(--text-secondary);
+  color: rgba(255, 255, 255, 0.6);
   font-size: 0.76rem;
   font-weight: 600;
   padding: 0.4rem;
@@ -4238,9 +4593,94 @@ body {
   transition: var(--transition-smooth);
 }
 .pomodoro-mode-toggle-btn.active {
-  background: var(--color-primary);
+  background: rgba(255, 255, 255, 0.1);
   color: #fff;
-  box-shadow: 0 2px 6px var(--color-primary-glow);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+/* Theme-specific styles for the countdown/stopwatch toggle group */
+.theme-default .pomodoro-mode-toggle-group {
+  background: rgba(59, 130, 246, 0.08);
+  border-color: rgba(59, 130, 246, 0.2);
+}
+.theme-default .pomodoro-mode-toggle-btn.active {
+  background: rgba(59, 130, 246, 0.25);
+  box-shadow: 0 0 8px rgba(59, 130, 246, 0.3);
+}
+.theme-default .pomodoro-mode-toggle-btn {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.theme-lofi-cafe .pomodoro-mode-toggle-group {
+  background: rgba(245, 158, 11, 0.08);
+  border-color: rgba(245, 158, 11, 0.2);
+}
+.theme-lofi-cafe .pomodoro-mode-toggle-btn.active {
+  background: rgba(245, 158, 11, 0.25);
+  box-shadow: 0 0 8px rgba(245, 158, 11, 0.3);
+}
+.theme-lofi-cafe .pomodoro-mode-toggle-btn {
+  color: rgba(254, 243, 199, 0.75);
+}
+
+.theme-cyberpunk-alley .pomodoro-mode-toggle-group {
+  background: rgba(236, 72, 153, 0.08);
+  border-color: rgba(236, 72, 153, 0.2);
+}
+.theme-cyberpunk-alley .pomodoro-mode-toggle-btn.active {
+  background: rgba(236, 72, 153, 0.25);
+  box-shadow: 0 0 8px rgba(236, 72, 153, 0.3);
+}
+.theme-cyberpunk-alley .pomodoro-mode-toggle-btn {
+  color: rgba(253, 242, 248, 0.75);
+}
+
+.theme-sakura-library .pomodoro-mode-toggle-group {
+  background: rgba(244, 114, 182, 0.08);
+  border-color: rgba(244, 114, 182, 0.2);
+}
+.theme-sakura-library .pomodoro-mode-toggle-btn.active {
+  background: rgba(244, 114, 182, 0.25);
+  box-shadow: 0 0 8px rgba(244, 114, 182, 0.3);
+}
+.theme-sakura-library .pomodoro-mode-toggle-btn {
+  color: rgba(253, 242, 248, 0.75);
+}
+
+.theme-space-odyssey .pomodoro-mode-toggle-group {
+  background: rgba(6, 182, 212, 0.08);
+  border-color: rgba(6, 182, 212, 0.2);
+}
+.theme-space-odyssey .pomodoro-mode-toggle-btn.active {
+  background: rgba(6, 182, 212, 0.25);
+  box-shadow: 0 0 8px rgba(6, 182, 212, 0.3);
+}
+.theme-space-odyssey .pomodoro-mode-toggle-btn {
+  color: rgba(236, 254, 255, 0.75);
+}
+
+.theme-nature-cabin .pomodoro-mode-toggle-group {
+  background: rgba(16, 185, 129, 0.08);
+  border-color: rgba(16, 185, 129, 0.2);
+}
+.theme-nature-cabin .pomodoro-mode-toggle-btn.active {
+  background: rgba(16, 185, 129, 0.25);
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.3);
+}
+.theme-nature-cabin .pomodoro-mode-toggle-btn {
+  color: rgba(240, 253, 250, 0.75);
+}
+
+.theme-custom .pomodoro-mode-toggle-group {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+.theme-custom .pomodoro-mode-toggle-btn.active {
+  background: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.2);
+}
+.theme-custom .pomodoro-mode-toggle-btn {
+  color: rgba(255, 255, 255, 0.75);
 }
 
 .focus-badges-section {
@@ -4314,6 +4754,43 @@ body {
   border-color: rgba(139, 92, 246, 0.4) !important;
   color: #fff !important;
   box-shadow: 0 0 10px rgba(139, 92, 246, 0.2);
+}
+
+/* Theme-specific styles for Keyboard Help Button */
+.theme-default .keyboard-help-btn {
+  background: rgba(59, 130, 246, 0.08) !important;
+  border: 1px solid rgba(59, 130, 246, 0.2) !important;
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+.theme-lofi-cafe .keyboard-help-btn {
+  background: rgba(245, 158, 11, 0.08) !important;
+  border: 1px solid rgba(245, 158, 11, 0.2) !important;
+  color: rgba(254, 243, 199, 0.85) !important;
+}
+.theme-cyberpunk-alley .keyboard-help-btn {
+  background: rgba(236, 72, 153, 0.08) !important;
+  border: 1px solid rgba(236, 72, 153, 0.2) !important;
+  color: rgba(253, 242, 248, 0.85) !important;
+}
+.theme-sakura-library .keyboard-help-btn {
+  background: rgba(244, 114, 182, 0.08) !important;
+  border: 1px solid rgba(244, 114, 182, 0.2) !important;
+  color: rgba(253, 242, 248, 0.85) !important;
+}
+.theme-space-odyssey .keyboard-help-btn {
+  background: rgba(6, 182, 212, 0.08) !important;
+  border: 1px solid rgba(6, 182, 212, 0.2) !important;
+  color: rgba(236, 254, 255, 0.85) !important;
+}
+.theme-nature-cabin .keyboard-help-btn {
+  background: rgba(16, 185, 129, 0.08) !important;
+  border: 1px solid rgba(16, 185, 129, 0.2) !important;
+  color: rgba(240, 253, 250, 0.85) !important;
+}
+.theme-custom .keyboard-help-btn {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  color: rgba(255, 255, 255, 0.85) !important;
 }
 
 /* Preset Buttons Hover */
