@@ -1173,7 +1173,7 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
-  z-index: 1000;
+  z-index: 99999; /* Set maximum overlay level to prevent overlap with main UI */
   transform: translateY(100%); /* Slide up transition for full screen tab feel */
   transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.5s ease;
   overflow: hidden;
@@ -1225,7 +1225,7 @@ body {
   background: rgba(10, 25, 18, 0.55); /* Forest emerald pine glass tint */
 }
 .pomodoro-sidebar.theme-custom {
-  background: rgba(15, 15, 25, 0.6); /* Soft dark glass tint */
+  background: linear-gradient(135deg, rgba(30, 20, 50, 0.95) 0%, rgba(10, 8, 22, 0.98) 100%); /* Premium dark violet gradient instead of dull grey */
 }
 
 .pomodoro-sidebar.open {
@@ -1357,15 +1357,15 @@ body {
 }
 
 .theme-custom .pomodoro-modes {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(255, 255, 255, 0.15);
+  background: rgba(139, 92, 246, 0.08);
+  border-color: rgba(139, 92, 246, 0.2);
 }
 .theme-custom .pomodoro-mode-btn.active {
-  background: rgba(255, 255, 255, 0.15);
-  box-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+  background: rgba(139, 92, 246, 0.25);
+  box-shadow: 0 0 10px rgba(139, 92, 246, 0.3);
 }
 .theme-custom .pomodoro-mode-btn {
-  color: rgba(255, 255, 255, 0.75);
+  color: rgba(216, 180, 254, 0.75);
 }
 
 .pomodoro-display-container {
@@ -1771,15 +1771,15 @@ body {
 }
 
 .theme-custom .pomodoro-tabs {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(255, 255, 255, 0.15);
+  background: rgba(139, 92, 246, 0.08);
+  border-color: rgba(139, 92, 246, 0.2);
 }
 .theme-custom .pomodoro-tab-btn.active {
-  background: rgba(255, 255, 255, 0.15);
-  box-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+  background: rgba(139, 92, 246, 0.25);
+  box-shadow: 0 0 10px rgba(139, 92, 246, 0.3);
 }
 .theme-custom .pomodoro-tab-btn {
-  color: rgba(255, 255, 255, 0.75);
+  color: rgba(216, 180, 254, 0.75);
 }
 
 /* Subject Selector & Task Selector */
@@ -1889,13 +1889,13 @@ body {
 
 .theme-custom .focus-subject-selector select,
 .theme-custom .focus-task-selector select {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(255, 255, 255, 0.15);
+  background: rgba(139, 92, 246, 0.05);
+  border-color: rgba(139, 92, 246, 0.2);
 }
 .theme-custom .focus-subject-selector select:focus,
 .theme-custom .focus-task-selector select:focus {
-  border-color: rgba(255, 255, 255, 0.3);
-  box-shadow: 0 0 8px rgba(255, 255, 255, 0.1);
+  border-color: rgba(139, 92, 246, 0.4);
+  box-shadow: 0 0 8px rgba(139, 92, 246, 0.2);
 }
 
 .focus-subject-selector select option,
@@ -3035,7 +3035,7 @@ body {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  z-index: 1010;
+  z-index: 100000; /* Align with sidebar overlay level */
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
@@ -3416,14 +3416,14 @@ body {
 }
 
 .theme-custom .soundboard-container {
-  background: rgba(255, 255, 255, 0.03);
-  border-color: rgba(255, 255, 255, 0.1);
+  background: rgba(139, 92, 246, 0.04);
+  border-color: rgba(139, 92, 246, 0.15);
 }
 .theme-custom .soundboard-header {
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(139, 92, 246, 0.06);
 }
 .theme-custom .soundboard-header:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(139, 92, 246, 0.1);
 }
 
 .soundboard-grid {
@@ -4672,15 +4672,15 @@ body {
 }
 
 .theme-custom .pomodoro-mode-toggle-group {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(255, 255, 255, 0.15);
+  background: rgba(139, 92, 246, 0.08);
+  border-color: rgba(139, 92, 246, 0.15);
 }
 .theme-custom .pomodoro-mode-toggle-btn.active {
-  background: rgba(255, 255, 255, 0.15);
-  box-shadow: 0 0 8px rgba(255, 255, 255, 0.2);
+  background: rgba(139, 92, 246, 0.25);
+  box-shadow: 0 0 8px rgba(139, 92, 246, 0.3);
 }
 .theme-custom .pomodoro-mode-toggle-btn {
-  color: rgba(255, 255, 255, 0.75);
+  color: rgba(216, 180, 254, 0.75);
 }
 
 .focus-badges-section {
@@ -4788,9 +4788,9 @@ body {
   color: rgba(240, 253, 250, 0.85) !important;
 }
 .theme-custom .keyboard-help-btn {
-  background: rgba(255, 255, 255, 0.08) !important;
-  border: 1px solid rgba(255, 255, 255, 0.15) !important;
-  color: rgba(255, 255, 255, 0.85) !important;
+  background: rgba(139, 92, 246, 0.08) !important;
+  border: 1px solid rgba(139, 92, 246, 0.2) !important;
+  color: rgba(216, 180, 254, 0.85) !important;
 }
 
 /* Preset Buttons Hover */
@@ -5701,7 +5701,7 @@ body {
 }
 
 .theme-custom .pomodoro-tint-overlay {
-  background: radial-gradient(circle at center, rgba(10, 14, 23, 0.15) 0%, rgba(8, 11, 19, 0.6) 100%);
+  background: radial-gradient(circle at center, rgba(35, 25, 60, 0.25) 0%, rgba(12, 10, 24, 0.8) 100%); /* Rich violet tint instead of dark grey */
 }
 
 /* AI Enhance Button & Sliders styling */
