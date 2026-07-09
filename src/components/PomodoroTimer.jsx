@@ -905,9 +905,11 @@ function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [], onToggl
         canvas.width = width;
         canvas.height = height;
         const ctx = canvas.getContext('2d');
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
         ctx.drawImage(img, 0, 0, width, height);
 
-        const compressedBase64 = canvas.toDataURL('image/jpeg', 0.85);
+        const compressedBase64 = canvas.toDataURL('image/webp', 0.9);
         
         const themeData = extractDominantColor(img);
 
@@ -948,7 +950,7 @@ function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [], onToggl
     });
   };
 
-  const compressImageBase64 = (base64Str, maxDim = 1920, quality = 0.8) => {
+  const compressImageBase64 = (base64Str, maxDim = 1920, quality = 0.9) => {
     return new Promise((resolve) => {
       const img = new Image();
       img.onload = () => {
@@ -967,8 +969,10 @@ function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [], onToggl
         canvas.width = width;
         canvas.height = height;
         const ctx = canvas.getContext('2d');
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
         ctx.drawImage(img, 0, 0, width, height);
-        resolve(canvas.toDataURL('image/jpeg', quality));
+        resolve(canvas.toDataURL('image/webp', quality));
       };
       img.src = base64Str;
     });
@@ -1000,14 +1004,14 @@ function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [], onToggl
 
       const upscaledSrc = await upscaler.upscale(customBg, {
         patchSize: 128,
-        padding: 8,
+        padding: 16,
         progress: (percent) => {
           setEnhanceStatus(`Đang chạy AI xử lý: ${Math.round(percent * 100)}%`);
         }
       });
 
       setEnhanceStatus('Đang nén tối ưu hóa dung lượng...');
-      const finalUpscaledSrc = await compressImageBase64(upscaledSrc, 1920, 0.8);
+      const finalUpscaledSrc = await compressImageBase64(upscaledSrc, 1920, 0.9);
 
       const img = new Image();
       img.onload = () => {
