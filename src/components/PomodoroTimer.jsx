@@ -358,13 +358,26 @@ function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [], onToggl
     localStorage.setItem('pomodoro_focus_task', focusTaskId);
   }, [focusTaskId]);
 
-  const [isStopwatch, setIsStopwatch] = useState(() => {
-    return localStorage.getItem('pomodoro_is_stopwatch') === 'true';
+  const [timerType, setTimerType] = useState(() => {
+    const savedType = localStorage.getItem('pomodoro_timer_type');
+    if (savedType) return savedType;
+    const isStopwatchSaved = localStorage.getItem('pomodoro_is_stopwatch') === 'true';
+    return isStopwatchSaved ? 'stopwatch' : 'pomodoro';
   });
 
   useEffect(() => {
-    localStorage.setItem('pomodoro_is_stopwatch', isStopwatch.toString());
-  }, [isStopwatch]);
+    localStorage.setItem('pomodoro_timer_type', timerType);
+    localStorage.setItem('pomodoro_is_stopwatch', (timerType === 'stopwatch').toString());
+  }, [timerType]);
+
+  const [customCountdownTime, setCustomCountdownTime] = useState(() => {
+    const saved = localStorage.getItem('pomodoro_custom_countdown_time');
+    return saved ? parseInt(saved, 10) : 30 * 60;
+  });
+
+  useEffect(() => {
+    localStorage.setItem('pomodoro_custom_countdown_time', customCountdownTime.toString());
+  }, [customCountdownTime]);
 
   // Sync extracted custom color theme with global CSS variables when custom theme is active
   useEffect(() => {
@@ -442,7 +455,17 @@ function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [], onToggl
   const secondsStudiedRef = useRef(0);
 
   // Time left in seconds
-  const [timeLeft, setTimeLeft] = useState(() => workTime * 60);
+  const [timeLeft, setTimeLeft] = useState(() => {
+    const savedType = localStorage.getItem('pomodoro_timer_type') || (localStorage.getItem('pomodoro_is_stopwatch') === 'true' ? 'stopwatch' : 'pomodoro');
+    if (savedType === 'stopwatch') return 0;
+    if (savedType === 'countdown') {
+      const savedCount = localStorage.getItem('pomodoro_custom_countdown_time');
+      return savedCount ? parseInt(savedCount, 10) : 30 * 60;
+    }
+    const savedWork = localStorage.getItem('pomodoro_work_time');
+    const wt = savedWork ? parseInt(savedWork, 10) : 25;
+    return wt * 60;
+  });
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isShortcutHelpOpen, setIsShortcutHelpOpen] = useState(false);
   
@@ -467,7 +490,12 @@ function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [], onToggl
 
   // Update browser tab title and favicon to show countdown timer (Windows taskbar)
   useEffect(() => {
-    const totalSecs = mode === 'work' ? workTime * 60 : (mode === 'shortBreak' ? shortBreakTime * 60 : longBreakTime * 60);
+    let totalSecs = mode === 'work' ? workTime * 60 : (mode === 'shortBreak' ? shortBreakTime * 60 : longBreakTime * 60);
+    if (timerType === 'countdown') {
+      totalSecs = customCountdownTime;
+    } else if (timerType === 'stopwatch') {
+      totalSecs = 0;
+    }
     const isTimerDirty = timeLeft !== totalSecs;
     
     if (isActive || isTimerDirty) {
@@ -476,8 +504,10 @@ function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [], onToggl
       const timeStr = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
       
       let emoji = '⚡';
-      if (mode === 'shortBreak') emoji = '☕';
-      if (mode === 'longBreak') emoji = '🍃';
+      if (timerType === 'stopwatch') emoji = '⏱️';
+      else if (timerType === 'countdown') emoji = '⏲️';
+      else if (mode === 'shortBreak') emoji = '☕';
+      else if (mode === 'longBreak') emoji = '🍃';
       
       const prefix = isActive ? '' : '⏸️ ';
       document.title = `${prefix}${emoji} ${timeStr} | Đồng Hồ Lịch Thi`;
@@ -501,7 +531,7 @@ function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [], onToggl
         favicon.href = `data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⏱️</text></svg>`;
       }
     };
-  }, [timeLeft, mode, isActive, workTime, shortBreakTime, longBreakTime]);
+  }, [timeLeft, mode, isActive, workTime, shortBreakTime, longBreakTime, timerType, customCountdownTime]);
 
   // Get total duration for the current mode in seconds
   const getTotalSeconds = () => {
@@ -607,6 +637,12 @@ function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [], onToggl
     setIsActive(false);
     playAlarmSound();
 
+    if (timerType === 'countdown') {
+      logAccumulatedStudyTime();
+      sendPushNotification('Hết giờ đếm ngược!', 'Thời gian đếm ngược của bạn đã kết thúc. Hãy tiếp tục ôn tập nhé!');
+      return;
+    }
+
     if (mode === 'work') {
       // Log completed study time
       logAccumulatedStudyTime();
@@ -643,11 +679,11 @@ function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [], onToggl
   useEffect(() => {
     if (isActive) {
       timerRef.current = setInterval(() => {
-        if (mode === 'work') {
+        if (timerType === 'stopwatch' || timerType === 'countdown' || (timerType === 'pomodoro' && mode === 'work')) {
           secondsStudiedRef.current += 1;
         }
         
-        if (isStopwatch) {
+        if (timerType === 'stopwatch') {
           setTimeLeft((prev) => prev + 1);
         } else {
           setTimeLeft((prev) => {
@@ -666,7 +702,7 @@ function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [], onToggl
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [isActive, mode, isStopwatch]);
+  }, [isActive, mode, timerType]);
 
   const handleStartPause = () => {
     setIsActive(!isActive);
@@ -674,10 +710,16 @@ function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [], onToggl
 
   const handleReset = () => {
     setIsActive(false);
-    if (mode === 'work' && secondsStudiedRef.current > 0) {
+    if ((timerType === 'stopwatch' || timerType === 'countdown' || (timerType === 'pomodoro' && mode === 'work')) && secondsStudiedRef.current > 0) {
       logAccumulatedStudyTime();
     }
-    setTimeLeft(isStopwatch ? 0 : getTotalSeconds());
+    if (timerType === 'stopwatch') {
+      setTimeLeft(0);
+    } else if (timerType === 'countdown') {
+      setTimeLeft(customCountdownTime);
+    } else {
+      setTimeLeft(getTotalSeconds());
+    }
   };
 
   const handleSkip = () => {
@@ -719,7 +761,7 @@ function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [], onToggl
       } else if (e.code === 'Escape') {
         e.preventDefault();
         onClose();
-      } else if (e.key === 's' || e.key === 'S') {
+      } else if ((e.key === 's' || e.key === 'S') && timerType === 'pomodoro') {
         e.preventDefault();
         handleSkip();
       } else if (e.key === 'l' || e.key === 'L') {
@@ -1247,69 +1289,143 @@ function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [], onToggl
           <div className="pomodoro-mode-toggle-group">
             <button 
               type="button"
-              className={`pomodoro-mode-toggle-btn ${!isStopwatch ? 'active' : ''}`}
+              className={`pomodoro-mode-toggle-btn ${timerType === 'pomodoro' ? 'active' : ''}`}
               onClick={() => {
                 setIsActive(false);
-                setIsStopwatch(false);
+                setTimerType('pomodoro');
                 setTimeLeft(getTotalSeconds());
               }}
             >
-              ⏳ Đếm ngược
+              ⏳ Pomodoro
             </button>
             <button 
               type="button"
-              className={`pomodoro-mode-toggle-btn ${isStopwatch ? 'active' : ''}`}
+              className={`pomodoro-mode-toggle-btn ${timerType === 'countdown' ? 'active' : ''}`}
               onClick={() => {
                 setIsActive(false);
-                setIsStopwatch(true);
+                setTimerType('countdown');
+                setTimeLeft(customCountdownTime);
+              }}
+            >
+              ⏲️ Đếm ngược
+            </button>
+            <button 
+              type="button"
+              className={`pomodoro-mode-toggle-btn ${timerType === 'stopwatch' ? 'active' : ''}`}
+              onClick={() => {
+                setIsActive(false);
+                setTimerType('stopwatch');
                 setTimeLeft(0);
               }}
             >
-              ⏱️ Bấm giờ (Đếm xuôi)
+              ⏱️ Bấm giờ
             </button>
           </div>
 
-          {/* Main Mode Toggle Buttons */}
-          <div className="pomodoro-modes">
-            <button 
-              className={`pomodoro-mode-btn ${mode === 'work' ? 'active' : ''}`}
-              onClick={() => { 
-                if (mode === 'work' && secondsStudiedRef.current > 0) logAccumulatedStudyTime();
-                setIsActive(false); 
-                setMode('work'); 
-              }}
-            >
-              Tập trung
-            </button>
-            <button 
-              className={`pomodoro-mode-btn ${mode === 'shortBreak' ? 'active' : ''}`}
-              onClick={() => { 
-                if (mode === 'work' && secondsStudiedRef.current > 0) logAccumulatedStudyTime();
-                setIsActive(false); 
-                setMode('shortBreak'); 
-              }}
-            >
-              Nghỉ ngắn
-            </button>
-            <button 
-              className={`pomodoro-mode-btn ${mode === 'longBreak' ? 'active' : ''}`}
-              onClick={() => { 
-                if (mode === 'work' && secondsStudiedRef.current > 0) logAccumulatedStudyTime();
-                setIsActive(false); 
-                setMode('longBreak'); 
-                setCompletedWorkSessions(0); 
-              }}
-            >
-              Nghỉ dài
-            </button>
-          </div>
+          {/* Main Mode Toggle Buttons (only for Pomodoro) */}
+          {timerType === 'pomodoro' && (
+            <div className="pomodoro-modes">
+              <button 
+                className={`pomodoro-mode-btn ${mode === 'work' ? 'active' : ''}`}
+                onClick={() => { 
+                  if (mode === 'work' && secondsStudiedRef.current > 0) logAccumulatedStudyTime();
+                  setIsActive(false); 
+                  setMode('work'); 
+                }}
+              >
+                Tập trung
+              </button>
+              <button 
+                className={`pomodoro-mode-btn ${mode === 'shortBreak' ? 'active' : ''}`}
+                onClick={() => { 
+                  if (mode === 'work' && secondsStudiedRef.current > 0) logAccumulatedStudyTime();
+                  setIsActive(false); 
+                  setMode('shortBreak'); 
+                }}
+              >
+                Nghỉ ngắn
+              </button>
+              <button 
+                className={`pomodoro-mode-btn ${mode === 'longBreak' ? 'active' : ''}`}
+                onClick={() => { 
+                  if (mode === 'work' && secondsStudiedRef.current > 0) logAccumulatedStudyTime();
+                  setIsActive(false); 
+                  setMode('longBreak'); 
+                  setCompletedWorkSessions(0); 
+                }}
+              >
+                Nghỉ dài
+              </button>
+            </div>
+          )}
+
+          {/* Custom Countdown Time Selector (only for Countdown Mode and when not running) */}
+          {timerType === 'countdown' && !isActive && (
+            <div className="custom-countdown-setter glass-panel" style={{
+              marginTop: '0.2rem',
+              marginBottom: '1.25rem',
+              padding: '0.8rem',
+              borderRadius: '12px',
+              background: 'rgba(255, 255, 255, 0.03)',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              textAlign: 'center',
+              width: '100%',
+              maxWidth: '320px',
+              margin: '0 auto 1.25rem auto'
+            }}>
+              <div style={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.7)', fontWeight: '600', marginBottom: '0.5rem' }}>
+                Cài đặt thời gian đếm ngược
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem', justifyContent: 'center', marginBottom: '0.6rem' }}>
+                {[5, 10, 15, 25, 30, 45, 60, 90, 120].map((mins) => (
+                  <button
+                    key={mins}
+                    type="button"
+                    className={`preset-time-btn ${customCountdownTime === mins * 60 ? 'active' : ''}`}
+                    onClick={() => {
+                      setCustomCountdownTime(mins * 60);
+                      setTimeLeft(mins * 60);
+                    }}
+                  >
+                    {mins}p
+                  </button>
+                ))}
+              </div>
+              <div style={{ display: 'flex', gap: '0.4rem', justifyContent: 'center', alignItems: 'center' }}>
+                <input
+                  type="number"
+                  min="1"
+                  max="720"
+                  value={Math.floor(customCountdownTime / 60)}
+                  onChange={(e) => {
+                    const mins = Math.max(1, parseInt(e.target.value, 10) || 0);
+                    setCustomCountdownTime(mins * 60);
+                    setTimeLeft(mins * 60);
+                  }}
+                  className="form-input"
+                  style={{
+                    width: '70px',
+                    textAlign: 'center',
+                    padding: '0.3rem',
+                    fontSize: '0.8rem',
+                    borderRadius: '6px',
+                    background: 'rgba(0,0,0,0.2)',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    color: '#fff',
+                    margin: 0
+                  }}
+                />
+                <span style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.6)' }}>phút</span>
+              </div>
+            </div>
+          )}
 
           {/* Large Digital Timer & Progress Bar */}
           <div className="pomodoro-display-container">
             <div className="pomodoro-timer-large">{formatTime(timeLeft)}</div>
             <span className="pomodoro-timer-label" style={{ marginTop: '0.4rem', marginBottom: '1rem' }}>{getModeLabel()}</span>
             
-            {!isStopwatch && (
+            {timerType !== 'stopwatch' && (
               <div className="pomodoro-timer-progress-container" style={{ width: '100%', maxWidth: '300px', margin: '0 auto 1rem auto' }} title={`${totalSeconds > 0 ? Math.round(((totalSeconds - timeLeft) / totalSeconds) * 100) : 0}% hoàn thành`}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.74rem', color: 'rgba(255,255,255,0.6)', marginBottom: '5px', fontWeight: '600' }}>
                   <span>Tiến độ phiên</span>
@@ -1333,7 +1449,7 @@ function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [], onToggl
           </div>
 
           {/* Session Progress Dots */}
-          {!isStopwatch && (
+          {timerType === 'pomodoro' && (
             <div className="pomodoro-progress-dots-container">
               <div className="pomodoro-dots-indicator">
                 {[0, 1, 2].map((idx) => (
@@ -1401,12 +1517,14 @@ function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [], onToggl
               )}
             </button>
 
-            <button className="btn btn-secondary btn-icon-only" onClick={handleSkip} title="Bỏ qua phiên">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" width="18" height="18" strokeLinecap="round" strokeLinejoin="round">
-                <polygon points="5 4 15 12 5 20 5 4"></polygon>
-                <line x1="19" y1="5" x2="19" y2="19"></line>
-              </svg>
-            </button>
+            {timerType === 'pomodoro' && (
+              <button className="btn btn-secondary btn-icon-only" onClick={handleSkip} title="Bỏ qua phiên">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" width="18" height="18" strokeLinecap="round" strokeLinejoin="round">
+                  <polygon points="5 4 15 12 5 20 5 4"></polygon>
+                  <line x1="19" y1="5" x2="19" y2="19"></line>
+                </svg>
+              </button>
+            )}
           </div>
 
           {/* Theme Selector Section */}
