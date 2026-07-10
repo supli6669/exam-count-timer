@@ -1092,15 +1092,10 @@ function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [], onToggl
     }
   };
 
-  // Format timeLeft to HH:MM:SS or MM:SS
+  // Format timeLeft to MM:SS (keep minutes even if over 60 mins)
   const formatTime = (seconds) => {
-    const hrs = Math.floor(seconds / 3600);
-    const mins = Math.floor((seconds % 3600) / 60);
+    const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
-    
-    if (hrs > 0) {
-      return `${String(hrs).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
-    }
     return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
   };
 
