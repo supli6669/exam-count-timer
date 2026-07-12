@@ -462,7 +462,7 @@ function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [], onToggl
       const savedCount = localStorage.getItem('pomodoro_custom_countdown_time');
       return savedCount ? parseInt(savedCount, 10) : 30 * 60;
     }
-    const savedWork = localStorage.getItem('pomodoro_work_time');
+    const savedWork = localStorage.getItem('pomodoro_work');
     const wt = savedWork ? parseInt(savedWork, 10) : 25;
     return wt * 60;
   });
@@ -534,9 +534,14 @@ function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [], onToggl
   }, [timeLeft, mode, isActive, workTime, shortBreakTime, longBreakTime, timerType, customCountdownTime]);
 
   // Get total duration for the current mode in seconds
-  const getTotalSeconds = () => {
-    if (mode === 'work') return workTime * 60;
-    if (mode === 'shortBreak') return shortBreakTime * 60;
+  const getTotalSeconds = (typeOverride = null, modeOverride = null) => {
+    const currentType = typeOverride || timerType;
+    if (currentType === 'countdown') return customCountdownTime;
+    if (currentType === 'stopwatch') return 0;
+    
+    const currentMode = modeOverride || mode;
+    if (currentMode === 'work') return workTime * 60;
+    if (currentMode === 'shortBreak') return shortBreakTime * 60;
     return longBreakTime * 60;
   };
 
@@ -1288,7 +1293,7 @@ function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [], onToggl
               onClick={() => {
                 setIsActive(false);
                 setTimerType('pomodoro');
-                setTimeLeft(getTotalSeconds());
+                setTimeLeft(getTotalSeconds('pomodoro'));
               }}
             >
               ⏳ Pomodoro
