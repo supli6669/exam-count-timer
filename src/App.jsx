@@ -101,6 +101,15 @@ function App() {
     localStorage.setItem('exams_general_tasks', JSON.stringify(generalTasks));
   }, [generalTasks]);
 
+  const [activeTheme, setActiveTheme] = useState(() => {
+    return localStorage.getItem('app_global_theme') || 'cyberpunk';
+  });
+
+  useEffect(() => {
+    document.body.setAttribute('data-theme', activeTheme);
+    localStorage.setItem('app_global_theme', activeTheme);
+  }, [activeTheme]);
+
   // Prune old study history on app launch
   useEffect(() => {
     pruneOldStudyLogs(180);
@@ -597,6 +606,31 @@ function App() {
           </div>
         </div>
         <div className="header-actions">
+          {/* Global Theme Selector */}
+          <select
+            value={activeTheme}
+            onChange={(e) => setActiveTheme(e.target.value)}
+            className="theme-selector-dropdown"
+            style={{
+              background: 'var(--bg-glass)',
+              border: '1px solid var(--border-glass)',
+              color: 'var(--text-primary)',
+              borderRadius: '8px',
+              padding: '0.4rem 0.6rem',
+              fontSize: '0.85rem',
+              outline: 'none',
+              cursor: 'pointer',
+              fontWeight: '600'
+            }}
+            title="Đổi chủ đề giao diện nghệ thuật"
+            aria-label="Chọn chủ đề giao diện"
+          >
+            <option value="cyberpunk">🏙️ Cyberpunk</option>
+            <option value="sakura">🌸 Sakura Library</option>
+            <option value="lofi">☕ Lofi Cafe</option>
+            <option value="space">🌌 Space Odyssey</option>
+            <option value="nature">🌲 Nature Cabin</option>
+          </select>
           <BackupRestore />
           <NotificationSettings 
             enabled={notificationsEnabled} 
