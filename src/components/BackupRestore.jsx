@@ -1,4 +1,5 @@
 import { useRef } from 'react';
+import { validateBackupJSON } from '../utils/storage';
 
 function BackupRestore() {
   const fileInputRef = useRef(null);
@@ -62,9 +63,10 @@ function BackupRestore() {
       try {
         const backupData = JSON.parse(event.target.result);
         
-        // Simple validation
-        if (!backupData || typeof backupData !== 'object') {
-          throw new Error('Định dạng file sao lưu không hợp lệ.');
+        // Strict validation schema check
+        const validation = validateBackupJSON(backupData);
+        if (!validation.valid) {
+          throw new Error(validation.error);
         }
 
         const confirmImport = window.confirm('Nhập dữ liệu mới sẽ thay thế toàn bộ dữ liệu hiện tại của bạn. Bạn có muốn tiếp tục?');

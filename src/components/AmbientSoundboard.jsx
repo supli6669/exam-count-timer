@@ -292,17 +292,17 @@ function AmbientSoundboard() {
     if (instance) {
       if (instance.type === 'binaural') {
         instance.oscillators.forEach(osc => {
-          try { osc.stop(); } catch (e) {}
-          try { osc.disconnect(); } catch (e) {}
+          try { osc.stop(); } catch { /* ignore */ }
+          try { osc.disconnect(); } catch { /* ignore */ }
         });
         instance.panners.forEach(pan => {
-          try { pan.disconnect(); } catch (e) {}
+          try { pan.disconnect(); } catch { /* ignore */ }
         });
       } else if (instance.type === 'noise') {
-        try { instance.source.stop(); } catch (e) {}
-        try { instance.source.disconnect(); } catch (e) {}
+        try { instance.source.stop(); } catch { /* ignore */ }
+        try { instance.source.disconnect(); } catch { /* ignore */ }
       }
-      try { instance.gainNode.disconnect(); } catch (e) {}
+      try { instance.gainNode.disconnect(); } catch { /* ignore */ }
       delete synthInstances.current[soundId];
     }
   };
@@ -517,24 +517,26 @@ function AmbientSoundboard() {
 
   // Cleanup on unmount
   useEffect(() => {
+    const currentAudio = audioInstances.current;
+    const currentSynth = synthInstances.current;
     return () => {
       // Standard sounds cleanup
-      Object.keys(audioInstances.current).forEach((key) => {
-        const audio = audioInstances.current[key];
+      Object.keys(currentAudio).forEach((key) => {
+        const audio = currentAudio[key];
         if (audio) {
           audio.pause();
         }
       });
 
       // Synthesized sounds cleanup
-      Object.keys(synthInstances.current).forEach((key) => {
+      Object.keys(currentSynth).forEach((key) => {
         stopSynthSound(key);
       });
 
       if (audioCtxRef.current) {
         try {
           audioCtxRef.current.close();
-        } catch (e) {}
+        } catch { /* ignore */ }
       }
     };
   }, []);

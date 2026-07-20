@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import SpotifyPlayer from './SpotifyPlayer';
 import ThemeParticles from './ThemeParticles';
 import AmbientSoundboard from './AmbientSoundboard';
@@ -264,7 +264,7 @@ const playSynthAlarm = (soundId, volumePercent) => {
   }
 };
 
-function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [], onToggleTask }) {
+function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [] }) {
   // Load custom time settings (in minutes) or default values
   const [workTime, setWorkTime] = useState(() => {
     const saved = localStorage.getItem('pomodoro_work');
@@ -556,7 +556,7 @@ function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [], onToggl
   }
 
   // Study log helper
-  const logAccumulatedStudyTime = () => {
+  const logAccumulatedStudyTime = useCallback(() => {
     const seconds = secondsStudiedRef.current;
     if (seconds < 5) {
       secondsStudiedRef.current = 0;
@@ -607,14 +607,14 @@ function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [], onToggl
     
     // Reset ref counter
     secondsStudiedRef.current = 0;
-  };
+  }, [focusSubjectId, focusTaskId, exams, generalTasks, studyLogs]);
 
   // Log on panel close
   useEffect(() => {
     if (!isOpen && mode === 'work' && secondsStudiedRef.current > 0) {
       logAccumulatedStudyTime();
     }
-  }, [isOpen]);
+  }, [isOpen, mode, logAccumulatedStudyTime]);
 
   // Play session finished alarm
   const playAlarmSound = () => {
@@ -709,9 +709,9 @@ function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [], onToggl
     };
   }, [isActive, mode, timerType]);
 
-  const handleStartPause = () => {
-    setIsActive(!isActive);
-  };
+  const handleStartPause = useCallback(() => {
+    setIsActive(prev => !prev);
+  }, []);
 
   const handleReset = () => {
     setIsActive(false);
@@ -727,7 +727,7 @@ function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [], onToggl
     }
   };
 
-  const handleSkip = () => {
+  const handleSkip = useCallback(() => {
     setIsActive(false);
     if (mode === 'work' && secondsStudiedRef.current > 0) {
       logAccumulatedStudyTime();
@@ -744,7 +744,7 @@ function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [], onToggl
     } else {
       setMode('work');
     }
-  };
+  }, [mode, completedWorkSessions, logAccumulatedStudyTime]);
 
   // Keyboard shortcuts listener when panel is open
   useEffect(() => {
@@ -782,7 +782,7 @@ function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [], onToggl
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [isOpen, handleStartPause, handleSkip, onClose, lowPowerMode]);
+  }, [isOpen, handleStartPause, handleSkip, onClose, lowPowerMode, timerType]);
 
   // Save customized time configurations
   const handleSaveSettings = (e) => {
@@ -840,7 +840,6 @@ function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [], onToggl
       let bestColor = null;
       let maxVibrancy = -1;
       const hueBuckets = new Array(360).fill(0);
-      let rSum = 0, gSum = 0, bSum = 0, count = 0;
       let maxS = 0;
 
       for (let i = 0; i < imgData.length; i += 4) {
@@ -850,11 +849,6 @@ function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [], onToggl
         const a = imgData[i+3];
         
         if (a < 150) continue;
-
-        rSum += r;
-        gSum += g;
-        bSum += b;
-        count++;
 
         const rNorm = r / 255;
         const gNorm = g / 255;
@@ -1251,15 +1245,10 @@ function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [], onToggl
 
           {/* Focus Task Selector */}
           {(() => {
-            let tasks = [];
-            let label = "📋 Chọn nhiệm vụ cần hoàn thành:";
-            if (focusSubjectId !== 'general') {
-              const selectedExam = exams.find(e => e.id === focusSubjectId);
-              tasks = selectedExam?.tasks || [];
-            } else {
-              tasks = generalTasks || [];
-              label = "📋 Chọn nhiệm vụ chung cần hoàn thành:";
-            }
+            const isGeneral = focusSubjectId === 'general';
+            const selectedExam = !isGeneral ? exams.find(e => e.id === focusSubjectId) : null;
+            const tasks = !isGeneral ? (selectedExam?.tasks || []) : (generalTasks || []);
+            const label = !isGeneral ? "📋 Chọn nhiệm vụ cần hoàn thành:" : "📋 Chọn nhiệm vụ chung cần hoàn thành:";
             if (tasks.length === 0) return null;
             return (
               <div className="focus-task-selector" style={{ marginTop: '0.6rem', marginBottom: '0.2rem' }}>

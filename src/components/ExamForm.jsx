@@ -87,7 +87,7 @@ function ExamForm({ exam, onSave, onClose }) {
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h2 className="modal-title">
-            {exam ? 'Chỉnh sửa lịch thi' : 'Thêm lịch thi mới'}
+            {exam && exam.id ? 'Chỉnh sửa lịch thi' : 'Thêm lịch thi mới'}
           </h2>
           <button className="btn-icon" onClick={onClose} aria-label="Đóng modal">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

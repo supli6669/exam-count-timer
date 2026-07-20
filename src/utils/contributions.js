@@ -1,10 +1,18 @@
 export const getContributions = () => {
-  const saved = localStorage.getItem('productivity_contributions');
-  return saved ? JSON.parse(saved) : {};
+  try {
+    const saved = localStorage.getItem('productivity_contributions');
+    return saved ? JSON.parse(saved) : {};
+  } catch {
+    return {};
+  }
 };
 
 export const saveContributions = (contributions) => {
-  localStorage.setItem('productivity_contributions', JSON.stringify(contributions));
+  try {
+    localStorage.setItem('productivity_contributions', JSON.stringify(contributions));
+  } catch (err) {
+    console.warn('Cannot save contributions to localStorage:', err);
+  }
 };
 
 export const incrementContribution = (dateStr = new Date().toISOString().split('T')[0]) => {

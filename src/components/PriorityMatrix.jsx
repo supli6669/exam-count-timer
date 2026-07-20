@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 
 function PriorityMatrix({ exams, generalTasks = [], onAddTask, onToggleTask, onDeleteTask, onUpdateTaskPriority }) {
   const [searchQuery, setSearchQuery] = useState('');

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, memo } from 'react';
 import { CATEGORIES } from '../constants';
 
 function calculateTimeLeft(datetime) {
@@ -369,4 +369,4 @@ function ExamCard({ exam, onEdit, onDelete, onAddTask, onToggleTask, onDeleteTas
   );
 }
 
-export default ExamCard;
+export default memo(ExamCard);

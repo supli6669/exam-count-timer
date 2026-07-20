@@ -1,18 +1,43 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo, lazy, Suspense } from 'react';
 import ExamCard from './components/ExamCard';
 import ExamForm from './components/ExamForm';
 import NotificationSettings from './components/NotificationSettings';
 import BackupRestore from './components/BackupRestore';
-import CalendarView from './components/CalendarView';
 import { CATEGORIES } from './constants';
 import PomodoroTimer from './components/PomodoroTimer';
 import RecurringTasks from './components/RecurringTasks';
 import DailyTasks from './components/DailyTasks';
-import SmartInsights from './components/SmartInsights';
 import ContributionGraph from './components/ContributionGraph';
 import { incrementContribution, decrementContribution } from './utils/contributions';
 import OnboardingTour from './components/OnboardingTour';
-import PriorityMatrix from './components/PriorityMatrix';
+import ErrorBoundary from './components/ErrorBoundary';
+import { pruneOldStudyLogs } from './utils/storage';
+
+const CalendarView = lazy(() => import('./components/CalendarView'));
+const SmartInsights = lazy(() => import('./components/SmartInsights'));
+const PriorityMatrix = lazy(() => import('./components/PriorityMatrix'));
+
+const ComponentLoader = () => (
+  <div style={{
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: '3rem 1rem',
+    gap: '1rem',
+    color: 'var(--text-secondary)'
+  }}>
+    <div style={{
+      width: '36px',
+      height: '36px',
+      border: '3px solid rgba(255, 255, 255, 0.1)',
+      borderTop: '3px solid #8b5cf6',
+      borderRadius: '50%',
+      animation: 'spin 0.8s linear infinite'
+    }} />
+    <span style={{ fontSize: '0.9rem', fontWeight: 500 }}>Đang tải giao diện...</span>
+  </div>
+);
 
 // Initial mock data set relative to current date (June 2026)
 const getInitialMockData = () => {
@@ -76,6 +101,11 @@ function App() {
     localStorage.setItem('exams_general_tasks', JSON.stringify(generalTasks));
   }, [generalTasks]);
 
+  // Prune old study history on app launch
+  useEffect(() => {
+    pruneOldStudyLogs(180);
+  }, []);
+
   const [username, setUsername] = useState(() => {
     return localStorage.getItem('pomodoro_username') || '';
   });
@@ -121,6 +151,18 @@ function App() {
     localStorage.setItem('pomodoro_username', name);
     setIsEditingName(false);
   };
+
+  // Global Escape key listener to close active modals
+  useEffect(() => {
+    const handleGlobalKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        if (isModalOpen) setIsModalOpen(false);
+        else if (isPomodoroOpen) setIsPomodoroOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, [isModalOpen, isPomodoroOpen]);
 
   const gainXP = useCallback((amount) => {
     setUserXP(prevXP => {
@@ -284,7 +326,7 @@ function App() {
     return () => clearInterval(interval);
   }, [exams, notificationsEnabled]);
 
-  const handleCreateOpen = (defaultDate = null) => {
+  const handleCreateOpen = useCallback((defaultDate = null) => {
     if (defaultDate && typeof defaultDate === 'string') {
       setEditingExam({
         id: '',
@@ -296,34 +338,34 @@ function App() {
       setEditingExam(null);
     }
     setIsModalOpen(true);
-  };
+  }, []);
 
   // Handle open modal for editing
-  const handleEditOpen = (exam) => {
+  const handleEditOpen = useCallback((exam) => {
     setEditingExam(exam);
     setIsModalOpen(true);
-  };
+  }, []);
 
-  // Handle saving new/edited exam
-  const handleSaveExam = (savedExam) => {
-    if (editingExam) {
-      setExams(exams.map(e => e.id === savedExam.id ? savedExam : e));
+  // Handle saving new/edited exam (Fixed bug where editingExam with empty id was treated as editing)
+  const handleSaveExam = useCallback((savedExam) => {
+    if (editingExam && editingExam.id) {
+      setExams(prev => prev.map(e => e.id === savedExam.id ? savedExam : e));
     } else {
-      setExams([...exams, savedExam]);
+      setExams(prev => [...prev, savedExam]);
     }
     setIsModalOpen(false);
     setEditingExam(null);
-  };
+  }, [editingExam]);
 
   // Handle delete
-  const handleDeleteExam = (id) => {
+  const handleDeleteExam = useCallback((id) => {
     if (window.confirm('Bạn có chắc chắn muốn xóa lịch thi này không?')) {
-      setExams(exams.filter(e => e.id !== id));
+      setExams(prev => prev.filter(e => e.id !== id));
     }
-  };
+  }, []);
 
   // Handle adding a sub-task for an exam or general tasks
-  const handleAddTask = (examId, text, deadline, estPomodoros = 1, urgent = false, important = true) => {
+  const handleAddTask = useCallback((examId, text, deadline, estPomodoros = 1, urgent = false, important = true) => {
     const newTask = {
       id: `task-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
       text,
@@ -338,7 +380,7 @@ function App() {
     if (examId === 'general') {
       setGeneralTasks(prev => [...prev, newTask]);
     } else {
-      setExams(exams.map(exam => {
+      setExams(prev => prev.map(exam => {
         if (exam.id === examId) {
           return {
             ...exam,
@@ -348,30 +390,13 @@ function App() {
         return exam;
       }));
     }
-  };
+  }, []);
 
   // Handle toggling sub-task completed status
-  const handleToggleTask = (examId, taskId) => {
+  const handleToggleTask = useCallback((examId, taskId) => {
     if (examId === 'general') {
-      const task = generalTasks.find(t => t.id === taskId);
-      if (task) {
-        if (!task.completed) {
-          incrementContribution();
-          window.dispatchEvent(new CustomEvent('gain-xp', { detail: 50 }));
-        } else {
-          decrementContribution();
-        }
-      }
-      setGeneralTasks(generalTasks.map(task => {
-        if (task.id === taskId) {
-          return { ...task, completed: !task.completed, completedAt: !task.completed ? Date.now() : null };
-        }
-        return task;
-      }));
-    } else {
-      const exam = exams.find(e => e.id === examId);
-      if (exam) {
-        const task = (exam.tasks || []).find(t => t.id === taskId);
+      setGeneralTasks(prev => {
+        const task = prev.find(t => t.id === taskId);
         if (task) {
           if (!task.completed) {
             incrementContribution();
@@ -380,31 +405,51 @@ function App() {
             decrementContribution();
           }
         }
-      }
-
-      setExams(exams.map(exam => {
-        if (exam.id === examId) {
-          return {
-            ...exam,
-            tasks: (exam.tasks || []).map(task => {
-              if (task.id === taskId) {
-                return { ...task, completed: !task.completed, completedAt: !task.completed ? Date.now() : null };
-              }
-              return task;
-            })
-          };
+        return prev.map(t => {
+          if (t.id === taskId) {
+            return { ...t, completed: !t.completed, completedAt: !t.completed ? Date.now() : null };
+          }
+          return t;
+        });
+      });
+    } else {
+      setExams(prev => {
+        const exam = prev.find(e => e.id === examId);
+        if (exam) {
+          const task = (exam.tasks || []).find(t => t.id === taskId);
+          if (task) {
+            if (!task.completed) {
+              incrementContribution();
+              window.dispatchEvent(new CustomEvent('gain-xp', { detail: 50 }));
+            } else {
+              decrementContribution();
+            }
+          }
         }
-        return exam;
-      }));
+        return prev.map(exam => {
+          if (exam.id === examId) {
+            return {
+              ...exam,
+              tasks: (exam.tasks || []).map(task => {
+                if (task.id === taskId) {
+                  return { ...task, completed: !task.completed, completedAt: !task.completed ? Date.now() : null };
+                }
+                return task;
+              })
+            };
+          }
+          return exam;
+        });
+      });
     }
-  };
+  }, []);
 
   // Handle deleting a sub-task
-  const handleDeleteTask = (examId, taskId) => {
+  const handleDeleteTask = useCallback((examId, taskId) => {
     if (examId === 'general') {
-      setGeneralTasks(generalTasks.filter(task => task.id !== taskId));
+      setGeneralTasks(prev => prev.filter(task => task.id !== taskId));
     } else {
-      setExams(exams.map(exam => {
+      setExams(prev => prev.map(exam => {
         if (exam.id === examId) {
           return {
             ...exam,
@@ -414,19 +459,19 @@ function App() {
         return exam;
       }));
     }
-  };
+  }, []);
 
   // Handle updating a sub-task's priority
-  const handleUpdateTaskPriority = (examId, taskId, urgent, important) => {
+  const handleUpdateTaskPriority = useCallback((examId, taskId, urgent, important) => {
     if (examId === 'general') {
-      setGeneralTasks(generalTasks.map(task => {
+      setGeneralTasks(prev => prev.map(task => {
         if (task.id === taskId) {
           return { ...task, urgent, important };
         }
         return task;
       }));
     } else {
-      setExams(exams.map(exam => {
+      setExams(prev => prev.map(exam => {
         if (exam.id === examId) {
           return {
             ...exam,
@@ -441,10 +486,10 @@ function App() {
         return exam;
       }));
     }
-  };
+  }, []);
 
-  // Dynamic status counts
-  const getStats = () => {
+  // Dynamic status counts (Memoized)
+  const stats = useMemo(() => {
     let urgent = 0;
     let warning = 0;
     let safe = 0;
@@ -469,27 +514,27 @@ function App() {
     });
 
     return { total: exams.length, urgent, warning, safe, passed };
-  };
+  }, [exams]);
 
-  const stats = getStats();
+  // Filter & Sort logic (Memoized)
+  const sortedExams = useMemo(() => {
+    const filtered = exams.filter(exam => {
+      const matchesSearch = exam.subject.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesCategory = selectedCategory === 'all' || (exam.category || 'other') === selectedCategory;
+      return matchesSearch && matchesCategory;
+    });
 
-  // Filter & Sort logic
-  const filteredExams = exams.filter(exam => {
-    const matchesSearch = exam.subject.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = selectedCategory === 'all' || (exam.category || 'other') === selectedCategory;
-    return matchesSearch && matchesCategory;
-  });
-
-  const sortedExams = [...filteredExams].sort((a, b) => {
-    if (sortBy === 'date-asc') {
-      return new Date(a.datetime) - new Date(b.datetime);
-    } else if (sortBy === 'date-desc') {
-      return new Date(b.datetime) - new Date(a.datetime);
-    } else if (sortBy === 'name-asc') {
-      return a.subject.localeCompare(b.subject, 'vi');
-    }
-    return 0;
-  });
+    return [...filtered].sort((a, b) => {
+      if (sortBy === 'date-asc') {
+        return new Date(a.datetime) - new Date(b.datetime);
+      } else if (sortBy === 'date-desc') {
+        return new Date(b.datetime) - new Date(a.datetime);
+      } else if (sortBy === 'name-asc') {
+        return a.subject.localeCompare(b.subject, 'vi');
+      }
+      return 0;
+    });
+  }, [exams, searchQuery, selectedCategory, sortBy]);
 
   return (
     <div className="app-container">
@@ -837,12 +882,16 @@ function App() {
               )}
             </main>
           ) : (
-            <CalendarView 
-              exams={sortedExams} 
-              onEdit={handleEditOpen}
-              onDelete={handleDeleteExam}
-              onCreate={handleCreateOpen}
-            />
+            <ErrorBoundary>
+              <Suspense fallback={<ComponentLoader />}>
+                <CalendarView 
+                  exams={sortedExams} 
+                  onEdit={handleEditOpen}
+                  onDelete={handleDeleteExam}
+                  onCreate={handleCreateOpen}
+                />
+              </Suspense>
+            </ErrorBoundary>
           )}
         </>
       )}
@@ -850,14 +899,18 @@ function App() {
       {/* TAB 2: KẾ HOẠCH & THÓI QUEN */}
       {viewMode === 'tasks' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-          <PriorityMatrix
-            exams={exams}
-            generalTasks={generalTasks}
-            onAddTask={handleAddTask}
-            onToggleTask={handleToggleTask}
-            onDeleteTask={handleDeleteTask}
-            onUpdateTaskPriority={handleUpdateTaskPriority}
-          />
+          <ErrorBoundary>
+            <Suspense fallback={<ComponentLoader />}>
+              <PriorityMatrix
+                exams={exams}
+                generalTasks={generalTasks}
+                onAddTask={handleAddTask}
+                onToggleTask={handleToggleTask}
+                onDeleteTask={handleDeleteTask}
+                onUpdateTaskPriority={handleUpdateTaskPriority}
+              />
+            </Suspense>
+          </ErrorBoundary>
           <div className="goals-and-daily-container">
             <RecurringTasks />
             <DailyTasks />
@@ -868,7 +921,11 @@ function App() {
       {/* TAB 3: PHÂN TÍCH & TIẾN ĐỘ */}
       {viewMode === 'analytics' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-          <SmartInsights exams={exams} />
+          <ErrorBoundary>
+            <Suspense fallback={<ComponentLoader />}>
+              <SmartInsights exams={exams} />
+            </Suspense>
+          </ErrorBoundary>
           <ContributionGraph />
         </div>
       )}

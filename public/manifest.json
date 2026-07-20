@@ -1,0 +1,17 @@
+{
+  "short_name": "ExamCountdown",
+  "name": "Exam Countdown Timer & Study Dashboard",
+  "icons": [
+    {
+      "src": "favicon.svg",
+      "type": "image/svg+xml",
+      "sizes": "192x192 512x512"
+    }
+  ],
+  "start_url": "./",
+  "background_color": "#0f172a",
+  "theme_color": "#8b5cf6",
+  "display": "standalone",
+  "orientation": "any",
+  "description": "Đếm ngược lịch thi thời gian thực, quản lý nhiệm vụ và bộ đếm Pomodoro tập trung học tập."
+}
