@@ -5,6 +5,7 @@ function TimerDisplay({
   mode,
   onModeChange,
   onTimerTypeChange,
+  onSwitchModeAndType,
   timeLeft,
   isActive,
   handleStartPause,
@@ -15,6 +16,15 @@ function TimerDisplay({
   getModeLabel,
   getTotalSeconds
 }) {
+  const handleSelectMode = (newMode, newType) => {
+    if (onSwitchModeAndType) {
+      onSwitchModeAndType(newMode, newType);
+    } else {
+      if (newType !== timerType) onTimerTypeChange(newType);
+      if (newMode !== mode) onModeChange(newMode);
+    }
+  };
+
   const formatTime = (totalSeconds) => {
     const mins = Math.floor(totalSeconds / 60);
     const secs = totalSeconds % 60;
@@ -32,7 +42,7 @@ function TimerDisplay({
         <button
           type="button"
           className={`mode-btn ${timerType === 'pomodoro' && mode === 'work' ? 'active' : ''}`}
-          onClick={() => { onTimerTypeChange('pomodoro'); onModeChange('work'); }}
+          onClick={() => handleSelectMode('work', 'pomodoro')}
           style={{ borderColor: timerType === 'pomodoro' && mode === 'work' ? getModeColor() : 'transparent' }}
         >
           🎯 Tập trung
@@ -40,7 +50,7 @@ function TimerDisplay({
         <button
           type="button"
           className={`mode-btn ${timerType === 'pomodoro' && mode === 'shortBreak' ? 'active' : ''}`}
-          onClick={() => { onTimerTypeChange('pomodoro'); onModeChange('shortBreak'); }}
+          onClick={() => handleSelectMode('shortBreak', 'pomodoro')}
           style={{ borderColor: timerType === 'pomodoro' && mode === 'shortBreak' ? getModeColor() : 'transparent' }}
         >
           ☕ Nghỉ ngắn
@@ -48,7 +58,7 @@ function TimerDisplay({
         <button
           type="button"
           className={`mode-btn ${timerType === 'pomodoro' && mode === 'longBreak' ? 'active' : ''}`}
-          onClick={() => { onTimerTypeChange('pomodoro'); onModeChange('longBreak'); }}
+          onClick={() => handleSelectMode('longBreak', 'pomodoro')}
           style={{ borderColor: timerType === 'pomodoro' && mode === 'longBreak' ? getModeColor() : 'transparent' }}
         >
           🌴 Nghỉ dài
@@ -56,7 +66,7 @@ function TimerDisplay({
         <button
           type="button"
           className={`mode-btn ${timerType === 'stopwatch' ? 'active' : ''}`}
-          onClick={() => { onTimerTypeChange('stopwatch'); }}
+          onClick={() => handleSelectMode(mode, 'stopwatch')}
           style={{ borderColor: timerType === 'stopwatch' ? '#10b981' : 'transparent' }}
         >
           ⏱️ Bấm giờ

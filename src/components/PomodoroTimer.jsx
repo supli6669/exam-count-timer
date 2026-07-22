@@ -100,17 +100,20 @@ function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [] }) {
     return workTime * 60;
   }, [workTime, shortBreakTime, longBreakTime]);
 
-  const handleModeChange = useCallback((newMode) => {
-    setMode(newMode);
+  const switchModeAndType = useCallback((newMode, newType) => {
     setIsActive(false);
-    setTimeLeft(calculateSecondsForMode(newMode, timerType));
-  }, [timerType, calculateSecondsForMode]);
+    setMode(newMode);
+    setTimerType(newType);
+    setTimeLeft(calculateSecondsForMode(newMode, newType));
+  }, [calculateSecondsForMode]);
+
+  const handleModeChange = useCallback((newMode) => {
+    switchModeAndType(newMode, timerType);
+  }, [timerType, switchModeAndType]);
 
   const handleTimerTypeChange = useCallback((newType) => {
-    setTimerType(newType);
-    setIsActive(false);
-    setTimeLeft(calculateSecondsForMode(mode, newType));
-  }, [mode, calculateSecondsForMode]);
+    switchModeAndType(mode, newType);
+  }, [mode, switchModeAndType]);
 
   // Sync theme to localStorage & global body data-theme attribute
   useEffect(() => {
@@ -187,55 +190,67 @@ function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [] }) {
     playSynthAlarm(soundToPlay, volToPlay);
   }, [inputAlarmSound, inputAlarmVolume]);
 
-  // Timer Tick Interval Effect
+  // Pure Timer Tick Interval Effect
   useEffect(() => {
-    if (isActive) {
-      timerRef.current = setInterval(() => {
-        if (timerType === 'stopwatch') {
-          setTimeLeft(prev => prev + 1);
-          secondsStudiedRef.current += 1;
-        } else {
-          setTimeLeft(prev => {
-            if (prev <= 1) {
-              clearInterval(timerRef.current);
-              setIsActive(false);
-              playAlarmSound();
+    if (!isActive) return;
 
-              if (mode === 'work') {
-                logAccumulatedStudyTime();
-                const nextCount = completedWorkSessions + 1;
-                localStorage.setItem('pomodoro_completed_sessions', nextCount.toString());
-                setCompletedWorkSessions(nextCount);
-
-                if (nextCount >= 4) {
-                  setCompletedWorkSessions(0);
-                  localStorage.setItem('pomodoro_completed_sessions', '0');
-                  setMode('longBreak');
-                } else {
-                  setMode('shortBreak');
-                }
-              } else {
-                setMode('work');
-              }
-              return 0;
-            }
-            if (mode === 'work') {
-              secondsStudiedRef.current += 1;
-            }
-            return prev - 1;
-          });
-        }
-      }, 1000);
-    }
+    timerRef.current = setInterval(() => {
+      if (timerType === 'stopwatch') {
+        setTimeLeft(prev => prev + 1);
+        secondsStudiedRef.current += 1;
+      } else {
+        setTimeLeft(prev => {
+          if (prev <= 1) return 0;
+          if (mode === 'work') {
+            secondsStudiedRef.current += 1;
+          }
+          return prev - 1;
+        });
+      }
+    }, 1000);
 
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [isActive, mode, timerType, completedWorkSessions, playAlarmSound, logAccumulatedStudyTime]);
+  }, [isActive, mode, timerType]);
+
+  // Timer Completion Effect (triggers clean state transition & sound when countdown reaches 0)
+  useEffect(() => {
+    if (isActive && timerType === 'pomodoro' && timeLeft === 0) {
+      setIsActive(false);
+      playAlarmSound();
+
+      let nextMode = 'work';
+      if (mode === 'work') {
+        logAccumulatedStudyTime();
+        const nextCount = completedWorkSessions + 1;
+        if (nextCount >= 4) {
+          setCompletedWorkSessions(0);
+          localStorage.setItem('pomodoro_completed_sessions', '0');
+          nextMode = 'longBreak';
+        } else {
+          setCompletedWorkSessions(nextCount);
+          localStorage.setItem('pomodoro_completed_sessions', nextCount.toString());
+          nextMode = 'shortBreak';
+        }
+      } else {
+        nextMode = 'work';
+      }
+
+      setMode(nextMode);
+      setTimeLeft(calculateSecondsForMode(nextMode, 'pomodoro'));
+    }
+  }, [timeLeft, isActive, timerType, mode, completedWorkSessions, playAlarmSound, logAccumulatedStudyTime, calculateSecondsForMode]);
 
   const handleStartPause = useCallback(() => {
-    setIsActive(prev => !prev);
-  }, []);
+    setIsActive(prev => {
+      const nextActive = !prev;
+      if (nextActive && timerType === 'pomodoro' && timeLeft <= 0) {
+        setTimeLeft(calculateSecondsForMode(mode, timerType));
+      }
+      return nextActive;
+    });
+  }, [timerType, mode, timeLeft, calculateSecondsForMode]);
 
   const handleReset = useCallback(() => {
     setIsActive(false);
@@ -244,31 +259,34 @@ function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [] }) {
     }
     if (timerType === 'stopwatch') {
       setTimeLeft(0);
-    } else if (timerType === 'countdown') {
-      setTimeLeft(customCountdownTime);
     } else {
-      setTimeLeft(getTotalSeconds());
+      setTimeLeft(calculateSecondsForMode(mode, timerType));
     }
-  }, [timerType, mode, customCountdownTime, getTotalSeconds, logAccumulatedStudyTime]);
+  }, [timerType, mode, calculateSecondsForMode, logAccumulatedStudyTime]);
 
   const handleSkip = useCallback(() => {
     setIsActive(false);
     if (mode === 'work' && secondsStudiedRef.current > 0) {
       logAccumulatedStudyTime();
     }
+    let nextMode = 'work';
     if (mode === 'work') {
       const nextCount = completedWorkSessions + 1;
       if (nextCount >= 4) {
         setCompletedWorkSessions(0);
-        setMode('longBreak');
+        localStorage.setItem('pomodoro_completed_sessions', '0');
+        nextMode = 'longBreak';
       } else {
         setCompletedWorkSessions(nextCount);
-        setMode('shortBreak');
+        localStorage.setItem('pomodoro_completed_sessions', nextCount.toString());
+        nextMode = 'shortBreak';
       }
     } else {
-      setMode('work');
+      nextMode = 'work';
     }
-  }, [mode, completedWorkSessions, logAccumulatedStudyTime]);
+    setMode(nextMode);
+    setTimeLeft(calculateSecondsForMode(nextMode, timerType));
+  }, [mode, completedWorkSessions, timerType, calculateSecondsForMode, logAccumulatedStudyTime]);
 
   // Save customized settings
   const handleSaveSettings = (e) => {
@@ -290,6 +308,13 @@ function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [] }) {
     localStorage.setItem('pomodoro_long_break', l.toString());
     localStorage.setItem('pomodoro_alarm_volume', vol.toString());
     localStorage.setItem('pomodoro_alarm_sound', snd);
+
+    if (!isActive && timerType === 'pomodoro') {
+      let updatedTime = w * 60;
+      if (mode === 'shortBreak') updatedTime = s * 60;
+      if (mode === 'longBreak') updatedTime = l * 60;
+      setTimeLeft(updatedTime);
+    }
 
     alert('Đã lưu thiết lập thành công!');
   };
@@ -528,6 +553,7 @@ function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [] }) {
               onTimerTypeChange={handleTimerTypeChange}
               mode={mode}
               onModeChange={handleModeChange}
+              onSwitchModeAndType={switchModeAndType}
               timeLeft={timeLeft}
               isActive={isActive}
               handleStartPause={handleStartPause}
