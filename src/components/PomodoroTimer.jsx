@@ -327,6 +327,93 @@ function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [] }) {
     return 'Nghỉ ngơi dài';
   };
 
+  // Update browser tab title and taskbar countdown timer with dynamic SVG favicons
+  useEffect(() => {
+    let intervalId = null;
+
+    const updateTaskbarTitle = () => {
+      const totalSecs = getTotalSeconds();
+      const isTimerDirty = timerType === 'stopwatch' ? timeLeft > 0 : timeLeft !== totalSecs;
+
+      if (isActive || isTimerDirty) {
+        let timeStr = '';
+        if (timerType === 'stopwatch') {
+          const hrs = Math.floor(timeLeft / 3600);
+          const mins = Math.floor((timeLeft % 3600) / 60);
+          const secs = timeLeft % 60;
+          timeStr = hrs > 0
+            ? `${String(hrs).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`
+            : `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+        } else {
+          const mins = Math.floor(timeLeft / 60);
+          const secs = timeLeft % 60;
+          timeStr = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+        }
+
+        let emoji = '⚡';
+        if (timerType === 'stopwatch') emoji = '⏱️';
+        else if (mode === 'shortBreak') emoji = '☕';
+        else if (mode === 'longBreak') emoji = '🍃';
+
+        const prefix = isActive ? '' : '⏸️ ';
+        const modeText = timerType === 'stopwatch' ? 'Bấm giờ' : (mode === 'work' ? 'Tập trung' : 'Nghỉ ngơi');
+        document.title = `${prefix}${emoji} ${timeStr} | ${modeText} - Lịch Thi`;
+
+        const favicon = document.querySelector("link[rel*='icon']");
+        if (favicon) {
+          favicon.href = `data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>${emoji}</text></svg>`;
+        }
+      } else {
+        // Nearest upcoming exam countdown on taskbar
+        const upcomingExams = (exams || [])
+          .map(e => ({ ...e, diff: new Date(e.datetime) - new Date() }))
+          .filter(e => e.diff > 0)
+          .sort((a, b) => a.diff - b.diff);
+
+        if (upcomingExams.length > 0) {
+          const nearest = upcomingExams[0];
+          const days = Math.floor(nearest.diff / (1000 * 60 * 60 * 24));
+          const hours = Math.floor((nearest.diff / (1000 * 60 * 60)) % 24);
+          const mins = Math.floor((nearest.diff / (1000 * 60)) % 60);
+          const secs = Math.floor((nearest.diff / 1000) % 60);
+
+          let timeLabel = '';
+          if (days > 0) {
+            timeLabel = `${days}d ${hours}h`;
+          } else if (hours > 0) {
+            timeLabel = `${hours}h ${mins}m`;
+          } else {
+            timeLabel = `${mins}m ${secs}s`;
+          }
+
+          document.title = `🎯 Còn ${timeLabel}: ${nearest.subject} | Đồng Hồ Lịch Thi`;
+          const favicon = document.querySelector("link[rel*='icon']");
+          if (favicon) {
+            favicon.href = `data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎯</text></svg>`;
+          }
+        } else {
+          document.title = "Đồng Hồ Đếm Ngược Lịch Thi - Theo Dõi Lịch Thi Thời Gian Thực";
+          const favicon = document.querySelector("link[rel*='icon']");
+          if (favicon) {
+            favicon.href = `data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⏱️</text></svg>`;
+          }
+        }
+      }
+    };
+
+    updateTaskbarTitle();
+
+    const totalSecs = getTotalSeconds();
+    const isTimerDirty = timerType === 'stopwatch' ? timeLeft > 0 : timeLeft !== totalSecs;
+    if (!isActive && !isTimerDirty) {
+      intervalId = setInterval(updateTaskbarTitle, 5000);
+    }
+
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [timeLeft, mode, isActive, timerType, getTotalSeconds, exams]);
+
   if (!isOpen) return null;
 
   return (
