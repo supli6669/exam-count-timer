@@ -12,6 +12,9 @@ import { incrementContribution, decrementContribution } from './utils/contributi
 import OnboardingTour from './components/OnboardingTour';
 import ErrorBoundary from './components/ErrorBoundary';
 import { pruneOldStudyLogs, safeJsonParse } from './utils/storage';
+import StudyStreak from './components/StudyStreak';
+import { downloadICalFile } from './utils/icsExport';
+
 
 const CalendarView = lazy(() => import('./components/CalendarView'));
 const SmartInsights = lazy(() => import('./components/SmartInsights'));
@@ -605,6 +608,7 @@ function App() {
           </div>
         </div>
         <div className="header-actions">
+          <StudyStreak userXP={userXP} />
           {/* Global Theme Selector */}
           <select
             value={activeTheme}
@@ -630,6 +634,26 @@ function App() {
             <option value="space">🌌 Space Odyssey</option>
             <option value="nature">🌲 Nature Cabin</option>
           </select>
+          <button
+            onClick={() => downloadICalFile(exams, 'lich-thi-exam-countdown.ics')}
+            style={{
+              background: 'rgba(59, 130, 246, 0.12)',
+              border: '1px solid rgba(59, 130, 246, 0.3)',
+              color: '#60a5fa',
+              borderRadius: '8px',
+              padding: '0.4rem 0.75rem',
+              fontSize: '0.85rem',
+              fontWeight: 600,
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.35rem',
+              backdropFilter: 'blur(8px)'
+            }}
+            title="Xuất toàn bộ lịch thi ra tập tin iCalendar (.ics) cho Google/Apple Calendar"
+          >
+            📅 Xuất Lịch (.ics)
+          </button>
           <BackupRestore />
           <NotificationSettings 
             enabled={notificationsEnabled} 
@@ -640,6 +664,7 @@ function App() {
             onClick={() => setIsPomodoroOpen(!isPomodoroOpen)}
             title="Đồng hồ Pomodoro"
             aria-label="Đồng hồ Pomodoro"
+
           >
             <span style={{ fontSize: '1.2rem', display: 'flex', alignItems: 'center' }}>🍅</span>
           </button>

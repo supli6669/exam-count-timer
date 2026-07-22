@@ -1,5 +1,6 @@
 import { useState, useEffect, memo } from 'react';
 import { CATEGORIES } from '../constants';
+import { downloadICalFile } from '../utils/icsExport';
 
 function calculateTimeLeft(datetime) {
   const difference = new Date(datetime) - new Date();
@@ -340,6 +341,15 @@ function ExamCard({ exam, onEdit, onDelete, onAddTask, onToggleTask, onDeleteTas
           📋 {totalTasksCount > 0 ? `Nhiệm vụ (${completedTasksCount}/${totalTasksCount})` : 'Việc cần làm'}
         </button>
         
+        <button 
+          className="btn-icon calendar-export" 
+          onClick={() => downloadICalFile(exam, `lich-thi-${exam.subject.toLowerCase().replace(/\s+/g, '-')}.ics`)} 
+          title="Xuất file iCalendar (.ics) để đồng bộ Google/Apple Calendar"
+          aria-label={`Xuất lịch thi môn ${exam.subject} ra file ics`}
+          style={{ background: 'rgba(59, 130, 246, 0.12)', color: '#60a5fa', border: '1px solid rgba(59, 130, 246, 0.25)' }}
+        >
+          📅
+        </button>
         <button 
           className="btn-icon edit" 
           onClick={() => onEdit(exam)} 
