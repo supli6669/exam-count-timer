@@ -216,18 +216,17 @@ function ExamCard({ exam, onEdit, onDelete, onAddTask, onToggleTask, onDeleteTas
         </div>
       </div>
 
-      {/* Task Progress Bar (only if there are tasks) */}
-      {totalTasksCount > 0 && (
-        <div className="exam-tasks-progress-container">
-          <div className="tasks-progress-header">
-            <span>Tiến độ ôn tập</span>
-            <span>{completedTasksCount}/{totalTasksCount} việc ({progressPercent}%)</span>
-          </div>
-          <div className="tasks-progress-track">
-            <div className="tasks-progress-fill" style={{ width: `${progressPercent}%` }}></div>
-          </div>
+      {/* Task Completion Progress Bar (Always Visible) */}
+      <div className="exam-tasks-progress-container" style={{ marginTop: '0.8rem' }}>
+        <div className="tasks-progress-header" style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.35rem', fontWeight: 600 }}>
+          <span>Tiến độ hoàn thành</span>
+          <span>{completedTasksCount}/{totalTasksCount} việc ({progressPercent}%)</span>
         </div>
-      )}
+        <div className="tasks-progress-track" style={{ height: '6px', width: '100%', backgroundColor: 'rgba(255, 255, 255, 0.08)', borderRadius: '3px', overflow: 'hidden' }}>
+          <div className="tasks-progress-fill" style={{ width: `${progressPercent}%`, height: '100%', background: 'linear-gradient(90deg, #6366f1, #10b981)', borderRadius: '3px', transition: 'width 0.3s ease' }}></div>
+        </div>
+      </div>
+
 
       {/* Collapsible Tasks Section */}
       {isTasksExpanded && (
