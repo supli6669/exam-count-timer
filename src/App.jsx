@@ -76,8 +76,10 @@ const getInitialMockData = () => {
 
 function App() {
   const [exams, setExams] = useState(() => {
-    return safeJsonParse('exams_countdown_list', getInitialMockData());
+    const parsed = safeJsonParse('exams_countdown_list', []);
+    return (Array.isArray(parsed) && parsed.length > 0) ? parsed : getInitialMockData();
   });
+
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingExam, setEditingExam] = useState(null);
@@ -276,29 +278,8 @@ function App() {
     };
   }, [gainXP]);
 
-  // Auto-remove exams that have already passed
-  useEffect(() => {
-    const cleanupPassed = () => {
-      const now = new Date();
-      setExams(prev => {
-        const remaining = prev.filter(exam => new Date(exam.datetime) > now);
-        // Only update if something was actually removed
-        if (remaining.length < prev.length) {
-          return remaining;
-        }
-        return prev;
-      });
-    };
-
-    // Check immediately on mount
-    cleanupPassed();
-
-    // Then check every 30 seconds
-    const interval = setInterval(cleanupPassed, 30000);
-    return () => clearInterval(interval);
-  }, []);
-
   // Save notification setting
+
   useEffect(() => {
     localStorage.setItem('notifications_enabled', notificationsEnabled.toString());
   }, [notificationsEnabled]);
