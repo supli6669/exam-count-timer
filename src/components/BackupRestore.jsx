@@ -73,8 +73,10 @@ function BackupRestore() {
         if (!confirmImport) return;
 
         Object.entries(backupData).forEach(([key, val]) => {
-          localStorage.setItem(key, val);
+          const stringVal = typeof val === 'string' ? val : JSON.stringify(val);
+          localStorage.setItem(key, stringVal);
         });
+
 
         alert('Nhập dữ liệu thành công! Ứng dụng sẽ tự động tải lại.');
         window.location.reload();

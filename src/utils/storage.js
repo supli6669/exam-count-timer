@@ -34,13 +34,23 @@ export function validateBackupJSON(data) {
     return { valid: false, error: 'Tập tin sao lưu không chứa bất kỳ dữ liệu cấu hình hợp lệ nào của ứng dụng.' };
   }
 
+  // Helper to parse if value is a JSON string
+  const parseIfString = (val) => {
+    if (typeof val === 'string') {
+      try { return JSON.parse(val); } catch { return val; }
+    }
+    return val;
+  };
+
+
   // Validate exams array if present
   if (data.exams_countdown_list) {
-    if (!Array.isArray(data.exams_countdown_list)) {
+    const exams = parseIfString(data.exams_countdown_list);
+    if (!Array.isArray(exams)) {
       return { valid: false, error: 'Danh sách môn thi (exams_countdown_list) phải là một mảng.' };
     }
-    for (const exam of data.exams_countdown_list) {
-      if (!exam.id || !exam.subject || !exam.datetime) {
+    for (const exam of exams) {
+      if (!exam || !exam.id || !exam.subject || !exam.datetime) {
         return { valid: false, error: 'Phát hiện môn thi thiếu thông tin bắt buộc (id, subject, datetime).' };
       }
       if (isNaN(new Date(exam.datetime).getTime())) {
@@ -51,7 +61,8 @@ export function validateBackupJSON(data) {
 
   // Validate study logs array if present
   if (data.pomodoro_study_logs) {
-    if (!Array.isArray(data.pomodoro_study_logs)) {
+    const logs = parseIfString(data.pomodoro_study_logs);
+    if (!Array.isArray(logs)) {
       return { valid: false, error: 'Nhật ký học tập (pomodoro_study_logs) phải là một mảng.' };
     }
   }
