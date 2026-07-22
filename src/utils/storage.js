@@ -81,3 +81,17 @@ export function pruneOldStudyLogs(maxDays = 180) {
     console.warn('Could not prune study logs:', err);
   }
 }
+
+/**
+ * Safely parses a LocalStorage JSON item with a fallback value.
+ */
+export function safeJsonParse(key, fallback) {
+  try {
+    const item = localStorage.getItem(key);
+    return item ? JSON.parse(item) : fallback;
+  } catch (err) {
+    console.warn(`Failed to parse LocalStorage key "${key}", using fallback:`, err);
+    return fallback;
+  }
+}
+

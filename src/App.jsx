@@ -11,7 +11,7 @@ import ContributionGraph from './components/ContributionGraph';
 import { incrementContribution, decrementContribution } from './utils/contributions';
 import OnboardingTour from './components/OnboardingTour';
 import ErrorBoundary from './components/ErrorBoundary';
-import { pruneOldStudyLogs } from './utils/storage';
+import { pruneOldStudyLogs, safeJsonParse } from './utils/storage';
 
 const CalendarView = lazy(() => import('./components/CalendarView'));
 const SmartInsights = lazy(() => import('./components/SmartInsights'));
@@ -72,8 +72,7 @@ const getInitialMockData = () => {
 
 function App() {
   const [exams, setExams] = useState(() => {
-    const saved = localStorage.getItem('exams_countdown_list');
-    return saved ? JSON.parse(saved) : getInitialMockData();
+    return safeJsonParse('exams_countdown_list', getInitialMockData());
   });
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -88,9 +87,9 @@ function App() {
   const [examsView, setExamsView] = useState('card'); // 'card' or 'calendar'
   const [isPomodoroOpen, setIsPomodoroOpen] = useState(false);
   const [generalTasks, setGeneralTasks] = useState(() => {
-    const saved = localStorage.getItem('exams_general_tasks');
-    return saved ? JSON.parse(saved) : [];
+    return safeJsonParse('exams_general_tasks', []);
   });
+
 
   // Save to LocalStorage
   useEffect(() => {
