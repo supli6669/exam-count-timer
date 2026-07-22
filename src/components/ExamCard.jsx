@@ -1,8 +1,11 @@
 import { useState, useEffect, memo } from 'react';
 import { CATEGORIES } from '../constants';
 import { downloadICalFile } from '../utils/icsExport';
+import { calculateExamReadiness } from '../utils/readinessIndex';
 
 function calculateTimeLeft(datetime) {
+
+
   const difference = new Date(datetime) - new Date();
   let timeLeft = {
     days: 0,
@@ -138,6 +141,7 @@ function ExamCard({ exam, onEdit, onDelete, onAddTask, onToggleTask, onDeleteTas
   const completedTasksCount = tasks.filter(t => t.completed).length;
   const totalTasksCount = tasks.length;
   const progressPercent = totalTasksCount > 0 ? Math.round((completedTasksCount / totalTasksCount) * 100) : 0;
+  const readiness = calculateExamReadiness(exam);
 
   return (
     <div className={`exam-card ${statusClass}`}>
@@ -165,8 +169,25 @@ function ExamCard({ exam, onEdit, onDelete, onAddTask, onToggleTask, onDeleteTas
             {formatDate(exam.datetime)}
           </span>
         </div>
-        <span className={`urgency-badge ${badgeClass}`}>{badgeLabel}</span>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.35rem' }}>
+          <span className={`urgency-badge ${badgeClass}`}>{badgeLabel}</span>
+          <span style={{
+            fontSize: '0.72rem',
+            fontWeight: 700,
+            padding: '0.15rem 0.5rem',
+            borderRadius: '12px',
+            background: `${readiness.color}18`,
+            color: readiness.color,
+            border: `1px solid ${readiness.color}40`,
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.25rem'
+          }} title={`Chỉ số ERI Sẵn Sàng: ${readiness.score}%`}>
+            📊 ERI: {readiness.score}% ({readiness.label})
+          </span>
+        </div>
       </div>
+
 
       <div className="countdown-display">
         <div className="countdown-unit">

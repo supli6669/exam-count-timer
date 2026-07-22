@@ -14,9 +14,10 @@ import ErrorBoundary from './components/ErrorBoundary';
 import { pruneOldStudyLogs, safeJsonParse } from './utils/storage';
 import StudyStreak from './components/StudyStreak';
 import { downloadICalFile } from './utils/icsExport';
-
+import FlashcardsModal from './components/FlashcardsModal';
 
 const CalendarView = lazy(() => import('./components/CalendarView'));
+
 const SmartInsights = lazy(() => import('./components/SmartInsights'));
 const PriorityMatrix = lazy(() => import('./components/PriorityMatrix'));
 
@@ -89,9 +90,11 @@ function App() {
   const [viewMode, setViewMode] = useState('exams'); // 'exams', 'tasks', or 'analytics'
   const [examsView, setExamsView] = useState('card'); // 'card' or 'calendar'
   const [isPomodoroOpen, setIsPomodoroOpen] = useState(false);
+  const [isFlashcardsOpen, setIsFlashcardsOpen] = useState(false);
   const [generalTasks, setGeneralTasks] = useState(() => {
     return safeJsonParse('exams_general_tasks', []);
   });
+
 
 
   // Save to LocalStorage
@@ -660,14 +663,23 @@ function App() {
             onToggle={setNotificationsEnabled} 
           />
           <button
+            className={`btn-icon ${isFlashcardsOpen ? 'active' : ''}`}
+            onClick={() => setIsFlashcardsOpen(!isFlashcardsOpen)}
+            title="Thẻ ghi nhớ Leitner (Flashcards)"
+            aria-label="Thẻ ghi nhớ Leitner"
+            style={{ background: 'rgba(168, 85, 247, 0.15)', color: '#c084fc', border: '1px solid rgba(168, 85, 247, 0.3)' }}
+          >
+            <span style={{ fontSize: '1.1rem', display: 'flex', alignItems: 'center' }}>🗂️</span>
+          </button>
+          <button
             className={`btn-icon ${isPomodoroOpen ? 'active' : ''}`}
             onClick={() => setIsPomodoroOpen(!isPomodoroOpen)}
             title="Đồng hồ Pomodoro"
             aria-label="Đồng hồ Pomodoro"
-
           >
             <span style={{ fontSize: '1.2rem', display: 'flex', alignItems: 'center' }}>🍅</span>
           </button>
+
           <div className="view-mode-tabs">
             <button
               className={`view-tab-btn ${viewMode === 'exams' ? 'active' : ''}`}
@@ -1004,6 +1016,12 @@ function App() {
         exams={exams}
         generalTasks={generalTasks}
         onToggleTask={handleToggleTask}
+      />
+
+      {/* Leitner Spaced Repetition Flashcards Modal */}
+      <FlashcardsModal
+        isOpen={isFlashcardsOpen}
+        onClose={() => setIsFlashcardsOpen(false)}
       />
     </div>
   );
