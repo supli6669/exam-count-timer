@@ -41,7 +41,6 @@ function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [] }) {
   const [inputAlarmSound, setInputAlarmSound] = useState(alarmSound);
 
   const [timerType, setTimerType] = useState('pomodoro'); // 'pomodoro' or 'stopwatch'
-  const [customCountdownTime] = useState(25 * 60);
   const [mode, setMode] = useState('work'); // 'work', 'shortBreak', 'longBreak'
   const [isActive, setIsActive] = useState(false);
   const [completedWorkSessions, setCompletedWorkSessions] = useState(() => {
@@ -190,7 +189,29 @@ function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [] }) {
     playSynthAlarm(soundToPlay, volToPlay);
   }, [inputAlarmSound, inputAlarmVolume]);
 
-  // Pure Timer Tick Interval Effect
+  const handleSessionComplete = useCallback(() => {
+    setIsActive(false);
+    playAlarmSound();
+
+    let targetMode = 'work';
+    if (mode === 'work') {
+      logAccumulatedStudyTime();
+      const nextCount = completedWorkSessions + 1;
+      if (nextCount >= 4) {
+        setCompletedWorkSessions(0);
+        localStorage.setItem('pomodoro_completed_sessions', '0');
+        targetMode = 'longBreak';
+      } else {
+        setCompletedWorkSessions(nextCount);
+        localStorage.setItem('pomodoro_completed_sessions', nextCount.toString());
+        targetMode = 'shortBreak';
+      }
+    }
+    setMode(targetMode);
+    setTimeLeft(calculateSecondsForMode(targetMode, 'pomodoro'));
+  }, [mode, completedWorkSessions, playAlarmSound, logAccumulatedStudyTime, calculateSecondsForMode]);
+
+  // Timer Tick Interval Effect
   useEffect(() => {
     if (!isActive) return;
 
@@ -200,7 +221,10 @@ function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [] }) {
         secondsStudiedRef.current += 1;
       } else {
         setTimeLeft(prev => {
-          if (prev <= 1) return 0;
+          if (prev <= 1) {
+            setTimeout(handleSessionComplete, 0);
+            return 0;
+          }
           if (mode === 'work') {
             secondsStudiedRef.current += 1;
           }
@@ -212,35 +236,7 @@ function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [] }) {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [isActive, mode, timerType]);
-
-  // Timer Completion Effect (triggers clean state transition & sound when countdown reaches 0)
-  useEffect(() => {
-    if (isActive && timerType === 'pomodoro' && timeLeft === 0) {
-      setIsActive(false);
-      playAlarmSound();
-
-      let nextMode = 'work';
-      if (mode === 'work') {
-        logAccumulatedStudyTime();
-        const nextCount = completedWorkSessions + 1;
-        if (nextCount >= 4) {
-          setCompletedWorkSessions(0);
-          localStorage.setItem('pomodoro_completed_sessions', '0');
-          nextMode = 'longBreak';
-        } else {
-          setCompletedWorkSessions(nextCount);
-          localStorage.setItem('pomodoro_completed_sessions', nextCount.toString());
-          nextMode = 'shortBreak';
-        }
-      } else {
-        nextMode = 'work';
-      }
-
-      setMode(nextMode);
-      setTimeLeft(calculateSecondsForMode(nextMode, 'pomodoro'));
-    }
-  }, [timeLeft, isActive, timerType, mode, completedWorkSessions, playAlarmSound, logAccumulatedStudyTime, calculateSecondsForMode]);
+  }, [isActive, mode, timerType, handleSessionComplete]);
 
   const handleStartPause = useCallback(() => {
     setIsActive(prev => {
@@ -269,23 +265,21 @@ function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [] }) {
     if (mode === 'work' && secondsStudiedRef.current > 0) {
       logAccumulatedStudyTime();
     }
-    let nextMode = 'work';
+    let targetMode = 'work';
     if (mode === 'work') {
       const nextCount = completedWorkSessions + 1;
       if (nextCount >= 4) {
         setCompletedWorkSessions(0);
         localStorage.setItem('pomodoro_completed_sessions', '0');
-        nextMode = 'longBreak';
+        targetMode = 'longBreak';
       } else {
         setCompletedWorkSessions(nextCount);
         localStorage.setItem('pomodoro_completed_sessions', nextCount.toString());
-        nextMode = 'shortBreak';
+        targetMode = 'shortBreak';
       }
-    } else {
-      nextMode = 'work';
     }
-    setMode(nextMode);
-    setTimeLeft(calculateSecondsForMode(nextMode, timerType));
+    setMode(targetMode);
+    setTimeLeft(calculateSecondsForMode(targetMode, timerType));
   }, [mode, completedWorkSessions, timerType, calculateSecondsForMode, logAccumulatedStudyTime]);
 
   // Save customized settings
@@ -361,7 +355,7 @@ function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [] }) {
       const isTimerDirty = timerType === 'stopwatch' ? timeLeft > 0 : timeLeft !== totalSecs;
 
       if (isActive || isTimerDirty) {
-        let timeStr = '';
+        let timeStr;
         if (timerType === 'stopwatch') {
           const hrs = Math.floor(timeLeft / 3600);
           const mins = Math.floor((timeLeft % 3600) / 60);
@@ -402,14 +396,9 @@ function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [] }) {
           const mins = Math.floor((nearest.diff / (1000 * 60)) % 60);
           const secs = Math.floor((nearest.diff / 1000) % 60);
 
-          let timeLabel = '';
-          if (days > 0) {
-            timeLabel = `${days}d ${hours}h`;
-          } else if (hours > 0) {
-            timeLabel = `${hours}h ${mins}m`;
-          } else {
-            timeLabel = `${mins}m ${secs}s`;
-          }
+          const timeLabel = days > 0
+            ? `${days}d ${hours}h`
+            : (hours > 0 ? `${hours}h ${mins}m` : `${mins}m ${secs}s`);
 
           document.title = `🎯 Còn ${timeLabel}: ${nearest.subject} | Đồng Hồ Lịch Thi`;
           const favicon = document.querySelector("link[rel*='icon']");
