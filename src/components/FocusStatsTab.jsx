@@ -39,7 +39,13 @@ const getRangeTotalMinutes = (studyLogs, range) => {
   return Math.round(rangeLogs.reduce((sum, log) => sum + log.seconds, 0) / 60);
 };
 
-const FocusStatsTab = React.memo(({ studyLogs, breakLogs, exams, themeColor, onClearStats }) => {
+const FocusStatsTab = React.memo(({
+  studyLogs = [],
+  breakLogs = [],
+  exams = [],
+  themeColor = '#8b5cf6',
+  onClearStats = () => {}
+}) => {
   // Local UI states for filters and tabs
   const [focusRange, setFocusRange] = useState('today'); // 'today' | 'week' | 'fourWeeks'
   const [statsMode, setStatsMode] = useState('week'); // 'week' | 'month' | 'year'

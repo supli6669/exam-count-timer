@@ -74,10 +74,34 @@ const getInitialMockData = () => {
   ];
 };
 
+const MAX_USER_XP = 100_000_000;
+
+const getStoredInteger = (key, fallback, min, max) => {
+  const value = Number(localStorage.getItem(key));
+  return Number.isInteger(value) && value >= min && value <= max ? value : fallback;
+};
+
+const getLevelForXP = (xp) => {
+  let level = 1;
+  let xpNeeded = level * 500;
+  let remainingXP = xp;
+  while (remainingXP >= xpNeeded) {
+    remainingXP -= xpNeeded;
+    level++;
+    xpNeeded = level * 500;
+  }
+  return level;
+};
+
 function App() {
   const [exams, setExams] = useState(() => {
+    // Only show examples for a brand-new installation. An empty saved array is
+    // a valid user choice after deleting every exam.
+    if (localStorage.getItem('exams_countdown_list') === null) {
+      return getInitialMockData();
+    }
     const parsed = safeJsonParse('exams_countdown_list', []);
-    return (Array.isArray(parsed) && parsed.length > 0) ? parsed : getInitialMockData();
+    return Array.isArray(parsed) ? parsed : getInitialMockData();
   });
 
 
@@ -129,13 +153,12 @@ function App() {
   const [tempName, setTempName] = useState(username);
 
   const [userXP, setUserXP] = useState(() => {
-    const saved = localStorage.getItem('pomodoro_user_xp');
-    return saved ? parseInt(saved, 10) : 0;
+    return getStoredInteger('pomodoro_user_xp', 0, 0, MAX_USER_XP);
   });
 
   const [userLevel, setUserLevel] = useState(() => {
-    const saved = localStorage.getItem('pomodoro_user_level');
-    return saved ? parseInt(saved, 10) : 1;
+    const savedXP = getStoredInteger('pomodoro_user_xp', 0, 0, MAX_USER_XP);
+    return getLevelForXP(savedXP);
   });
 
   const getGreetingPrefix = () => {
@@ -181,18 +204,14 @@ function App() {
   }, [isModalOpen, isPomodoroOpen]);
 
   const gainXP = useCallback((amount) => {
+    const validAmount = Number.isFinite(amount) && amount > 0 ? Math.floor(amount) : 0;
+    if (validAmount === 0) return;
+
     setUserXP(prevXP => {
-      const nextXP = prevXP + amount;
+      const nextXP = Math.min(MAX_USER_XP, prevXP + validAmount);
       localStorage.setItem('pomodoro_user_xp', nextXP.toString());
       
-      let level = 1;
-      let xpNeeded = level * 500;
-      let tempXP = nextXP;
-      while (tempXP >= xpNeeded) {
-        tempXP -= xpNeeded;
-        level++;
-        xpNeeded = level * 500;
-      }
+      const level = getLevelForXP(nextXP);
       
       setUserLevel(prevLevel => {
         if (level > prevLevel) {
@@ -266,8 +285,8 @@ function App() {
   // Sync XP and listen to global gain-xp events
   useEffect(() => {
     const handleGainXP = (e) => {
-      const amount = e.detail || 0;
-      if (amount > 0) {
+      const amount = Number(e.detail);
+      if (Number.isFinite(amount) && amount > 0) {
         gainXP(amount);
         playSuccessChime();
       }

@@ -616,7 +616,17 @@ function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [] }) {
 
         {/* TAB 2: STATS VIEW */}
         {activeTab === 'stats' && (
-          <FocusStatsTab studyLogs={studyLogs} exams={exams} />
+          <FocusStatsTab
+            studyLogs={studyLogs}
+            breakLogs={[]}
+            exams={exams}
+            themeColor={getModeColor()}
+            onClearStats={() => {
+              setStudyLogs([]);
+              localStorage.removeItem('pomodoro_study_logs');
+              window.dispatchEvent(new Event('studyLogsUpdated'));
+            }}
+          />
         )}
       </div>
     </div>
