@@ -1,3 +1,26 @@
+# Cập Nhật Gần Nhất (2026-07-23)
+
+- Đã sửa độ ổn định dữ liệu LocalStorage: Pomodoro tự phục hồi khi cấu hình số hoặc lịch sử học tập bị hỏng; XP và cấp độ chỉ nhận số nguyên hợp lệ.
+- Đã sửa lỗi ngày theo múi giờ địa phương cho log học tập, biểu đồ đóng góp, streak và Smart Insights; không còn lệch ngày gần nửa đêm tại Việt Nam.
+- Đã hoàn thiện Backup/Restore: sao lưu thêm task chung, XP, cấp độ, theme, flashcard, streak và onboarding; restore xóa dữ liệu cũ không có trong bản sao lưu, đồng thời bỏ qua key không được hỗ trợ.
+- Đã làm an toàn Soundboard khi dữ liệu âm lượng hoặc sound mix trong LocalStorage bị hỏng.
+- Đã cập nhật cache PWA lên `exam-countdown-v2` để bản deploy mới không tiếp tục dùng asset cũ từ cache.
+- Đã sửa logic danh sách lịch thi rỗng: sau khi người dùng xóa toàn bộ lịch thi, dữ liệu mẫu không tự xuất hiện lại khi tải trang.
+- Đã sửa tab **Bảng Thống Kê** trong Pomodoro bị màn hình đen. Nguyên nhân là `breakLogs` không được truyền vào component; tab nay có dữ liệu mặc định an toàn, màu biểu đồ theo phiên Pomodoro và thao tác xóa lịch sử hoạt động đúng.
+- Đã xác minh sau mỗi đợt sửa bằng `npm run lint` và `npm run build`.
+- Commit đã đẩy lên `main`:
+  - `9b3cd55` — harden local data handling and backups
+  - `8f803bc` — stabilize local dates, audio settings and PWA updates
+  - `7d9ffba` — preserve empty exams and restore Pomodoro stats
+
+## Tính Năng Đang Chờ Push
+
+- Thêm **Hôm nay học gì?** trong tab Kế hoạch & Thói quen: tự xếp tối đa bốn việc ưu tiên từ hạn thi, độ ưu tiên task, số Pomodoro dự kiến và flashcard đến hạn.
+- Nâng cấp flashcard Leitner: mặc định mở danh sách thẻ đến hạn; trả lời Đúng/Sai tự tính hộp tiếp theo và ngày ôn kế tiếp (1, 3, 7, 14 hoặc 30 ngày).
+- Thêm **Mock Exam**: chọn môn, thời lượng và số câu; đếm giờ làm bài, tự chấm điểm và lưu tối đa 50 kết quả cục bộ.
+- Tối ưu phần mới: tính kế hoạch bằng dữ liệu dẫn xuất (`useMemo`), cô lập component kế hoạch bằng `React.memo`, và chống dữ liệu LocalStorage bị hỏng.
+
+---
 # Tài Liệu Bàn Giao Dự Án (Project Handover)
 
 ## 1. Trạng Thái Hiện Tại Của Dự Án
@@ -138,7 +161,7 @@
   - **Sao lưu hoàn chỉnh**: Cả mã ảnh base64 (`pomodoro_custom_bg`) và dữ liệu màu sắc dạng HSL (`pomodoro_custom_theme_data`) đều được tích hợp vào mảng `keysToBackup` của bộ Backup JSON để đồng bộ hóa và khôi phục khi cần thiết.
  
 ## 3. Trạng Thế Git Hiện Tại
-- Mã SHA commit / Message gần nhất: `88ecf94` / `style: shift custom theme color matching from complementary to analogous for artistic dual-tone look`��), Q2 (Lên lịch - Tím), Q3 (Làm nhanh - Xanh lá), Q4 (Loại bỏ - Xám) với hiệu ứng bóng mờ và viền màu neon tinh tế.
+- Mã SHA commit / Message gần nhất: `88ecf94` / `style: shift custom theme color matching from complementary to analogous for artistic dual-tone look`��), Q2 (Lên lịch - Tím), Q3 (Làm nhanh - Xanh lá), Q4 (Loại bỏ - Xám) với hiệu ứng bóng mờ và viền màu neon tinh tế.
   - **Nhiệm vụ chung (General Tasks)**: Bổ sung state `generalTasks` và bộ nhớ LocalStorage riêng biệt để người học có thể tạo các đầu việc độc lập không gắn với môn thi nào.
   - **Form thêm nhanh & Đổi quadrant**: Cho phép thêm trực tiếp công việc mới vào bất kỳ góc phần tư nào, cũng như di chuyển linh hoạt công việc giữa các góc phần tư qua menu select mini.
   - **Chấm chỉ báo độ ưu tiên**: Hiển thị chấm tròn phát sáng màu tương ứng bên cạnh tên nhiệm vụ trong danh sách việc cần làm của từng Exam Card.
@@ -177,4 +200,3 @@
 
 ## 5. Lỗi Hiện Tại / Điểm Nghẽn / Khó Khăn Kỹ Thuật
 - **Đã khắc phục lỗi ReferenceError khởi động**: Sửa lỗi tham chiếu `studyLogs` trước khi khởi tạo trong `PomodoroTimer.jsx` bằng cách chuyển các hàm tính toán thống kê xuống dưới phần khai báo các React hooks và state. Hiện tại trang web khởi chạy hoàn hảo không còn lỗi runtime.
-

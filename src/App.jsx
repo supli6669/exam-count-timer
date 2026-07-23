@@ -15,6 +15,8 @@ import { pruneOldStudyLogs, safeJsonParse } from './utils/storage';
 import StudyStreak from './components/StudyStreak';
 import { downloadICalFile } from './utils/icsExport';
 import FlashcardsModal from './components/FlashcardsModal';
+import TodayStudyPlan from './components/TodayStudyPlan';
+import MockExamModal from './components/MockExamModal';
 
 const CalendarView = lazy(() => import('./components/CalendarView'));
 
@@ -117,6 +119,7 @@ function App() {
   const [examsView, setExamsView] = useState('card'); // 'card' or 'calendar'
   const [isPomodoroOpen, setIsPomodoroOpen] = useState(false);
   const [isFlashcardsOpen, setIsFlashcardsOpen] = useState(false);
+  const [isMockExamOpen, setIsMockExamOpen] = useState(false);
   const [generalTasks, setGeneralTasks] = useState(() => {
     return safeJsonParse('exams_general_tasks', []);
   });
@@ -679,6 +682,7 @@ function App() {
           >
             <span style={{ fontSize: '1.2rem', display: 'flex', alignItems: 'center' }}>🍅</span>
           </button>
+          <button className="btn-icon" onClick={() => setIsMockExamOpen(true)} title="Mock Exam" aria-label="Mở Mock Exam" style={{ background: 'rgba(59,130,246,.14)', color: '#93c5fd', border: '1px solid rgba(59,130,246,.3)' }}>📝</button>
 
           <div className="view-mode-tabs">
             <button
@@ -969,6 +973,7 @@ function App() {
       {/* TAB 2: KẾ HOẠCH & THÓI QUEN */}
       {viewMode === 'tasks' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+          <TodayStudyPlan exams={exams} generalTasks={generalTasks} onOpenFlashcards={() => setIsFlashcardsOpen(true)} onOpenPomodoro={() => setIsPomodoroOpen(true)} />
           <ErrorBoundary>
             <Suspense fallback={<ComponentLoader />}>
               <PriorityMatrix
@@ -1023,6 +1028,7 @@ function App() {
         isOpen={isFlashcardsOpen}
         onClose={() => setIsFlashcardsOpen(false)}
       />
+      <MockExamModal isOpen={isMockExamOpen} onClose={() => setIsMockExamOpen(false)} exams={exams} />
     </div>
   );
 }

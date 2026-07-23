@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { getDueFlashcards, getNextReviewDate } from '../utils/studyPlanner';
 
 const INITIAL_CARDS = [
   { id: 'fc-1', question: 'Cơ sở dữ liệu: Khóa chính (Primary Key) là gì?', answer: 'Là thuộc tính hoặc tập thuộc tính xác định duy nhất một hàng trong bảng, không chứa giá trị NULL.', box: 1 },
@@ -17,7 +18,7 @@ export default function FlashcardsModal({ isOpen, onClose }) {
     }
   });
 
-  const [activeBox, setActiveBox] = useState(0); // 0 = all boxes
+  const [activeBox, setActiveBox] = useState('due'); // due | 0 = all boxes
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
@@ -26,9 +27,11 @@ export default function FlashcardsModal({ isOpen, onClose }) {
 
   useEffect(() => {
     localStorage.setItem('app_leitner_flashcards', JSON.stringify(cards));
+    window.dispatchEvent(new Event('flashcards-updated'));
   }, [cards]);
 
-  const filteredCards = activeBox === 0 ? cards : cards.filter(c => c.box === activeBox);
+  const dueCards = getDueFlashcards(cards);
+  const filteredCards = activeBox === 'due' ? dueCards : activeBox === 0 ? cards : cards.filter(c => c.box === activeBox);
   const currentCard = filteredCards[currentIndex] || null;
 
   const handleNext = () => {
@@ -41,8 +44,8 @@ export default function FlashcardsModal({ isOpen, onClose }) {
 
     setCards(prev => prev.map(c => {
       if (c.id === currentCard.id) {
-        const nextBox = isCorrect ? Math.min(5, c.box + 1) : 1;
-        return { ...c, box: nextBox };
+        const { nextBox, nextReviewDate } = getNextReviewDate(c.box, isCorrect);
+        return { ...c, box: nextBox, nextReviewDate, lastReviewedAt: Date.now() };
       }
       return c;
     }));
@@ -58,7 +61,8 @@ export default function FlashcardsModal({ isOpen, onClose }) {
       id: `fc-${Date.now()}`,
       question: newQuestion.trim(),
       answer: newAnswer.trim(),
-      box: 1
+      box: 1,
+      nextReviewDate: null
     };
 
     setCards(prev => [...prev, newCard]);
@@ -119,6 +123,7 @@ export default function FlashcardsModal({ isOpen, onClose }) {
 
         {/* Box Filter Selector */}
         <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '1.2rem', flexWrap: 'wrap' }}>
+          <button onClick={() => { setActiveBox('due'); setCurrentIndex(0); setIsFlipped(false); }} style={{ padding: '0.35rem 0.75rem', borderRadius: '10px', border: activeBox === 'due' ? '1px solid var(--color-primary)' : '1px solid var(--border-glass)', background: activeBox === 'due' ? 'var(--color-primary-glow)' : 'rgba(255,255,255,.04)', color: '#fff', cursor: 'pointer' }}>Đến hạn ({dueCards.length})</button>
           <button
             onClick={() => { setActiveBox(0); setCurrentIndex(0); setIsFlipped(false); }}
             style={{
