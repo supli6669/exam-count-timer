@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { getLocalDateKey, localDateFromKey } from '../utils/date';
 
 
 const BADGES = [
@@ -53,19 +54,19 @@ function getStreakData() {
   } catch (e) {
     console.warn('Could not parse streak data:', e);
   }
-  return { currentStreak: 1, lastStudyDate: new Date().toISOString().slice(0, 10), freezeActive: false };
+  return { currentStreak: 1, lastStudyDate: getLocalDateKey(), freezeActive: false };
 }
 
 function recordStudySession() {
-  const todayStr = new Date().toISOString().slice(0, 10);
+  const todayStr = getLocalDateKey();
   const data = getStreakData();
 
   if (data.lastStudyDate === todayStr) {
     return data; // Already recorded today
   }
 
-  const lastDate = new Date(data.lastStudyDate);
-  const today = new Date(todayStr);
+  const lastDate = localDateFromKey(data.lastStudyDate);
+  const today = localDateFromKey(todayStr);
   const diffDays = Math.round((today - lastDate) / (1000 * 60 * 60 * 24));
 
   let newStreak = data.currentStreak;

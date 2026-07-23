@@ -1,5 +1,39 @@
 import { useRef } from 'react';
 import { validateBackupJSON } from '../utils/storage';
+import { getLocalDateKey } from '../utils/date';
+
+const BACKUP_KEYS = [
+  'exams_countdown_list',
+  'exams_general_tasks',
+  'app_global_theme',
+  'notifications_enabled',
+  'pomodoro_work',
+  'pomodoro_short_break',
+  'pomodoro_long_break',
+  'pomodoro_alarm_volume',
+  'pomodoro_alarm_sound',
+  'pomodoro_completed_sessions',
+  'pomodoro_break_logs',
+  'pomodoro_theme',
+  'pomodoro_focus_subject',
+  'pomodoro_study_logs',
+  'pomodoro_user_xp',
+  'pomodoro_user_level',
+  'pomodoro_username',
+  'pomodoro_ambient_master',
+  'pomodoro_ambient_mix',
+  'pomodoro_synth_mix',
+  'productivity_contributions',
+  'recurring_tasks_rule_of_3',
+  'pomodoro_low_power',
+  'daily_tasks_list',
+  'daily_tasks_last_reset',
+  'pomodoro_custom_bg',
+  'pomodoro_custom_theme_data',
+  'app_leitner_flashcards',
+  'app_study_streak_data',
+  'pomodoro_onboarding_completed'
+];
 
 function BackupRestore() {
   const fileInputRef = useRef(null);
@@ -7,32 +41,7 @@ function BackupRestore() {
   const handleExport = () => {
     try {
       const backupData = {};
-      const keysToBackup = [
-        'exams_countdown_list',
-        'notifications_enabled',
-        'pomodoro_work',
-        'pomodoro_short_break',
-        'pomodoro_long_break',
-        'pomodoro_alarm_volume',
-        'pomodoro_alarm_sound',
-        'pomodoro_completed_sessions',
-        'pomodoro_break_logs',
-        'pomodoro_theme',
-        'pomodoro_focus_subject',
-        'pomodoro_study_logs',
-        'pomodoro_ambient_master',
-        'pomodoro_ambient_mix',
-        'pomodoro_synth_mix',
-        'productivity_contributions',
-        'recurring_tasks_rule_of_3',
-        'pomodoro_low_power',
-        'daily_tasks_list',
-        'daily_tasks_last_reset',
-        'pomodoro_custom_bg',
-        'pomodoro_custom_theme_data'
-      ];
-
-      keysToBackup.forEach(key => {
+      BACKUP_KEYS.forEach(key => {
         const val = localStorage.getItem(key);
         if (val !== null) {
           backupData[key] = val;
@@ -42,7 +51,7 @@ function BackupRestore() {
       const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
-      const today = new Date().toISOString().split('T')[0];
+      const today = getLocalDateKey();
       a.href = url;
       a.download = `exam_countdown_backup_${today}.json`;
       document.body.appendChild(a);
@@ -72,7 +81,12 @@ function BackupRestore() {
         const confirmImport = window.confirm('Nhập dữ liệu mới sẽ thay thế toàn bộ dữ liệu hiện tại của bạn. Bạn có muốn tiếp tục?');
         if (!confirmImport) return;
 
+        // An import is a complete application snapshot. Remove app keys that
+        // are absent from the selected backup so stale data cannot survive.
+        BACKUP_KEYS.forEach(key => localStorage.removeItem(key));
+
         Object.entries(backupData).forEach(([key, val]) => {
+          if (!BACKUP_KEYS.includes(key)) return;
           const stringVal = typeof val === 'string' ? val : JSON.stringify(val);
           localStorage.setItem(key, stringVal);
         });
@@ -84,7 +98,11 @@ function BackupRestore() {
         alert('Lỗi nhập dữ liệu: ' + err.message);
       }
     };
+    reader.onerror = () => {
+      alert('Không thể đọc tệp sao lưu. Vui lòng thử lại với một tệp JSON hợp lệ.');
+    };
     reader.readAsText(file);
+    e.target.value = '';
   };
 
   return (

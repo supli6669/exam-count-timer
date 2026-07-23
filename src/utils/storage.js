@@ -15,6 +15,7 @@ export function validateBackupJSON(data) {
   const knownKeys = [
     'exams_countdown_list',
     'exams_general_tasks',
+    'app_global_theme',
     'notifications_enabled',
     'pomodoro_work',
     'pomodoro_short_break',
@@ -23,6 +24,8 @@ export function validateBackupJSON(data) {
     'pomodoro_user_xp',
     'pomodoro_user_level',
     'pomodoro_username',
+    'app_leitner_flashcards',
+    'app_study_streak_data',
     'daily_tasks_list',
     'recurring_tasks_list',
     'pomodoro_custom_bg',
@@ -105,4 +108,3 @@ export function safeJsonParse(key, fallback) {
     return fallback;
   }
 }
-

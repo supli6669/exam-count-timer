@@ -15,14 +15,14 @@ export const saveContributions = (contributions) => {
   }
 };
 
-export const incrementContribution = (dateStr = new Date().toISOString().split('T')[0]) => {
+export const incrementContribution = (dateStr = getLocalDateKey()) => {
   const contributions = getContributions();
   contributions[dateStr] = (contributions[dateStr] || 0) + 1;
   saveContributions(contributions);
   window.dispatchEvent(new Event('contributions-updated'));
 };
 
-export const decrementContribution = (dateStr = new Date().toISOString().split('T')[0]) => {
+export const decrementContribution = (dateStr = getLocalDateKey()) => {
   const contributions = getContributions();
   if (contributions[dateStr] && contributions[dateStr] > 0) {
     contributions[dateStr] -= 1;
@@ -33,3 +33,4 @@ export const decrementContribution = (dateStr = new Date().toISOString().split('
     window.dispatchEvent(new Event('contributions-updated'));
   }
 };
+import { getLocalDateKey } from './date';

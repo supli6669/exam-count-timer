@@ -1,16 +1,25 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { getLocalDateKey } from '../utils/date';
+
+const getStoredStudyLogs = () => {
+  try {
+    const saved = localStorage.getItem('pomodoro_study_logs');
+    const logs = saved ? JSON.parse(saved) : [];
+    return Array.isArray(logs) ? logs : [];
+  } catch {
+    return [];
+  }
+};
 
 function SmartInsights({ exams = [] }) {
   const [studyLogs, setStudyLogs] = useState(() => {
-    const saved = localStorage.getItem('pomodoro_study_logs');
-    return saved ? JSON.parse(saved) : [];
+    return getStoredStudyLogs();
   });
 
   // Reload logs when component mounts or when localStorage changes
   useEffect(() => {
     const handleStorageChange = () => {
-      const saved = localStorage.getItem('pomodoro_study_logs');
-      setStudyLogs(saved ? JSON.parse(saved) : []);
+      setStudyLogs(getStoredStudyLogs());
     };
 
     window.addEventListener('storage', handleStorageChange);
@@ -27,7 +36,7 @@ function SmartInsights({ exams = [] }) {
   // Upcoming exams analysis
   const insights = useMemo(() => {
     const now = new Date();
-    const todayStr = now.toISOString().split('T')[0];
+    const todayStr = getLocalDateKey(now);
 
     const getSubjectStudyMinutes = (subjectId) => {
       const logs = studyLogs.filter(log => log.subjectId === subjectId);
@@ -200,7 +209,7 @@ function SmartInsights({ exams = [] }) {
   // Growth Analysis (Today vs. Yesterday)
   const growthInsight = useMemo(() => {
     const now = new Date();
-    const todayStr = now.toISOString().split('T')[0];
+    const todayStr = getLocalDateKey(now);
     const yesterday = new Date(now);
     yesterday.setDate(now.getDate() - 1);
     const yesterdayStr = yesterday.toISOString().split('T')[0];

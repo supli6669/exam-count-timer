@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { getLocalDateKey } from '../utils/date';
 
 // Range calculation helpers (Pure functions defined outside component)
 const getWeekRange = (offset) => {
@@ -82,7 +83,7 @@ const FocusStatsTab = React.memo(({ studyLogs, breakLogs, exams, themeColor, onC
     
     // Calculate current streak
     let current = 0;
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = getLocalDateKey();
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
     const yesterdayStr = yesterday.toISOString().split('T')[0];

@@ -8,25 +8,27 @@ import { playSynthAlarm, STUDY_QUOTES } from './pomodoro/audioSynthesizer';
 import TimerDisplay from './pomodoro/TimerDisplay';
 import ThemeSelector from './pomodoro/ThemeSelector';
 import AlarmSoundSettings from './pomodoro/AlarmSoundSettings';
+import { getLocalDateKey } from '../utils/date';
+
+const getStoredNumber = (key, fallback, min, max) => {
+  const value = Number.parseInt(localStorage.getItem(key), 10);
+  return Number.isFinite(value) && value >= min && value <= max ? value : fallback;
+};
 
 function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [] }) {
   // Time settings (in minutes)
   const [workTime, setWorkTime] = useState(() => {
-    const saved = localStorage.getItem('pomodoro_work');
-    return saved ? parseInt(saved, 10) : 25;
+    return getStoredNumber('pomodoro_work', 25, 1, 120);
   });
   const [shortBreakTime, setShortBreakTime] = useState(() => {
-    const saved = localStorage.getItem('pomodoro_short_break');
-    return saved ? parseInt(saved, 10) : 5;
+    return getStoredNumber('pomodoro_short_break', 5, 1, 60);
   });
   const [longBreakTime, setLongBreakTime] = useState(() => {
-    const saved = localStorage.getItem('pomodoro_long_break');
-    return saved ? parseInt(saved, 10) : 15;
+    return getStoredNumber('pomodoro_long_break', 15, 1, 60);
   });
 
   const [alarmVolume, setAlarmVolume] = useState(() => {
-    const saved = localStorage.getItem('pomodoro_alarm_volume');
-    return saved ? parseInt(saved, 10) : 50;
+    return getStoredNumber('pomodoro_alarm_volume', 50, 0, 100);
   });
 
   const [alarmSound, setAlarmSound] = useState(() => {
@@ -44,8 +46,7 @@ function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [] }) {
   const [mode, setMode] = useState('work'); // 'work', 'shortBreak', 'longBreak'
   const [isActive, setIsActive] = useState(false);
   const [completedWorkSessions, setCompletedWorkSessions] = useState(() => {
-    const saved = localStorage.getItem('pomodoro_completed_sessions');
-    return saved ? parseInt(saved, 10) : 0;
+    return getStoredNumber('pomodoro_completed_sessions', 0, 0, 3);
   });
 
   const [theme, setTheme] = useState(() => {
@@ -84,8 +85,13 @@ function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [] }) {
 
   // Study logs history
   const [studyLogs, setStudyLogs] = useState(() => {
-    const saved = localStorage.getItem('pomodoro_study_logs');
-    return saved ? JSON.parse(saved) : [];
+    try {
+      const saved = localStorage.getItem('pomodoro_study_logs');
+      const logs = saved ? JSON.parse(saved) : [];
+      return Array.isArray(logs) ? logs : [];
+    } catch {
+      return [];
+    }
   });
 
   const secondsStudiedRef = useRef(0);
@@ -130,7 +136,7 @@ function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [] }) {
 
     incrementContribution();
 
-    const today = new Date().toISOString().split('T')[0];
+    const today = getLocalDateKey();
     let subjectName = 'Học tập chung';
     let taskText = null;
     if (focusSubjectId !== 'general') {
