@@ -172,47 +172,49 @@ const AMBIENT_PRESETS = [
   }
 ];
 
+const createDefaultMix = (sounds, volume) => Object.fromEntries(
+  sounds.map(({ id }) => [id, { playing: false, volume }])
+);
+
+const loadMix = (storageKey, sounds, defaultVolume) => {
+  const defaults = createDefaultMix(sounds, defaultVolume);
+  try {
+    const saved = localStorage.getItem(storageKey);
+    if (!saved) return defaults;
+    const parsed = JSON.parse(saved);
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return defaults;
+
+    return sounds.reduce((mix, { id }) => {
+      const entry = parsed[id];
+      const volume = Number(entry?.volume);
+      mix[id] = {
+        playing: Boolean(entry?.playing),
+        volume: Number.isFinite(volume) ? Math.min(1, Math.max(0, volume)) : defaultVolume
+      };
+      return mix;
+    }, {});
+  } catch {
+    return defaults;
+  }
+};
+
 function AmbientSoundboard() {
   const [isOpen, setIsOpen] = useState(false);
   
   // Master volume state
   const [masterVolume, setMasterVolume] = useState(() => {
-    const saved = localStorage.getItem('pomodoro_ambient_master');
-    return saved ? parseFloat(saved) : 1.0;
+    const saved = Number.parseFloat(localStorage.getItem('pomodoro_ambient_master'));
+    return Number.isFinite(saved) ? Math.min(1, Math.max(0, saved)) : 1;
   });
 
   // Standard sounds state
   const [soundMix, setSoundMix] = useState(() => {
-    const saved = localStorage.getItem('pomodoro_ambient_mix');
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch (e) {
-        console.error('Error parsing ambient mix:', e);
-      }
-    }
-    const initial = {};
-    SOUNDS.forEach((s) => {
-      initial[s.id] = { playing: false, volume: 0.5 };
-    });
-    return initial;
+    return loadMix('pomodoro_ambient_mix', SOUNDS, 0.5);
   });
 
   // Synthesized brainwave & noise state
   const [synthMix, setSynthMix] = useState(() => {
-    const saved = localStorage.getItem('pomodoro_synth_mix');
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch (e) {
-        console.error('Error parsing synth mix:', e);
-      }
-    }
-    const initial = {};
-    SYNTH_SOUNDS.forEach((s) => {
-      initial[s.id] = { playing: false, volume: 0.3 };
-    });
-    return initial;
+    return loadMix('pomodoro_synth_mix', SYNTH_SOUNDS, 0.3);
   });
 
   const audioInstances = useRef({});

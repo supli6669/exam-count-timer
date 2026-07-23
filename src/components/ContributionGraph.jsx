@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { getContributions } from '../utils/contributions';
+import { getLocalDateKey } from '../utils/date';
 
 const getLevel = (count) => {
   if (count === 0) return 0;
@@ -37,7 +38,7 @@ function ContributionGraph() {
     for (let i = 0; i < 53 * 7; i++) {
       const d = new Date(start);
       d.setDate(start.getDate() + i);
-      const dateStr = d.toISOString().split('T')[0];
+      const dateStr = getLocalDateKey(d);
       gridDates.push({
         date: d,
         dateStr,
@@ -83,14 +84,14 @@ function ContributionGraph() {
     let d = new Date();
     
     while (true) {
-      const dateStr = d.toISOString().split('T')[0];
+      const dateStr = getLocalDateKey(d);
       if (contributions[dateStr] > 0) {
         currentStreak++;
         maxStreak = Math.max(maxStreak, currentStreak);
       } else {
         // If it's today and 0, don't break yet (user might complete it later today)
         // But if it's yesterday and 0, break
-        const todayStr = new Date().toISOString().split('T')[0];
+        const todayStr = getLocalDateKey();
         if (dateStr !== todayStr) {
           break;
         }

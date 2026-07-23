@@ -86,7 +86,7 @@ const FocusStatsTab = React.memo(({ studyLogs, breakLogs, exams, themeColor, onC
     const todayStr = getLocalDateKey();
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
-    const yesterdayStr = yesterday.toISOString().split('T')[0];
+    const yesterdayStr = getLocalDateKey(yesterday);
     
     let hasToday = dates.includes(todayStr);
     let hasYesterday = dates.includes(yesterdayStr);
@@ -94,7 +94,7 @@ const FocusStatsTab = React.memo(({ studyLogs, breakLogs, exams, themeColor, onC
     if (hasToday || hasYesterday) {
       let checkDate = hasToday ? new Date() : yesterday;
       while (true) {
-        const checkStr = checkDate.toISOString().split('T')[0];
+        const checkStr = getLocalDateKey(checkDate);
         if (dates.includes(checkStr)) {
           current++;
           checkDate.setDate(checkDate.getDate() - 1);
@@ -324,7 +324,7 @@ const FocusStatsTab = React.memo(({ studyLogs, breakLogs, exams, themeColor, onC
       for (let i = 0; i < 7; i++) {
         const d = new Date(range.start);
         d.setDate(range.start.getDate() + i);
-        const dateStr = d.toISOString().split('T')[0];
+        const dateStr = getLocalDateKey(d);
         
         const dayLogs = studyLogs.filter(log => log.date === dateStr);
         const totalMinutes = Math.round(dayLogs.reduce((sum, log) => sum + log.seconds, 0) / 60);

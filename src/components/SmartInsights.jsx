@@ -212,7 +212,7 @@ function SmartInsights({ exams = [] }) {
     const todayStr = getLocalDateKey(now);
     const yesterday = new Date(now);
     yesterday.setDate(now.getDate() - 1);
-    const yesterdayStr = yesterday.toISOString().split('T')[0];
+    const yesterdayStr = getLocalDateKey(yesterday);
 
     const todayLogs = studyLogs.filter(log => log.date === todayStr);
     const yesterdayLogs = studyLogs.filter(log => log.date === yesterdayStr);
