@@ -1,4 +1,4 @@
-import { getLocalDateKey } from './date';
+import { getLocalDateKey } from './date.js';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 

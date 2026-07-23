@@ -1,48 +1,18 @@
-import { useState, useEffect, memo } from 'react';
+import { useState, memo } from 'react';
 import { CATEGORIES } from '../constants';
 import { downloadICalFile } from '../utils/icsExport';
 import { calculateExamReadiness } from '../utils/readinessIndex';
-
-function calculateTimeLeft(datetime) {
-
-
-  const difference = new Date(datetime) - new Date();
-  let timeLeft = {
-    days: 0,
-    hours: 0,
-    minutes: 0,
-    seconds: 0,
-    isPassed: true,
-    totalMs: difference
-  };
-
-  if (difference > 0) {
-    timeLeft = {
-      days: Math.floor(difference / (1000 * 60 * 60 * 24)),
-      hours: Math.floor((difference / (1000 * 60 * 60)) % 24),
-      minutes: Math.floor((difference / 1000 / 60) % 60),
-      seconds: Math.floor((difference / 1000) % 60),
-      isPassed: false,
-      totalMs: difference
-    };
-  }
-
-  return timeLeft;
-}
+import { useCurrentTime } from '../utils/clock';
+import { calculateTimeLeft } from '../utils/examTime';
 
 function ExamCard({ exam, onEdit, onDelete, onAddTask, onToggleTask, onDeleteTask }) {
-  const [timeLeft, setTimeLeft] = useState(() => calculateTimeLeft(exam.datetime));
-  const [prevDatetime, setPrevDatetime] = useState(exam.datetime);
+  const now = useCurrentTime();
+  const timeLeft = calculateTimeLeft(exam.datetime, now);
   const [isTasksExpanded, setIsTasksExpanded] = useState(false);
   const [newTaskText, setNewTaskText] = useState('');
   const [newTaskDeadline, setNewTaskDeadline] = useState('');
   const [newTaskEstPomodoros, setNewTaskEstPomodoros] = useState(1);
   const [newTaskPriority, setNewTaskPriority] = useState('q2');
-
-  if (exam.datetime !== prevDatetime) {
-    setPrevDatetime(exam.datetime);
-    setTimeLeft(calculateTimeLeft(exam.datetime));
-  }
 
   // Get day of week in Vietnamese
   const getDayOfWeek = (dateStr) => {
@@ -50,14 +20,6 @@ function ExamCard({ exam, onEdit, onDelete, onAddTask, onToggleTask, onDeleteTas
     const date = new Date(dateStr);
     return days[date.getDay()];
   };
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setTimeLeft(calculateTimeLeft(exam.datetime));
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [exam.datetime]);
 
   // Determine urgency class & label
   let statusClass = 'status-safe';
