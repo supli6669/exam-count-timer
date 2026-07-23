@@ -142,6 +142,7 @@ function ExamCard({ exam, onEdit, onDelete, onAddTask, onToggleTask, onDeleteTas
   const totalTasksCount = tasks.length;
   const progressPercent = totalTasksCount > 0 ? Math.round((completedTasksCount / totalTasksCount) * 100) : 0;
   const readiness = calculateExamReadiness(exam);
+  const isFarFuture = !timeLeft.isPassed && timeLeft.days > 365;
 
   return (
     <div className={`exam-card ${statusClass}`}>
@@ -182,14 +183,18 @@ function ExamCard({ exam, onEdit, onDelete, onAddTask, onToggleTask, onDeleteTas
             display: 'inline-flex',
             alignItems: 'center',
             gap: '0.25rem'
-          }} title={`Chỉ số ERI Sẵn Sàng: ${readiness.score}%`}>
-            📊 ERI: {readiness.score}% ({readiness.label})
+          }} title={readiness.score === null ? 'Thêm task hoặc ghi nhận phiên học để tính ERI.' : `Chỉ số ERI Sẵn Sàng: ${readiness.score}%`}>
+            📊 {readiness.score === null ? readiness.label : `ERI: ${readiness.score}% (${readiness.label})`}
           </span>
         </div>
       </div>
 
 
-      <div className="countdown-display">
+      {isFarFuture ? (
+        <div style={{ margin: '1.25rem 0', padding: '1rem', textAlign: 'center', color: 'var(--text-secondary)', background: 'rgba(255,255,255,.03)', borderRadius: '14px' }}>
+          Còn hơn một năm mới đến kỳ thi — hãy thêm đề cương và task để bắt đầu chuẩn bị dần.
+        </div>
+      ) : <div className="countdown-display">
         <div className="countdown-unit">
           <span className="countdown-value">
             {timeLeft.isPassed ? 0 : timeLeft.days}
@@ -214,7 +219,7 @@ function ExamCard({ exam, onEdit, onDelete, onAddTask, onToggleTask, onDeleteTas
           </span>
           <span className="countdown-label">Giây</span>
         </div>
-      </div>
+      </div>}
 
       {/* Task Completion Progress Bar (Always Visible) */}
       <div className="exam-tasks-progress-container" style={{ marginTop: '0.8rem' }}>

@@ -15,6 +15,7 @@
 
 ## Tính Năng Đang Chờ Push
 
+- Nâng cấp cách hiển thị Exam Card và Smart Insights: kỳ thi xa hơn 365 ngày chỉ hiển thị trạng thái tổng quan; ERI báo “Chưa đủ dữ liệu” nếu chưa có task/log; đề xuất ôn chỉ tính cho kỳ thi trong một năm và có ngưỡng tối thiểu 15 phút khi còn mục tiêu.
 - Thêm **Hôm nay học gì?** trong tab Kế hoạch & Thói quen: tự xếp tối đa bốn việc ưu tiên từ hạn thi, độ ưu tiên task, số Pomodoro dự kiến và flashcard đến hạn.
 - Nâng cấp flashcard Leitner: mặc định mở danh sách thẻ đến hạn; trả lời Đúng/Sai tự tính hộp tiếp theo và ngày ôn kế tiếp (1, 3, 7, 14 hoặc 30 ngày).
 - Thêm **Mock Exam**: chọn môn, thời lượng và số câu; đếm giờ làm bài, tự chấm điểm và lưu tối đa 50 kết quả cục bộ.

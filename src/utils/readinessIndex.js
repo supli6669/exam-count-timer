@@ -10,6 +10,10 @@ export function calculateExamReadiness(exam, studyLogs = []) {
   const totalTasks = tasks.length;
   const completedTasks = tasks.filter(t => t.completed).length;
 
+  if (totalTasks === 0 && studyLogs.length === 0) {
+    return { score: null, level: 'unknown', label: 'Chưa đủ dữ liệu', color: '#94a3b8', coveragePercent: 0, totalFocusMinutes: 0 };
+  }
+
   // 1. Task Coverage Score (0 - 50 points)
   const coverageScore = totalTasks > 0 ? (completedTasks / totalTasks) * 50 : 25;
 

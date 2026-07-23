@@ -58,7 +58,10 @@ function SmartInsights({ exams = [] }) {
     };
 
     return exams
-      .filter(exam => new Date(exam.datetime) > now)
+      .filter(exam => {
+        const daysUntilExam = (new Date(exam.datetime) - now) / (1000 * 60 * 60 * 24);
+        return daysUntilExam > 0 && daysUntilExam <= 365;
+      })
       .map(exam => {
         const examDate = new Date(exam.datetime);
         const diffMs = examDate - now;
@@ -125,7 +128,9 @@ function SmartInsights({ exams = [] }) {
         // Calculate how many minutes studied today for this specific subject
         const todayLogsForSubject = studyLogs.filter(log => log.subjectId === exam.id && log.date === todayStr);
         const todaySubjectMins = Math.round(todayLogsForSubject.reduce((sum, log) => sum + log.seconds, 0) / 60);
-        const todayRemainingRecommended = Math.max(0, dailyRecommended - todaySubjectMins);
+        const todayRemainingRecommended = remainingMins > 0
+          ? Math.max(0, Math.max(15, dailyRecommended) - todaySubjectMins)
+          : 0;
 
         const tasks = exam.tasks || [];
         const completedTasks = tasks.filter(t => t.completed).length;
