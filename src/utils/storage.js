@@ -26,6 +26,7 @@ export function validateBackupJSON(data) {
     'pomodoro_username',
     'app_leitner_flashcards',
     'app_study_streak_data',
+    'exam_countdown_notes',
     'daily_tasks_list',
     'recurring_tasks_list',
     'pomodoro_custom_bg',

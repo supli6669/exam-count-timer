@@ -32,6 +32,7 @@ const BACKUP_KEYS = [
   'pomodoro_custom_theme_data',
   'app_leitner_flashcards',
   'app_study_streak_data',
+  'exam_countdown_notes',
   'pomodoro_onboarding_completed'
 ];
 

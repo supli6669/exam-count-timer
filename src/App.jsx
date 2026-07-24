@@ -17,6 +17,7 @@ import { downloadICalFile } from './utils/icsExport';
 import FlashcardsModal from './components/FlashcardsModal';
 import TodayStudyPlan from './components/TodayStudyPlan';
 import MockExamModal from './components/MockExamModal';
+import Notes from './components/Notes';
 
 const CalendarView = lazy(() => import('./components/CalendarView'));
 
@@ -115,7 +116,7 @@ function App() {
   const [notificationsEnabled, setNotificationsEnabled] = useState(() => {
     return localStorage.getItem('notifications_enabled') === 'true';
   });
-  const [viewMode, setViewMode] = useState('exams'); // 'exams', 'tasks', or 'analytics'
+  const [viewMode, setViewMode] = useState('exams'); // 'exams', 'tasks', 'notes', or 'analytics'
   const [examsView, setExamsView] = useState('card'); // 'card' or 'calendar'
   const [isPomodoroOpen, setIsPomodoroOpen] = useState(false);
   const [isFlashcardsOpen, setIsFlashcardsOpen] = useState(false);
@@ -709,6 +710,14 @@ function App() {
               <span style={{ fontSize: '0.9rem', display: 'inline-flex', alignItems: 'center', marginRight: '0.35rem' }}>📊</span>
               Phân tích & Tiến độ
             </button>
+            <button
+              className={`view-tab-btn ${viewMode === 'notes' ? 'active' : ''}`}
+              onClick={() => setViewMode('notes')}
+              title="Sổ tay học tập"
+            >
+              <span aria-hidden="true">📝</span>
+              Sổ tay
+            </button>
           </div>
           {viewMode === 'exams' && (
             <button className="btn btn-primary" onClick={handleCreateOpen}>
@@ -1004,6 +1013,8 @@ function App() {
           <ContributionGraph />
         </div>
       )}
+
+      {viewMode === 'notes' && <Notes />}
 
       {/* Add / Edit Modal Form */}
       {isModalOpen && (
