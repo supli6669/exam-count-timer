@@ -137,7 +137,7 @@ function App() {
   }, [generalTasks]);
 
   const [activeTheme, setActiveTheme] = useState(() => {
-    return localStorage.getItem('app_global_theme') || 'cyberpunk';
+    return localStorage.getItem('app_global_theme') || 'space';
   });
 
   useEffect(() => {
