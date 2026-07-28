@@ -94,20 +94,30 @@ function AlarmSoundSettings({
           </p>
         </div>
 
-        {/* Alarm Volume Slider */}
+        {/* Alarm volume: presets are easier to scan than a second long slider. */}
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: '#fff', marginBottom: '0.3rem' }}>
             <span>🔊 Âm Lượng Chuông Báo:</span>
             <span style={{ fontWeight: 600, color: 'var(--color-primary)' }}>{getVolumeLevelLabel(parseInt(inputAlarmVolume, 10) || 0)}</span>
           </div>
-          <input
-            type="range"
-            min="0"
-            max="100"
-            value={inputAlarmVolume}
-            onChange={(e) => { setInputAlarmVolume(e.target.value); playPreviewAlarmSound(); }}
-            style={{ width: '100%', accentColor: 'var(--color-primary)', cursor: 'pointer' }}
-          />
+          <div className="volume-presets" role="group" aria-label="Âm lượng chuông báo">
+            {[
+              { value: 0, label: 'Tắt' },
+              { value: 35, label: 'Nhẹ' },
+              { value: 70, label: 'Vừa' },
+              { value: 100, label: 'To' },
+            ].map(({ value, label }) => (
+              <button
+                key={value}
+                type="button"
+                className={Number(inputAlarmVolume) === value ? 'active' : ''}
+                onClick={() => { setInputAlarmVolume(String(value)); playPreviewAlarmSound(); }}
+                aria-pressed={Number(inputAlarmVolume) === value}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
 
         <button

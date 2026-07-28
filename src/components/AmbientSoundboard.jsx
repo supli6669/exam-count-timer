@@ -596,17 +596,24 @@ function AmbientSoundboard() {
           {/* Master Volume Control */}
           <div className="soundboard-master-volume">
             <span className="master-vol-label">🔊 Âm lượng tổng:</span>
-            <input
-              type="range"
-              min="0"
-              max="1"
-              step="0.05"
-              value={masterVolume}
-              onChange={(e) => setMasterVolume(parseFloat(e.target.value))}
-              className="sound-volume-slider master-slider"
-              aria-label="Âm lượng tổng"
-            />
-            <span className="master-vol-percent">{Math.round(masterVolume * 100)}%</span>
+            <div className="volume-presets compact" role="group" aria-label="Âm lượng tổng">
+              {[
+                { value: 0, label: 'Tắt' },
+                { value: 0.35, label: 'Nhẹ' },
+                { value: 0.7, label: 'Vừa' },
+                { value: 1, label: 'To' },
+              ].map(({ value, label }) => (
+                <button
+                  key={value}
+                  type="button"
+                  className={masterVolume === value ? 'active' : ''}
+                  onClick={() => setMasterVolume(value)}
+                  aria-pressed={masterVolume === value}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Quick Audio Presets */}

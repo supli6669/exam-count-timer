@@ -434,6 +434,19 @@ function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [] }) {
     };
   }, [timeLeft, mode, isActive, timerType, getTotalSeconds, exams]);
 
+  // The timer is a full-screen dialog. Keep the page behind it still so it
+  // never creates a second competing scrollbar.
+  useEffect(() => {
+    if (!isOpen) return undefined;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   return (
@@ -483,7 +496,7 @@ function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [] }) {
       </button>
 
       {/* Main Container */}
-      <div style={{
+      <div className="pomodoro-content" style={{
         flex: 1,
         overflowY: 'auto',
         padding: '2rem 1.5rem',
