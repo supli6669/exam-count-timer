@@ -11,6 +11,8 @@ function TimerDisplay({
   handleStartPause,
   handleReset,
   handleSkip,
+  onOpenMiniTimer,
+  isMiniTimerOpen,
   completedWorkSessions,
   getModeColor,
   getModeLabel,
@@ -71,6 +73,15 @@ function TimerDisplay({
         >
           ⏱️ Bấm giờ
         </button>
+        <button
+          type="button"
+          className={`mode-btn ${timerType === 'animedoro' ? 'active' : ''}`}
+          onClick={() => handleSelectMode('work', 'animedoro')}
+          style={{ borderColor: timerType === 'animedoro' ? '#f59e0b' : 'transparent' }}
+          title="50 phút tập trung, 20 phút giải trí"
+        >
+          🎬 Animedoro
+        </button>
       </div>
 
       {/* SVG Radial Clock Display */}
@@ -108,9 +119,9 @@ function TimerDisplay({
           <span style={{ fontSize: '3.2rem', fontWeight: 800, letterSpacing: '-1px', color: '#fff', textShadow: '0 0 20px rgba(0,0,0,0.5)', fontFamily: 'monospace' }}>
             {formatTime(timeLeft)}
           </span>
-          {timerType === 'pomodoro' && (
+          {timerType !== 'stopwatch' && (
             <span style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.7)', marginTop: '0.2rem' }}>
-              Chu kỳ: {completedWorkSessions}/4 🍅
+              {timerType === 'animedoro' ? 'Nhịp 50/20 🎬' : `Chu kỳ: ${completedWorkSessions}/4 🍅`}
             </span>
           )}
         </div>
@@ -147,7 +158,23 @@ function TimerDisplay({
         >
           🔄
         </button>
-        {timerType === 'pomodoro' && (
+        <button
+          type="button"
+          onClick={onOpenMiniTimer}
+          className="btn-icon"
+          title={isMiniTimerOpen ? 'Đồng hồ mini đang mở' : 'Mở đồng hồ mini luôn nổi'}
+          aria-label={isMiniTimerOpen ? 'Đưa đồng hồ mini lên trước' : 'Mở đồng hồ mini luôn nổi'}
+          style={{
+            background: isMiniTimerOpen ? `${getModeColor()}33` : 'rgba(255,255,255,0.08)',
+            border: isMiniTimerOpen ? `1px solid ${getModeColor()}88` : '1px solid transparent',
+            borderRadius: '12px',
+            width: '44px',
+            height: '44px'
+          }}
+        >
+          ▣
+        </button>
+        {timerType !== 'stopwatch' && (
           <button
             type="button"
             onClick={handleSkip}

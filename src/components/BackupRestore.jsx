@@ -16,6 +16,7 @@ const BACKUP_KEYS = [
   'pomodoro_break_logs',
   'pomodoro_theme',
   'pomodoro_focus_subject',
+  'pomodoro_focus_task',
   'pomodoro_study_logs',
   'pomodoro_user_xp',
   'pomodoro_user_level',
@@ -33,7 +34,16 @@ const BACKUP_KEYS = [
   'app_leitner_flashcards',
   'app_study_streak_data',
   'exam_countdown_notes',
-  'pomodoro_onboarding_completed'
+  'pomodoro_onboarding_completed',
+  'focus_planner_v1',
+  'focus_task_templates_v1',
+  'focus_distractions_v1',
+  'focus_widget_order_v1',
+  'focus_workspace_widget_order_v1',
+  'focus_workspace_scratchpad',
+  'focus_integrations_v1',
+  'study_room_display_name',
+  'study_room_blocked_ids'
 ];
 
 function BackupRestore() {

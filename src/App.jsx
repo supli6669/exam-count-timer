@@ -12,10 +12,11 @@ import { incrementContribution, decrementContribution } from './utils/contributi
 import OnboardingTour from './components/OnboardingTour';
 import ErrorBoundary from './components/ErrorBoundary';
 import { pruneOldStudyLogs, safeJsonParse } from './utils/storage';
+import { flushFocusWebhookQueue } from './utils/integrations';
+import { migrateStudyData } from './utils/focusPlanning';
 import StudyStreak from './components/StudyStreak';
 import { downloadICalFile } from './utils/icsExport';
 import FlashcardsModal from './components/FlashcardsModal';
-import TodayStudyPlan from './components/TodayStudyPlan';
 import MockExamModal from './components/MockExamModal';
 import Notes from './components/Notes';
 
@@ -23,6 +24,11 @@ const CalendarView = lazy(() => import('./components/CalendarView'));
 
 const SmartInsights = lazy(() => import('./components/SmartInsights'));
 const PriorityMatrix = lazy(() => import('./components/PriorityMatrix'));
+const FocusPlanner = lazy(() => import('./components/FocusPlanner'));
+const IntegrationsPanel = lazy(() => import('./components/IntegrationsPanel'));
+const WorkspaceCanvas = lazy(() => import('./components/WorkspaceCanvas'));
+const StudyTogether = lazy(() => import('./components/StudyTogether'));
+const studyRoomsEnabled = import.meta.env.VITE_STUDY_ROOMS_ENABLED !== 'false';
 
 const ComponentLoader = () => (
   <div style={{
@@ -104,7 +110,7 @@ function App() {
       return getInitialMockData();
     }
     const parsed = safeJsonParse('exams_countdown_list', []);
-    return Array.isArray(parsed) ? parsed : getInitialMockData();
+    return Array.isArray(parsed) ? migrateStudyData(parsed, []).exams : getInitialMockData();
   });
 
 
@@ -116,13 +122,14 @@ function App() {
   const [notificationsEnabled, setNotificationsEnabled] = useState(() => {
     return localStorage.getItem('notifications_enabled') === 'true';
   });
-  const [viewMode, setViewMode] = useState('exams'); // 'exams', 'tasks', 'notes', or 'analytics'
+  const [viewMode, setViewMode] = useState('exams'); // exams, tasks, workspace, notes, or analytics
   const [examsView, setExamsView] = useState('card'); // 'card' or 'calendar'
   const [isPomodoroOpen, setIsPomodoroOpen] = useState(false);
   const [isFlashcardsOpen, setIsFlashcardsOpen] = useState(false);
   const [isMockExamOpen, setIsMockExamOpen] = useState(false);
   const [generalTasks, setGeneralTasks] = useState(() => {
-    return safeJsonParse('exams_general_tasks', []);
+    const parsed = safeJsonParse('exams_general_tasks', []);
+    return migrateStudyData([], Array.isArray(parsed) ? parsed : []).generalTasks;
   });
 
 
@@ -148,6 +155,15 @@ function App() {
   // Prune old study history on app launch
   useEffect(() => {
     pruneOldStudyLogs(180);
+  }, []);
+
+  useEffect(() => {
+    const flushQueue = () => {
+      void flushFocusWebhookQueue();
+    };
+    window.addEventListener('online', flushQueue);
+    flushQueue();
+    return () => window.removeEventListener('online', flushQueue);
   }, []);
 
   const [username, setUsername] = useState(() => {
@@ -356,6 +372,15 @@ function App() {
       setEditingExam(null);
     }
     setIsModalOpen(true);
+  }, []);
+
+  const handleOpenPomodoro = useCallback((focusTarget = null) => {
+    if (focusTarget?.examId && focusTarget?.taskId) {
+      localStorage.setItem('pomodoro_focus_subject', focusTarget.examId);
+      localStorage.setItem('pomodoro_focus_task', focusTarget.taskId);
+      window.dispatchEvent(new CustomEvent('pomodoro-focus-target', { detail: focusTarget }));
+    }
+    setIsPomodoroOpen(true);
   }, []);
 
   // Handle open modal for editing
@@ -711,6 +736,24 @@ function App() {
               Phân tích & Tiến độ
             </button>
             <button
+              className={`view-tab-btn ${viewMode === 'workspace' ? 'active' : ''}`}
+              onClick={() => setViewMode('workspace')}
+              title="Không gian học tuỳ biến"
+            >
+              <span aria-hidden="true">🪟</span>
+              Không gian
+            </button>
+            {studyRoomsEnabled && (
+              <button
+                className={`view-tab-btn ${viewMode === 'together' ? 'active' : ''}`}
+                onClick={() => setViewMode('together')}
+                title="Phòng học chung"
+              >
+                <span aria-hidden="true">👥</span>
+                Học cùng nhau
+              </button>
+            )}
+            <button
               className={`view-tab-btn ${viewMode === 'notes' ? 'active' : ''}`}
               onClick={() => setViewMode('notes')}
               title="Sổ tay học tập"
@@ -982,7 +1025,21 @@ function App() {
       {/* TAB 2: KẾ HOẠCH & THÓI QUEN */}
       {viewMode === 'tasks' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-          <TodayStudyPlan exams={exams} generalTasks={generalTasks} onOpenFlashcards={() => setIsFlashcardsOpen(true)} onOpenPomodoro={() => setIsPomodoroOpen(true)} />
+          <ErrorBoundary>
+            <Suspense fallback={<ComponentLoader />}>
+              <FocusPlanner
+                exams={exams}
+                generalTasks={generalTasks}
+                onOpenPomodoro={handleOpenPomodoro}
+                onAddTask={handleAddTask}
+              />
+            </Suspense>
+          </ErrorBoundary>
+          <ErrorBoundary>
+            <Suspense fallback={<ComponentLoader />}>
+              <IntegrationsPanel onAddTask={handleAddTask} />
+            </Suspense>
+          </ErrorBoundary>
           <ErrorBoundary>
             <Suspense fallback={<ComponentLoader />}>
               <PriorityMatrix
@@ -1014,6 +1071,26 @@ function App() {
         </div>
       )}
 
+      {viewMode === 'workspace' && (
+        <ErrorBoundary>
+          <Suspense fallback={<ComponentLoader />}>
+            <WorkspaceCanvas
+              exams={exams}
+              generalTasks={generalTasks}
+              onOpenPomodoro={handleOpenPomodoro}
+            />
+          </Suspense>
+        </ErrorBoundary>
+      )}
+
+      {viewMode === 'together' && studyRoomsEnabled && (
+        <ErrorBoundary>
+          <Suspense fallback={<ComponentLoader />}>
+            <StudyTogether />
+          </Suspense>
+        </ErrorBoundary>
+      )}
+
       {viewMode === 'notes' && <Notes />}
 
       {/* Add / Edit Modal Form */}
@@ -1031,6 +1108,7 @@ function App() {
         onClose={() => setIsPomodoroOpen(false)}
         exams={exams}
         generalTasks={generalTasks}
+        notificationsEnabled={notificationsEnabled}
         onToggleTask={handleToggleTask}
       />
 

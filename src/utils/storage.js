@@ -24,13 +24,23 @@ export function validateBackupJSON(data) {
     'pomodoro_user_xp',
     'pomodoro_user_level',
     'pomodoro_username',
+    'pomodoro_focus_task',
     'app_leitner_flashcards',
     'app_study_streak_data',
     'exam_countdown_notes',
     'daily_tasks_list',
     'recurring_tasks_list',
     'pomodoro_custom_bg',
-    'pomodoro_custom_theme_data'
+    'pomodoro_custom_theme_data',
+    'focus_planner_v1',
+    'focus_task_templates_v1',
+    'focus_distractions_v1',
+    'focus_widget_order_v1',
+    'focus_workspace_widget_order_v1',
+    'focus_workspace_scratchpad',
+    'focus_integrations_v1',
+    'study_room_display_name',
+    'study_room_blocked_ids'
   ];
 
   const hasAtLeastOneValidKey = Object.keys(data).some(key => knownKeys.includes(key));

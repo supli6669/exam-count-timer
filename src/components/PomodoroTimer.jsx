@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import SpotifyPlayer from './SpotifyPlayer';
 import ThemeParticles from './ThemeParticles';
 import AmbientSoundboard from './AmbientSoundboard';
@@ -6,16 +7,34 @@ import { incrementContribution } from '../utils/contributions';
 import FocusStatsTab from './FocusStatsTab';
 import { playSynthAlarm, STUDY_QUOTES } from './pomodoro/audioSynthesizer';
 import TimerDisplay from './pomodoro/TimerDisplay';
+import FloatingTimer from './pomodoro/FloatingTimer';
+import DistractionParkingLot from './pomodoro/DistractionParkingLot';
+import BreakCoach from './pomodoro/BreakCoach';
 import ThemeSelector from './pomodoro/ThemeSelector';
 import AlarmSoundSettings from './pomodoro/AlarmSoundSettings';
 import { getLocalDateKey } from '../utils/date';
+import {
+  getCountdownSeconds,
+  getElapsedWholeSeconds,
+  getStopwatchSeconds
+} from '../utils/timer';
+import { deliverFocusEvent } from '../utils/integrations';
 
 const getStoredNumber = (key, fallback, min, max) => {
   const value = Number.parseInt(localStorage.getItem(key), 10);
   return Number.isFinite(value) && value >= min && value <= max ? value : fallback;
 };
 
-function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [] }) {
+const ANIMEDORO_WORK_MINUTES = 50;
+const ANIMEDORO_BREAK_MINUTES = 20;
+
+function PomodoroTimer({
+  isOpen,
+  onClose,
+  exams = [],
+  generalTasks = [],
+  notificationsEnabled = false
+}) {
   // Time settings (in minutes)
   const [workTime, setWorkTime] = useState(() => {
     return getStoredNumber('pomodoro_work', 25, 1, 120);
@@ -42,7 +61,7 @@ function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [] }) {
   const [inputAlarmVolume, setInputAlarmVolume] = useState(alarmVolume.toString());
   const [inputAlarmSound, setInputAlarmSound] = useState(alarmSound);
 
-  const [timerType, setTimerType] = useState('pomodoro'); // 'pomodoro' or 'stopwatch'
+  const [timerType, setTimerType] = useState('pomodoro'); // pomodoro, animedoro, or stopwatch
   const [mode, setMode] = useState('work'); // 'work', 'shortBreak', 'longBreak'
   const [isActive, setIsActive] = useState(false);
   const [completedWorkSessions, setCompletedWorkSessions] = useState(() => {
@@ -58,9 +77,13 @@ function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [] }) {
   });
 
   const [activeTab, setActiveTab] = useState('timer'); // 'timer', 'stats', 'settings'
+  const [miniWindow, setMiniWindow] = useState(null);
 
   const getTotalSeconds = useCallback(() => {
     if (timerType === 'stopwatch') return 0;
+    if (timerType === 'animedoro') {
+      return (mode === 'work' ? ANIMEDORO_WORK_MINUTES : ANIMEDORO_BREAK_MINUTES) * 60;
+    }
     if (mode === 'work') return workTime * 60;
     if (mode === 'shortBreak') return shortBreakTime * 60;
     if (mode === 'longBreak') return longBreakTime * 60;
@@ -73,7 +96,13 @@ function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [] }) {
   const [focusSubjectId, setFocusSubjectId] = useState(() => {
     return localStorage.getItem('pomodoro_focus_subject') || 'general';
   });
-  const [focusTaskId, setFocusTaskId] = useState('general');
+  const [focusTaskId, setFocusTaskId] = useState(() => {
+    return localStorage.getItem('pomodoro_focus_task') || 'general';
+  });
+  const availableFocusTasks = useMemo(() => {
+    if (focusSubjectId === 'general') return generalTasks;
+    return exams.find((exam) => exam.id === focusSubjectId)?.tasks || [];
+  }, [focusSubjectId, exams, generalTasks]);
 
   // Quotes state
   const [quoteIndex, setQuoteIndex] = useState(() => Math.floor(Math.random() * STUDY_QUOTES.length));
@@ -96,22 +125,43 @@ function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [] }) {
 
   const secondsStudiedRef = useRef(0);
   const timerRef = useRef(null);
-  const lastTickAtRef = useRef(null);
+  const deadlineAtRef = useRef(null);
+  const stopwatchStartedAtRef = useRef(null);
+  const lastDisplayedTimeRef = useRef(null);
   const completionScheduledRef = useRef(false);
+  const miniWindowRef = useRef(null);
 
   const calculateSecondsForMode = useCallback((targetMode, targetType) => {
     if (targetType === 'stopwatch') return 0;
+    if (targetType === 'animedoro') {
+      return (targetMode === 'work' ? ANIMEDORO_WORK_MINUTES : ANIMEDORO_BREAK_MINUTES) * 60;
+    }
     if (targetMode === 'work') return workTime * 60;
     if (targetMode === 'shortBreak') return shortBreakTime * 60;
     if (targetMode === 'longBreak') return longBreakTime * 60;
     return workTime * 60;
   }, [workTime, shortBreakTime, longBreakTime]);
 
+  useEffect(() => {
+    const syncFocusTarget = (event) => {
+      const target = event.detail;
+      if (!target?.examId || !target?.taskId) return;
+      setFocusSubjectId(target.examId);
+      setFocusTaskId(target.taskId);
+    };
+    window.addEventListener('pomodoro-focus-target', syncFocusTarget);
+    return () => window.removeEventListener('pomodoro-focus-target', syncFocusTarget);
+  }, []);
+
   const switchModeAndType = useCallback((newMode, newType) => {
     setIsActive(false);
     setMode(newMode);
     setTimerType(newType);
-    setTimeLeft(calculateSecondsForMode(newMode, newType));
+    const nextSeconds = calculateSecondsForMode(newMode, newType);
+    deadlineAtRef.current = null;
+    stopwatchStartedAtRef.current = null;
+    lastDisplayedTimeRef.current = nextSeconds;
+    setTimeLeft(nextSeconds);
   }, [calculateSecondsForMode]);
 
   const handleModeChange = useCallback((newMode) => {
@@ -171,6 +221,7 @@ function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [] }) {
     setStudyLogs(updatedLogs);
     localStorage.setItem('pomodoro_study_logs', JSON.stringify(updatedLogs));
     window.dispatchEvent(new Event('studyLogsUpdated'));
+    void deliverFocusEvent(newLog);
     
     const xpGained = Math.round((seconds / 1500) * 100);
     if (xpGained > 0) {
@@ -197,15 +248,53 @@ function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [] }) {
     playSynthAlarm(soundToPlay, volToPlay);
   }, [inputAlarmSound, inputAlarmVolume]);
 
+  const showSessionNotification = useCallback(async (completedMode) => {
+    if (!notificationsEnabled || !('Notification' in window) || Notification.permission !== 'granted') return;
+
+    const wasWorkSession = completedMode === 'work';
+    const title = wasWorkSession ? 'Hoàn thành phiên tập trung!' : 'Hết giờ nghỉ!';
+    const options = {
+      body: wasWorkSession
+        ? 'Làm tốt lắm. Đến lúc nghỉ một chút rồi.'
+        : 'Sẵn sàng quay lại học nhé.',
+      icon: '/favicon.svg',
+      badge: '/favicon.svg',
+      tag: 'pomodoro-session-complete',
+      renotify: true,
+      data: { url: window.location.href }
+    };
+
+    try {
+      const registration = await navigator.serviceWorker?.getRegistration();
+      if (registration) {
+        await registration.showNotification(title, options);
+      } else {
+        new Notification(title, options);
+      }
+    } catch {
+      try {
+        new Notification(title, options);
+      } catch {
+        // The alarm and in-app state still work if the OS blocks notifications.
+      }
+    }
+  }, [notificationsEnabled]);
+
   const handleSessionComplete = useCallback(() => {
     setIsActive(false);
     playAlarmSound();
+    void showSessionNotification(mode);
 
     let targetMode = 'work';
     if (mode === 'work') {
       logAccumulatedStudyTime();
       const nextCount = completedWorkSessions + 1;
-      if (nextCount >= 4) {
+      if (timerType === 'animedoro') {
+        const normalizedCount = nextCount >= 4 ? 0 : nextCount;
+        setCompletedWorkSessions(normalizedCount);
+        localStorage.setItem('pomodoro_completed_sessions', normalizedCount.toString());
+        targetMode = 'shortBreak';
+      } else if (nextCount >= 4) {
         setCompletedWorkSessions(0);
         localStorage.setItem('pomodoro_completed_sessions', '0');
         targetMode = 'longBreak';
@@ -215,79 +304,115 @@ function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [] }) {
         targetMode = 'shortBreak';
       }
     }
+    const nextSeconds = calculateSecondsForMode(targetMode, timerType);
+    deadlineAtRef.current = null;
+    stopwatchStartedAtRef.current = null;
+    lastDisplayedTimeRef.current = nextSeconds;
     setMode(targetMode);
-    setTimeLeft(calculateSecondsForMode(targetMode, 'pomodoro'));
-  }, [mode, completedWorkSessions, playAlarmSound, logAccumulatedStudyTime, calculateSecondsForMode]);
+    setTimeLeft(nextSeconds);
+  }, [mode, timerType, completedWorkSessions, playAlarmSound, showSessionNotification, logAccumulatedStudyTime, calculateSecondsForMode]);
 
-  // Timer Tick Interval Effect
+  // Derive the display from absolute time anchors. The callback may be delayed by
+  // Edge in a background tab without making the timer itself lose elapsed time.
   useEffect(() => {
     if (!isActive) return;
 
-    lastTickAtRef.current = Date.now();
     completionScheduledRef.current = false;
+    const startingSeconds = lastDisplayedTimeRef.current ?? 0;
+    if (timerType === 'stopwatch') {
+      if (!Number.isFinite(stopwatchStartedAtRef.current)) {
+        stopwatchStartedAtRef.current = Date.now() - startingSeconds * 1000;
+      }
+    } else if (!Number.isFinite(deadlineAtRef.current)) {
+      deadlineAtRef.current = Date.now() + startingSeconds * 1000;
+    }
 
     const tick = () => {
       const now = Date.now();
-      const elapsedSeconds = Math.floor((now - lastTickAtRef.current) / 1000);
-      if (elapsedSeconds <= 0) return;
+      const previous = lastDisplayedTimeRef.current ?? 0;
+      const next = timerType === 'stopwatch'
+        ? getStopwatchSeconds(stopwatchStartedAtRef.current, now)
+        : getCountdownSeconds(deadlineAtRef.current, now);
 
-      // Advance by real elapsed time, rather than by interval callbacks. Browsers
-      // throttle callbacks in background tabs, but Date.now() still lets us catch up.
-      lastTickAtRef.current += elapsedSeconds * 1000;
-      if (timerType === 'stopwatch') {
-        setTimeLeft(prev => prev + elapsedSeconds);
+      const elapsedSeconds = timerType === 'stopwatch'
+        ? getElapsedWholeSeconds(previous, next)
+        : getElapsedWholeSeconds(next, previous);
+      if ((timerType === 'stopwatch' || mode === 'work') && elapsedSeconds > 0) {
         secondsStudiedRef.current += elapsedSeconds;
-      } else {
-        setTimeLeft(prev => {
-          const timeUsed = Math.min(prev, elapsedSeconds);
-          if (mode === 'work') {
-            secondsStudiedRef.current += timeUsed;
-          }
-          if (prev <= elapsedSeconds) {
-            if (!completionScheduledRef.current) {
-              completionScheduledRef.current = true;
-              setTimeout(handleSessionComplete, 0);
-            }
-            return 0;
-          }
-          return prev - elapsedSeconds;
-        });
+      }
+
+      lastDisplayedTimeRef.current = next;
+      setTimeLeft(current => current === next ? current : next);
+
+      if (timerType !== 'stopwatch' && next === 0 && !completionScheduledRef.current) {
+        completionScheduledRef.current = true;
+        handleSessionComplete();
       }
     };
 
-    timerRef.current = setInterval(tick, 1000);
+    tick();
+    const intervalHost = miniWindow && !miniWindow.closed ? miniWindow : window;
+    timerRef.current = intervalHost.setInterval(tick, 1000);
     const handleVisibilityChange = () => {
       if (!document.hidden) tick();
     };
     document.addEventListener('visibilitychange', handleVisibilityChange);
+    miniWindow?.document.addEventListener('visibilitychange', tick);
 
     return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
+      if (timerRef.current) intervalHost.clearInterval(timerRef.current);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
-      lastTickAtRef.current = null;
+      miniWindow?.document.removeEventListener('visibilitychange', tick);
     };
-  }, [isActive, mode, timerType, handleSessionComplete]);
+  }, [isActive, mode, timerType, miniWindow, handleSessionComplete]);
 
   const handleStartPause = useCallback(() => {
-    setIsActive(prev => {
-      const nextActive = !prev;
-      if (nextActive && timerType === 'pomodoro' && timeLeft <= 0) {
-        setTimeLeft(calculateSecondsForMode(mode, timerType));
+    const now = Date.now();
+    if (isActive) {
+      const next = timerType === 'stopwatch'
+        ? getStopwatchSeconds(stopwatchStartedAtRef.current, now)
+        : getCountdownSeconds(deadlineAtRef.current, now);
+      const previous = lastDisplayedTimeRef.current ?? next;
+      const elapsedSeconds = timerType === 'stopwatch'
+        ? getElapsedWholeSeconds(previous, next)
+        : getElapsedWholeSeconds(next, previous);
+      if ((timerType === 'stopwatch' || mode === 'work') && elapsedSeconds > 0) {
+        secondsStudiedRef.current += elapsedSeconds;
       }
-      return nextActive;
-    });
-  }, [timerType, mode, timeLeft, calculateSecondsForMode]);
+      lastDisplayedTimeRef.current = next;
+      setTimeLeft(next);
+      deadlineAtRef.current = null;
+      stopwatchStartedAtRef.current = null;
+      setIsActive(false);
+      return;
+    }
+
+    const startSeconds = timerType !== 'stopwatch' && timeLeft <= 0
+      ? calculateSecondsForMode(mode, timerType)
+      : timeLeft;
+    if (startSeconds !== timeLeft) setTimeLeft(startSeconds);
+
+    if (timerType === 'stopwatch') {
+      stopwatchStartedAtRef.current = now - startSeconds * 1000;
+      deadlineAtRef.current = null;
+    } else {
+      deadlineAtRef.current = now + startSeconds * 1000;
+      stopwatchStartedAtRef.current = null;
+    }
+    lastDisplayedTimeRef.current = startSeconds;
+    setIsActive(true);
+  }, [isActive, timerType, mode, timeLeft, calculateSecondsForMode]);
 
   const handleReset = useCallback(() => {
     setIsActive(false);
-    if ((timerType === 'stopwatch' || (timerType === 'pomodoro' && mode === 'work')) && secondsStudiedRef.current > 0) {
+    if ((timerType === 'stopwatch' || (timerType !== 'stopwatch' && mode === 'work')) && secondsStudiedRef.current > 0) {
       logAccumulatedStudyTime();
     }
-    if (timerType === 'stopwatch') {
-      setTimeLeft(0);
-    } else {
-      setTimeLeft(calculateSecondsForMode(mode, timerType));
-    }
+    const nextSeconds = timerType === 'stopwatch' ? 0 : calculateSecondsForMode(mode, timerType);
+    deadlineAtRef.current = null;
+    stopwatchStartedAtRef.current = null;
+    lastDisplayedTimeRef.current = nextSeconds;
+    setTimeLeft(nextSeconds);
   }, [timerType, mode, calculateSecondsForMode, logAccumulatedStudyTime]);
 
   const handleSkip = useCallback(() => {
@@ -298,7 +423,12 @@ function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [] }) {
     let targetMode = 'work';
     if (mode === 'work') {
       const nextCount = completedWorkSessions + 1;
-      if (nextCount >= 4) {
+      if (timerType === 'animedoro') {
+        const normalizedCount = nextCount >= 4 ? 0 : nextCount;
+        setCompletedWorkSessions(normalizedCount);
+        localStorage.setItem('pomodoro_completed_sessions', normalizedCount.toString());
+        targetMode = 'shortBreak';
+      } else if (nextCount >= 4) {
         setCompletedWorkSessions(0);
         localStorage.setItem('pomodoro_completed_sessions', '0');
         targetMode = 'longBreak';
@@ -308,8 +438,12 @@ function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [] }) {
         targetMode = 'shortBreak';
       }
     }
+    const nextSeconds = calculateSecondsForMode(targetMode, timerType);
+    deadlineAtRef.current = null;
+    stopwatchStartedAtRef.current = null;
+    lastDisplayedTimeRef.current = nextSeconds;
     setMode(targetMode);
-    setTimeLeft(calculateSecondsForMode(targetMode, timerType));
+    setTimeLeft(nextSeconds);
   }, [mode, completedWorkSessions, timerType, calculateSecondsForMode, logAccumulatedStudyTime]);
 
   // Save customized settings
@@ -337,6 +471,7 @@ function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [] }) {
       let updatedTime = w * 60;
       if (mode === 'shortBreak') updatedTime = s * 60;
       if (mode === 'longBreak') updatedTime = l * 60;
+      lastDisplayedTimeRef.current = updatedTime;
       setTimeLeft(updatedTime);
     }
 
@@ -364,6 +499,7 @@ function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [] }) {
   };
 
   const getModeColor = () => {
+    if (timerType === 'animedoro') return '#f59e0b';
     if (mode === 'work') return '#8b5cf6';
     if (mode === 'shortBreak') return '#10b981';
     return '#3b82f6';
@@ -371,10 +507,88 @@ function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [] }) {
 
   const getModeLabel = () => {
     if (timerType === 'stopwatch') return 'Đang bấm giờ';
+    if (timerType === 'animedoro') return mode === 'work' ? 'Animedoro tập trung' : 'Animedoro giải trí';
     if (mode === 'work') return 'Phiên tập trung';
     if (mode === 'shortBreak') return 'Nghỉ ngơi ngắn';
     return 'Nghỉ ngơi dài';
   };
+
+  const closeMiniTimer = useCallback(() => {
+    const activeMiniWindow = miniWindowRef.current;
+    miniWindowRef.current = null;
+    setMiniWindow(null);
+    if (activeMiniWindow && !activeMiniWindow.closed) {
+      activeMiniWindow.close();
+    }
+  }, []);
+
+  const openMiniTimer = useCallback(async () => {
+    const existingWindow = miniWindowRef.current;
+    if (existingWindow && !existingWindow.closed) {
+      existingWindow.focus();
+      return;
+    }
+
+    try {
+      let timerWindow;
+      if ('documentPictureInPicture' in window) {
+        timerWindow = await window.documentPictureInPicture.requestWindow({
+          width: 340,
+          height: 220
+        });
+      } else {
+        timerWindow = window.open(
+          '',
+          'exam-countdown-mini-timer',
+          'popup=yes,width=340,height=220,resizable=yes'
+        );
+      }
+
+      if (!timerWindow) {
+        window.alert('Edge đang chặn cửa sổ mini. Hãy cho phép pop-up cho trang này rồi thử lại.');
+        return;
+      }
+
+      timerWindow.document.title = 'Đồng hồ học tập';
+      timerWindow.document.documentElement.lang = 'vi';
+      timerWindow.document.body.replaceChildren();
+      const root = timerWindow.document.createElement('div');
+      root.id = 'mini-timer-root';
+      timerWindow.document.body.appendChild(root);
+
+      const handleMiniWindowClosed = () => {
+        if (miniWindowRef.current === timerWindow) {
+          miniWindowRef.current = null;
+          setMiniWindow(null);
+        }
+      };
+      timerWindow.addEventListener('pagehide', handleMiniWindowClosed, { once: true });
+      timerWindow.addEventListener('beforeunload', handleMiniWindowClosed, { once: true });
+
+      miniWindowRef.current = timerWindow;
+      setMiniWindow(timerWindow);
+    } catch (error) {
+      if (error?.name !== 'NotAllowedError') {
+        console.warn('Không thể mở đồng hồ mini:', error);
+      }
+    }
+  }, []);
+
+  const handleStartPauseWithMini = useCallback(() => {
+    if (!isActive) {
+      void openMiniTimer();
+    }
+    handleStartPause();
+  }, [isActive, openMiniTimer, handleStartPause]);
+
+  useEffect(() => {
+    return () => {
+      const activeMiniWindow = miniWindowRef.current;
+      if (activeMiniWindow && !activeMiniWindow.closed) {
+        activeMiniWindow.close();
+      }
+    };
+  }, []);
 
   // Update browser tab title and taskbar countdown timer with dynamic SVG favicons
   useEffect(() => {
@@ -471,9 +685,29 @@ function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [] }) {
     };
   }, [isOpen]);
 
-  if (!isOpen) return null;
+  const miniTimerRoot = miniWindow && !miniWindow.closed
+    ? miniWindow.document.getElementById('mini-timer-root')
+    : null;
+  const miniTimerPortal = miniTimerRoot
+    ? createPortal(
+      <FloatingTimer
+        timeLeft={timeLeft}
+        isActive={isActive}
+        modeLabel={getModeLabel()}
+        modeColor={getModeColor()}
+        timerType={timerType}
+        onStartPause={handleStartPauseWithMini}
+        onReset={handleReset}
+        onClose={closeMiniTimer}
+      />,
+      miniTimerRoot
+    )
+    : null;
+
+  if (!isOpen) return miniTimerPortal;
 
   return (
+    <>
     <div className={`pomodoro-overlay ${isOpen ? 'open' : ''}`} style={{
       position: 'fixed',
       top: 0,
@@ -588,9 +822,11 @@ function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [] }) {
               onSwitchModeAndType={switchModeAndType}
               timeLeft={timeLeft}
               isActive={isActive}
-              handleStartPause={handleStartPause}
+              handleStartPause={handleStartPauseWithMini}
               handleReset={handleReset}
               handleSkip={handleSkip}
+              onOpenMiniTimer={openMiniTimer}
+              isMiniTimerOpen={Boolean(miniTimerRoot)}
               completedWorkSessions={completedWorkSessions}
               getModeColor={getModeColor}
               getModeLabel={getModeLabel}
@@ -608,6 +844,7 @@ function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [] }) {
                   setFocusSubjectId(e.target.value);
                   setFocusTaskId('general');
                   localStorage.setItem('pomodoro_focus_subject', e.target.value);
+                  localStorage.removeItem('pomodoro_focus_task');
                 }}
                 style={{ width: '100%', padding: '0.6rem', borderRadius: '8px', background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)', color: '#fff', outline: 'none' }}
               >
@@ -616,7 +853,33 @@ function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [] }) {
                   <option key={exam.id} value={exam.id}>{exam.subject}</option>
                 ))}
               </select>
+              <label style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)', display: 'block', margin: '0.8rem 0 0.4rem' }}>
+                ✅ Gắn phiên này với nhiệm vụ:
+              </label>
+              <select
+                value={focusTaskId}
+                onChange={(event) => {
+                  setFocusTaskId(event.target.value);
+                  if (event.target.value === 'general') {
+                    localStorage.removeItem('pomodoro_focus_task');
+                  } else {
+                    localStorage.setItem('pomodoro_focus_task', event.target.value);
+                  }
+                }}
+                style={{ width: '100%', padding: '0.6rem', borderRadius: '8px', background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)', color: '#fff', outline: 'none' }}
+              >
+                <option value="general">Không gắn nhiệm vụ cụ thể</option>
+                {availableFocusTasks.filter((task) => !task.completed).map((task) => (
+                  <option key={task.id} value={task.id}>{task.text} · 🍅 {task.estPomodoros || 1}</option>
+                ))}
+              </select>
             </div>
+
+            {timerType !== 'stopwatch' && mode !== 'work' && (
+              <BreakCoach mode={mode} timerType={timerType} />
+            )}
+
+            <DistractionParkingLot />
 
             {/* Audio & Spotify Integration */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem' }}>
@@ -667,6 +930,8 @@ function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [] }) {
         )}
       </div>
     </div>
+    {miniTimerPortal}
+    </>
   );
 }
 
