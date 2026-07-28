@@ -96,6 +96,8 @@ function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [] }) {
 
   const secondsStudiedRef = useRef(0);
   const timerRef = useRef(null);
+  const lastTickAtRef = useRef(null);
+  const completionScheduledRef = useRef(false);
 
   const calculateSecondsForMode = useCallback((targetMode, targetType) => {
     if (targetType === 'stopwatch') return 0;
@@ -221,26 +223,48 @@ function PomodoroTimer({ isOpen, onClose, exams = [], generalTasks = [] }) {
   useEffect(() => {
     if (!isActive) return;
 
-    timerRef.current = setInterval(() => {
+    lastTickAtRef.current = Date.now();
+    completionScheduledRef.current = false;
+
+    const tick = () => {
+      const now = Date.now();
+      const elapsedSeconds = Math.floor((now - lastTickAtRef.current) / 1000);
+      if (elapsedSeconds <= 0) return;
+
+      // Advance by real elapsed time, rather than by interval callbacks. Browsers
+      // throttle callbacks in background tabs, but Date.now() still lets us catch up.
+      lastTickAtRef.current += elapsedSeconds * 1000;
       if (timerType === 'stopwatch') {
-        setTimeLeft(prev => prev + 1);
-        secondsStudiedRef.current += 1;
+        setTimeLeft(prev => prev + elapsedSeconds);
+        secondsStudiedRef.current += elapsedSeconds;
       } else {
         setTimeLeft(prev => {
-          if (prev <= 1) {
-            setTimeout(handleSessionComplete, 0);
+          const timeUsed = Math.min(prev, elapsedSeconds);
+          if (mode === 'work') {
+            secondsStudiedRef.current += timeUsed;
+          }
+          if (prev <= elapsedSeconds) {
+            if (!completionScheduledRef.current) {
+              completionScheduledRef.current = true;
+              setTimeout(handleSessionComplete, 0);
+            }
             return 0;
           }
-          if (mode === 'work') {
-            secondsStudiedRef.current += 1;
-          }
-          return prev - 1;
+          return prev - elapsedSeconds;
         });
       }
-    }, 1000);
+    };
+
+    timerRef.current = setInterval(tick, 1000);
+    const handleVisibilityChange = () => {
+      if (!document.hidden) tick();
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      lastTickAtRef.current = null;
     };
   }, [isActive, mode, timerType, handleSessionComplete]);
 

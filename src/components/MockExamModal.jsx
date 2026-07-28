@@ -10,9 +10,21 @@ export default function MockExamModal({ isOpen, onClose, exams = [] }) {
   const active = startedAt !== null;
   useEffect(() => {
     if (!active) return;
-    const id = setInterval(() => setRemaining(prev => Math.max(0, prev - 1)), 1000);
-    return () => clearInterval(id);
-  }, [active]);
+    const updateRemaining = () => {
+      const deadline = startedAt + minutes * 60 * 1000;
+      setRemaining(Math.max(0, Math.ceil((deadline - Date.now()) / 1000)));
+    };
+    updateRemaining();
+    const id = setInterval(updateRemaining, 1000);
+    const handleVisibilityChange = () => {
+      if (!document.hidden) updateRemaining();
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      clearInterval(id);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [active, minutes, startedAt]);
   const formatted = useMemo(() => `${String(Math.floor(remaining / 60)).padStart(2, '0')}:${String(remaining % 60).padStart(2, '0')}`, [remaining]);
   const finish = () => {
     const score = Math.max(0, Math.min(questionCount, Number(correct) || 0));
