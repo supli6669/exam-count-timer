@@ -19,6 +19,7 @@ import { downloadICalFile } from './utils/icsExport';
 import FlashcardsModal from './components/FlashcardsModal';
 import MockExamModal from './components/MockExamModal';
 import Notes from './components/Notes';
+import { filterActiveExams } from './utils/examTime';
 
 const CalendarView = lazy(() => import('./components/CalendarView'));
 
@@ -133,6 +134,34 @@ function App() {
   });
 
 
+
+  const [autoDeletePassed, setAutoDeletePassed] = useState(() => {
+    const saved = localStorage.getItem('auto_delete_passed_exams');
+    return saved === null ? true : saved === 'true';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('auto_delete_passed_exams', autoDeletePassed.toString());
+  }, [autoDeletePassed]);
+
+  // Auto delete passed exams if enabled
+  useEffect(() => {
+    if (!autoDeletePassed) return;
+
+    const checkAndPrunePassed = () => {
+      setExams(prevExams => {
+        const active = filterActiveExams(prevExams, true);
+        if (active.length !== prevExams.length) {
+          return active;
+        }
+        return prevExams;
+      });
+    };
+
+    checkAndPrunePassed();
+    const interval = setInterval(checkAndPrunePassed, 5000);
+    return () => clearInterval(interval);
+  }, [autoDeletePassed]);
 
   // Save to LocalStorage
   useEffect(() => {
@@ -406,6 +435,18 @@ function App() {
       setExams(prev => prev.filter(e => e.id !== id));
     }
   }, []);
+
+  const handleClearPassedExams = useCallback(() => {
+    const now = Date.now();
+    const passedCount = exams.filter(e => new Date(e.datetime).getTime() <= now).length;
+    if (passedCount === 0) {
+      alert('Không có môn thi nào đã hết giờ!');
+      return;
+    }
+    if (window.confirm(`Bạn có chắc chắn muốn xóa ${passedCount} môn thi đã hết giờ không?`)) {
+      setExams(prev => filterActiveExams(prev, true));
+    }
+  }, [exams]);
 
   // Handle adding a sub-task for an exam or general tasks
   const handleAddTask = useCallback((examId, text, deadline, estPomodoros = 1, urgent = false, important = true) => {
@@ -919,6 +960,52 @@ function App() {
                   <option value="name-asc">Tên môn thi (A-Z)</option>
                 </select>
               </div>
+
+              <label 
+                style={{ 
+                  display: 'inline-flex', 
+                  alignItems: 'center', 
+                  gap: '0.4rem', 
+                  fontSize: '0.85rem', 
+                  color: 'var(--text-secondary)', 
+                  fontWeight: 600, 
+                  cursor: 'pointer',
+                  background: 'rgba(255, 255, 255, 0.05)',
+                  padding: '0.35rem 0.65rem',
+                  borderRadius: '8px',
+                  border: '1px solid var(--border-glass)',
+                  userSelect: 'none'
+                }}
+                title="Tự động xóa môn thi khỏi danh sách ngay khi hết giờ"
+              >
+                <input
+                  type="checkbox"
+                  checked={autoDeletePassed}
+                  onChange={(e) => setAutoDeletePassed(e.target.checked)}
+                  style={{ accentColor: '#8b5cf6', cursor: 'pointer', width: '15px', height: '15px' }}
+                />
+                <span>⚡ Tự động xóa khi hết giờ</span>
+              </label>
+
+              {stats.passed > 0 && !autoDeletePassed && (
+                <button
+                  type="button"
+                  onClick={handleClearPassedExams}
+                  style={{
+                    background: 'rgba(239, 68, 68, 0.15)',
+                    border: '1px solid rgba(239, 68, 68, 0.3)',
+                    color: '#f87171',
+                    borderRadius: '8px',
+                    padding: '0.35rem 0.65rem',
+                    fontSize: '0.82rem',
+                    fontWeight: 600,
+                    cursor: 'pointer'
+                  }}
+                  title="Xóa ngay tất cả các môn đã hết giờ thi"
+                >
+                  🗑️ Dọn dẹp ({stats.passed})
+                </button>
+              )}
 
               {/* Sub-view Toggle */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', borderLeft: '1px solid rgba(255,255,255,0.1)', paddingLeft: '0.75rem', marginLeft: '0.25rem' }}>

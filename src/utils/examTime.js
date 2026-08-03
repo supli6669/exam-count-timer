@@ -12,3 +12,13 @@ export function calculateTimeLeft(datetime, now = Date.now()) {
     totalMs: difference
   };
 }
+
+export function filterActiveExams(exams, autoDeletePassed = true, now = Date.now()) {
+  if (!Array.isArray(exams)) return [];
+  if (!autoDeletePassed) return exams;
+  return exams.filter(exam => {
+    if (!exam || !exam.datetime) return true;
+    return new Date(exam.datetime).getTime() > now;
+  });
+}
+
