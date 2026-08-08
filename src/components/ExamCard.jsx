@@ -5,9 +5,45 @@ import { calculateExamReadiness } from '../utils/readinessIndex';
 import { useCurrentTime } from '../utils/clock';
 import { calculateTimeLeft } from '../utils/examTime';
 
-function ExamCard({ exam, onEdit, onDelete, onAddTask, onToggleTask, onDeleteTask }) {
+const ExamCountdown = memo(function ExamCountdown({ datetime }) {
   const now = useCurrentTime();
-  const timeLeft = calculateTimeLeft(exam.datetime, now);
+  const timeLeft = calculateTimeLeft(datetime, now);
+  const isFarFuture = !timeLeft.isPassed && timeLeft.days > 365;
+
+  if (isFarFuture) {
+    return (
+      <div style={{ margin: '1.25rem 0', padding: '1rem', textAlign: 'center', color: 'var(--text-secondary)', background: 'rgba(255,255,255,.03)', borderRadius: '14px' }}>
+        Còn hơn một năm mới đến kỳ thi — hãy thêm đề cương và task để bắt đầu chuẩn bị dần.
+      </div>
+    );
+  }
+
+  return (
+    <div className="countdown-display">
+      <div className="countdown-unit">
+        <span className="countdown-value">{timeLeft.isPassed ? 0 : timeLeft.days}</span>
+        <span className="countdown-label">Ngày</span>
+      </div>
+      <div className="countdown-unit">
+        <span className="countdown-value">{timeLeft.isPassed ? 0 : timeLeft.hours}</span>
+        <span className="countdown-label">Giờ</span>
+      </div>
+      <div className="countdown-unit">
+        <span className="countdown-value">{timeLeft.isPassed ? 0 : timeLeft.minutes}</span>
+        <span className="countdown-label">Phút</span>
+      </div>
+      <div className="countdown-unit">
+        <span className="countdown-value">{timeLeft.isPassed ? 0 : timeLeft.seconds}</span>
+        <span className="countdown-label">Giây</span>
+      </div>
+    </div>
+  );
+});
+
+function ExamCard({ exam, onEdit, onDelete, onAddTask, onToggleTask, onDeleteTask }) {
+  // The full card is intentionally not subscribed to the one-second clock.
+  // Only ExamCountdown updates each second, keeping task forms and ERI content still.
+  const timeLeft = calculateTimeLeft(exam.datetime);
   const [isTasksExpanded, setIsTasksExpanded] = useState(false);
   const [newTaskText, setNewTaskText] = useState('');
   const [newTaskDeadline, setNewTaskDeadline] = useState('');
@@ -104,8 +140,6 @@ function ExamCard({ exam, onEdit, onDelete, onAddTask, onToggleTask, onDeleteTas
   const totalTasksCount = tasks.length;
   const progressPercent = totalTasksCount > 0 ? Math.round((completedTasksCount / totalTasksCount) * 100) : 0;
   const readiness = calculateExamReadiness(exam);
-  const isFarFuture = !timeLeft.isPassed && timeLeft.days > 365;
-
   return (
     <div className={`exam-card ${statusClass}`}>
       <div className="exam-card-header">
@@ -152,36 +186,7 @@ function ExamCard({ exam, onEdit, onDelete, onAddTask, onToggleTask, onDeleteTas
       </div>
 
 
-      {isFarFuture ? (
-        <div style={{ margin: '1.25rem 0', padding: '1rem', textAlign: 'center', color: 'var(--text-secondary)', background: 'rgba(255,255,255,.03)', borderRadius: '14px' }}>
-          Còn hơn một năm mới đến kỳ thi — hãy thêm đề cương và task để bắt đầu chuẩn bị dần.
-        </div>
-      ) : <div className="countdown-display">
-        <div className="countdown-unit">
-          <span className="countdown-value">
-            {timeLeft.isPassed ? 0 : timeLeft.days}
-          </span>
-          <span className="countdown-label">Ngày</span>
-        </div>
-        <div className="countdown-unit">
-          <span className="countdown-value">
-            {timeLeft.isPassed ? 0 : timeLeft.hours}
-          </span>
-          <span className="countdown-label">Giờ</span>
-        </div>
-        <div className="countdown-unit">
-          <span className="countdown-value">
-            {timeLeft.isPassed ? 0 : timeLeft.minutes}
-          </span>
-          <span className="countdown-label">Phút</span>
-        </div>
-        <div className="countdown-unit">
-          <span className="countdown-value">
-            {timeLeft.isPassed ? 0 : timeLeft.seconds}
-          </span>
-          <span className="countdown-label">Giây</span>
-        </div>
-      </div>}
+      <ExamCountdown datetime={exam.datetime} />
 
       {/* Task Completion Progress Bar (Always Visible) */}
       <div className="exam-tasks-progress-container" style={{ marginTop: '0.8rem' }}>

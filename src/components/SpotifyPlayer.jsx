@@ -38,7 +38,9 @@ function SpotifyPlayer() {
   });
 
   const [customInput, setCustomInput] = useState('');
-  const [isOpen, setIsOpen] = useState(true);
+  // Spotify embeds are relatively heavy. Load one only when the user opens
+  // this panel instead of paying that cost every time Pomodoro opens.
+  const [isOpen, setIsOpen] = useState(false);
   const [error, setError] = useState('');
   const [spotifyVolume, setSpotifyVolume] = useState(100);
   const [showSpotifyVolWarning, setShowSpotifyVolWarning] = useState(false);

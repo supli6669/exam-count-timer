@@ -27,6 +27,7 @@ const getStoredNumber = (key, fallback, min, max) => {
 
 const ANIMEDORO_WORK_MINUTES = 50;
 const ANIMEDORO_BREAK_MINUTES = 20;
+const EMPTY_BREAK_LOGS = Object.freeze([]);
 
 function PomodoroTimer({
   isOpen,
@@ -447,7 +448,7 @@ function PomodoroTimer({
   }, [mode, completedWorkSessions, timerType, calculateSecondsForMode, logAccumulatedStudyTime]);
 
   // Save customized settings
-  const handleSaveSettings = (e) => {
+  const handleSaveSettings = useCallback((e) => {
     e.preventDefault();
     const w = Math.max(1, Math.min(120, parseInt(inputWork, 10) || 25));
     const s = Math.max(1, Math.min(60, parseInt(inputShort, 10) || 5));
@@ -476,10 +477,10 @@ function PomodoroTimer({
     }
 
     alert('Đã lưu thiết lập thành công!');
-  };
+  }, [inputWork, inputShort, inputLong, inputAlarmVolume, inputAlarmSound, isActive, timerType, mode]);
 
   // Custom theme background upload & removal
-  const handleCustomThemeUpload = (e) => {
+  const handleCustomThemeUpload = useCallback((e) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
@@ -490,13 +491,19 @@ function PomodoroTimer({
       localStorage.setItem('pomodoro_custom_bg', base64);
     };
     reader.readAsDataURL(file);
-  };
+  }, []);
 
-  const handleRemoveCustomBg = () => {
+  const handleRemoveCustomBg = useCallback(() => {
     setCustomBg(null);
     setTheme('cyberpunk');
     localStorage.removeItem('pomodoro_custom_bg');
-  };
+  }, []);
+
+  const handleClearStats = useCallback(() => {
+    setStudyLogs([]);
+    localStorage.removeItem('pomodoro_study_logs');
+    window.dispatchEvent(new Event('studyLogsUpdated'));
+  }, []);
 
   const getModeColor = () => {
     if (timerType === 'animedoro') return '#f59e0b';
@@ -822,7 +829,7 @@ function PomodoroTimer({
               onSwitchModeAndType={switchModeAndType}
               timeLeft={timeLeft}
               isActive={isActive}
-              handleStartPause={handleStartPauseWithMini}
+              handleStartPause={handleStartPause}
               handleReset={handleReset}
               handleSkip={handleSkip}
               onOpenMiniTimer={openMiniTimer}
@@ -918,14 +925,10 @@ function PomodoroTimer({
         {activeTab === 'stats' && (
           <FocusStatsTab
             studyLogs={studyLogs}
-            breakLogs={[]}
+            breakLogs={EMPTY_BREAK_LOGS}
             exams={exams}
             themeColor={getModeColor()}
-            onClearStats={() => {
-              setStudyLogs([]);
-              localStorage.removeItem('pomodoro_study_logs');
-              window.dispatchEvent(new Event('studyLogsUpdated'));
-            }}
+            onClearStats={handleClearStats}
           />
         )}
       </div>
