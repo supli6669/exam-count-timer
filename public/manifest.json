@@ -1,6 +1,6 @@
 {
-  "short_name": "ExamCountdown",
-  "name": "Exam Countdown Timer & Study Dashboard",
+  "short_name": "flocus / 02",
+  "name": "flocus / 02 — Focus your next move",
   "icons": [
     {
       "src": "favicon.svg",
@@ -9,9 +9,9 @@
     }
   ],
   "start_url": "./",
-  "background_color": "#0f172a",
-  "theme_color": "#8b5cf6",
+  "background_color": "#111317",
+  "theme_color": "#111317",
   "display": "standalone",
   "orientation": "any",
-  "description": "Đếm ngược lịch thi thời gian thực, quản lý nhiệm vụ và bộ đếm Pomodoro tập trung học tập."
+  "description": "Lịch thi, nhiệm vụ và Pomodoro trong một không gian tập trung tối giản."
 }

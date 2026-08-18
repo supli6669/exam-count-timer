@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo, lazy, Suspense } from 'react';
+import { useState, useEffect, useCallback, useMemo, lazy, Suspense, memo } from 'react';
 import ExamCard from './components/ExamCard';
 import ExamForm from './components/ExamForm';
 import NotificationSettings from './components/NotificationSettings';
@@ -19,7 +19,8 @@ import { downloadICalFile } from './utils/icsExport';
 import FlashcardsModal from './components/FlashcardsModal';
 import MockExamModal from './components/MockExamModal';
 import Notes from './components/Notes';
-import { filterActiveExams } from './utils/examTime';
+import { calculateTimeLeft, filterActiveExams } from './utils/examTime';
+import { useCurrentTime } from './utils/clock';
 
 const CalendarView = lazy(() => import('./components/CalendarView'));
 
@@ -52,6 +53,59 @@ const ComponentLoader = () => (
     <span style={{ fontSize: '0.9rem', fontWeight: 500 }}>Đang tải giao diện...</span>
   </div>
 );
+
+const FocusHero = memo(function FocusHero({ exams, onStart, onCreate }) {
+  const now = useCurrentTime();
+  const nextExam = useMemo(() => {
+    return [...exams]
+      .filter(exam => exam?.datetime && new Date(exam.datetime).getTime() > now)
+      .sort((a, b) => new Date(a.datetime) - new Date(b.datetime))[0] || null;
+  }, [exams, now]);
+  const nextExamTimeLeft = nextExam ? calculateTimeLeft(nextExam.datetime, now) : null;
+  const nextExamDateLabel = nextExam
+    ? new Intl.DateTimeFormat('vi-VN', { weekday: 'long', day: '2-digit', month: '2-digit' }).format(new Date(nextExam.datetime))
+    : 'Chưa có lịch thi';
+
+  return (
+    <section className="focus-hero" aria-labelledby="focus-hero-title">
+      <div className="focus-hero-copy">
+        <span className="focus-eyebrow"><span className="eyebrow-dot" /> STUDY OS / TODAY</span>
+        <h2 id="focus-hero-title">Tập trung vào điều<br /><em>quan trọng nhất.</em></h2>
+        <p>Lịch thi gọn gàng, phiên học rõ ràng, tâm trí nhẹ hơn.</p>
+        <div className="focus-hero-actions">
+          <button className="btn btn-primary hero-primary-action" onClick={() => onStart(nextExam ? { examId: nextExam.id } : null)}>
+            <span className="play-glyph">▶</span>
+            Bắt đầu tập trung
+          </button>
+          <button className="hero-text-action" onClick={onCreate}>+ Thêm lịch thi</button>
+        </div>
+      </div>
+
+      <div className="next-focus-card" aria-label="Kỳ thi sắp tới">
+        <div className="next-focus-card-topline">
+          <span className="focus-eyebrow">UP NEXT</span>
+          <span className="next-focus-status"><span className="status-pulse" /> Đang theo dõi</span>
+        </div>
+        {nextExam ? (
+          <>
+            <div className="next-focus-subject">{nextExam.subject}</div>
+            <div className="next-focus-date">{nextExamDateLabel} · {new Date(nextExam.datetime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</div>
+            <div className="next-focus-countdown">
+              <strong>{nextExamTimeLeft?.days ?? 0}</strong><span>ngày</span>
+              <strong>{String(nextExamTimeLeft?.hours ?? 0).padStart(2, '0')}</strong><span>giờ</span>
+              <strong>{String(nextExamTimeLeft?.minutes ?? 0).padStart(2, '0')}</strong><span>phút</span>
+            </div>
+            <div className="next-focus-footer"><span>Thời gian còn lại</span><span>{nextExam.credits || 3} tín chỉ</span></div>
+          </>
+        ) : (
+          <div className="next-focus-empty">Thêm kỳ thi đầu tiên để bắt đầu xây dựng nhịp học của bạn.</div>
+        )}
+        <div className="orbital-orb orb-one" />
+        <div className="orbital-orb orb-two" />
+      </div>
+    </section>
+  );
+});
 
 // Initial mock data set relative to current date (June 2026)
 const getInitialMockData = () => {
@@ -173,7 +227,7 @@ function App() {
   }, [generalTasks]);
 
   const [activeTheme, setActiveTheme] = useState(() => {
-    return localStorage.getItem('app_global_theme') || 'space';
+    return localStorage.getItem('app_global_theme') || 'focus';
   });
 
   useEffect(() => {
@@ -633,7 +687,7 @@ function App() {
           </div>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-              <h1 className="brand-title" style={{ margin: 0 }}>Đồng Hồ Lịch Thi</h1>
+              <h1 className="brand-title" style={{ margin: 0 }}>flocus<span className="brand-title-version">/ 02</span></h1>
               <span className="level-badge">Cấp {userLevel}</span>
             </div>
             <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.2rem', marginTop: '0.15rem', flexWrap: 'wrap' }}>
@@ -659,7 +713,7 @@ function App() {
                   {username || 'Người học'}
                 </span>
               )}
-              <span>! Chúc ôn tập tốt. 📝</span>
+              <span>! Chúc ôn tập tốt.</span>
             </div>
           </div>
         </div>
@@ -681,75 +735,60 @@ function App() {
           </div>
         </div>
         <div className="header-actions">
-          <StudyStreak userXP={userXP} />
-          {/* Global Theme Selector */}
-          <select
-            value={activeTheme}
-            onChange={(e) => setActiveTheme(e.target.value)}
-            className="theme-selector-dropdown"
-            style={{
-              background: 'var(--bg-glass)',
-              border: '1px solid var(--border-glass)',
-              color: 'var(--text-primary)',
-              borderRadius: '8px',
-              padding: '0.4rem 0.6rem',
-              fontSize: '0.85rem',
-              outline: 'none',
-              cursor: 'pointer',
-              fontWeight: '600'
-            }}
-            title="Đổi chủ đề giao diện nghệ thuật"
-            aria-label="Chọn chủ đề giao diện"
-          >
-            <option value="cyberpunk">🏙️ Cyberpunk</option>
-            <option value="sakura">🌸 Sakura Library</option>
-            <option value="lofi">☕ Lofi Cafe</option>
-            <option value="space">🌌 Space Odyssey</option>
-            <option value="nature">🌲 Nature Cabin</option>
-          </select>
-          <button
-            onClick={() => downloadICalFile(exams, 'lich-thi-exam-countdown.ics')}
-            style={{
-              background: 'rgba(59, 130, 246, 0.12)',
-              border: '1px solid rgba(59, 130, 246, 0.3)',
-              color: '#60a5fa',
-              borderRadius: '8px',
-              padding: '0.4rem 0.75rem',
-              fontSize: '0.85rem',
-              fontWeight: 600,
-              cursor: 'pointer',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.35rem',
-              backdropFilter: 'blur(8px)'
-            }}
-            title="Xuất toàn bộ lịch thi ra tập tin iCalendar (.ics) cho Google/Apple Calendar"
-          >
-            📅 Xuất Lịch (.ics)
-          </button>
-          <BackupRestore />
-          <NotificationSettings 
-            enabled={notificationsEnabled} 
-            onToggle={setNotificationsEnabled} 
-          />
-          <button
-            className={`btn-icon ${isFlashcardsOpen ? 'active' : ''}`}
-            onClick={() => setIsFlashcardsOpen(!isFlashcardsOpen)}
-            title="Thẻ ghi nhớ Leitner (Flashcards)"
-            aria-label="Thẻ ghi nhớ Leitner"
-            style={{ background: 'rgba(168, 85, 247, 0.15)', color: '#c084fc', border: '1px solid rgba(168, 85, 247, 0.3)' }}
-          >
-            <span style={{ fontSize: '1.1rem', display: 'flex', alignItems: 'center' }}>🗂️</span>
-          </button>
-          <button
-            className={`btn-icon ${isPomodoroOpen ? 'active' : ''}`}
-            onClick={() => setIsPomodoroOpen(!isPomodoroOpen)}
-            title="Đồng hồ Pomodoro"
-            aria-label="Đồng hồ Pomodoro"
-          >
-            <span style={{ fontSize: '1.2rem', display: 'flex', alignItems: 'center' }}>🍅</span>
-          </button>
-          <button className="btn-icon" onClick={() => setIsMockExamOpen(true)} title="Mock Exam" aria-label="Mở Mock Exam" style={{ background: 'rgba(59,130,246,.14)', color: '#93c5fd', border: '1px solid rgba(59,130,246,.3)' }}>📝</button>
+          <div className="header-quick-actions">
+            <StudyStreak userXP={userXP} />
+            <details className="utility-menu">
+              <summary aria-label="Mở công cụ phụ">☰ <span>Công cụ</span></summary>
+              <div className="utility-menu-panel">
+                <label className="utility-theme-field">
+                  <span>Giao diện</span>
+                  <select
+                    value={activeTheme}
+                    onChange={(e) => setActiveTheme(e.target.value)}
+                    className="theme-selector-dropdown"
+                    title="Đổi chủ đề giao diện nghệ thuật"
+                    aria-label="Chọn chủ đề giao diện"
+                  >
+                    <option value="cyberpunk">🏙️ Cyberpunk</option>
+                    <option value="sakura">🌸 Sakura Library</option>
+                    <option value="lofi">☕ Lofi Cafe</option>
+                    <option value="focus">◐ Flocus Dusk</option>
+                    <option value="space">🌌 Space Odyssey</option>
+                    <option value="nature">🌲 Nature Cabin</option>
+                  </select>
+                </label>
+                <button
+                  className="utility-action utility-export"
+                  onClick={() => downloadICalFile(exams, 'lich-thi-exam-countdown.ics')}
+                  title="Xuất toàn bộ lịch thi ra tập tin iCalendar (.ics)"
+                >
+                  <span>↗</span> Xuất lịch
+                </button>
+                <BackupRestore />
+                <NotificationSettings
+                  enabled={notificationsEnabled}
+                  onToggle={setNotificationsEnabled}
+                />
+                <button
+                  className={`btn-icon utility-icon ${isFlashcardsOpen ? 'active' : ''}`}
+                  onClick={() => setIsFlashcardsOpen(!isFlashcardsOpen)}
+                  title="Thẻ ghi nhớ Leitner (Flashcards)"
+                  aria-label="Thẻ ghi nhớ Leitner"
+                >
+                  🗂️
+                </button>
+                <button
+                  className={`btn-icon utility-icon ${isPomodoroOpen ? 'active' : ''}`}
+                  onClick={() => setIsPomodoroOpen(!isPomodoroOpen)}
+                  title="Đồng hồ Pomodoro"
+                  aria-label="Đồng hồ Pomodoro"
+                >
+                  🍅
+                </button>
+                <button className="btn-icon utility-icon" onClick={() => setIsMockExamOpen(true)} title="Mock Exam" aria-label="Mở Mock Exam">📝</button>
+              </div>
+            </details>
+          </div>
 
           <div className="view-mode-tabs">
             <button
@@ -804,7 +843,7 @@ function App() {
             </button>
           </div>
           {viewMode === 'exams' && (
-            <button className="btn btn-primary" onClick={handleCreateOpen}>
+            <button className="btn btn-primary header-add-exam" onClick={handleCreateOpen}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="12" y1="5" x2="12" y2="19"></line>
                 <line x1="5" y1="12" x2="19" y2="12"></line>
@@ -814,6 +853,10 @@ function App() {
           )}
         </div>
       </header>
+
+      {viewMode === 'exams' && (
+        <FocusHero exams={exams} onStart={handleOpenPomodoro} onCreate={handleCreateOpen} />
+      )}
 
       {/* TAB 1: LỊCH THI */}
       {viewMode === 'exams' && (

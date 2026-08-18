@@ -627,7 +627,7 @@ function PomodoroTimer({
 
         const prefix = isActive ? '' : '⏸️ ';
         const modeText = timerType === 'stopwatch' ? 'Bấm giờ' : (mode === 'work' ? 'Tập trung' : 'Nghỉ ngơi');
-        document.title = `${prefix}${emoji} ${timeStr} | ${modeText} - Lịch Thi`;
+        document.title = `${prefix}${emoji} ${timeStr} | ${modeText} · flocus / 02`;
 
         const favicon = document.querySelector("link[rel*='icon']");
         if (favicon) {
@@ -651,13 +651,13 @@ function PomodoroTimer({
             ? `${days}d ${hours}h`
             : (hours > 0 ? `${hours}h ${mins}m` : `${mins}m ${secs}s`);
 
-          document.title = `🎯 Còn ${timeLabel}: ${nearest.subject} | Đồng Hồ Lịch Thi`;
+          document.title = `🎯 Còn ${timeLabel}: ${nearest.subject} · flocus / 02`;
           const favicon = document.querySelector("link[rel*='icon']");
           if (favicon) {
             favicon.href = `data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎯</text></svg>`;
           }
         } else {
-          document.title = "Đồng Hồ Đếm Ngược Lịch Thi - Theo Dõi Lịch Thi Thời Gian Thực";
+        document.title = "flocus / 02 — Focus your next move";
           const favicon = document.querySelector("link[rel*='icon']");
           if (favicon) {
             favicon.href = `data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⏱️</text></svg>`;
