@@ -1,43 +1,31 @@
-# Exam Countdown Timer
+# Nhịp học
 
-Ứng dụng học tập React/Vite gồm lịch thi, Focus Loop, Pomodoro/Animedoro, thống kê, không gian widget và Study Together.
+Ứng dụng học theo tín chỉ, không cần deadline. Nhập môn và tín chỉ, chọn số buổi mỗi tuần, quỹ phút mỗi buổi (gồm nghỉ), và phiên 25/30/45/50 phút.
 
-## Chạy local
+## Cách chia lịch
 
-```bash
+App trừ 5 phút nghỉ giữa các phiên, bỏ khoảng cuối dưới 15 phút để chuyển tiếp. Mỗi phiên được giao cho môn đang thiếu thời gian nhiều nhất so với tỷ lệ tín chỉ. Vì làm tròn theo phiên, tỷ lệ có thể lệch một ít; phần phân bổ hiển thị phút thực tế. Nếu quỹ giờ quá nhỏ để mọi môn có lượt, app báo rõ.
+
+Ví dụ 4–3–2 tín chỉ, 6 buổi × 100 phút, phiên 30 phút: 240–180–120 phút học và 60 phút nghỉ.
+
+Các buổi là thứ tự học linh hoạt, không gắn cứng ngày trong tuần. Phiên chưa học được giữ lại, không tự xóa hoặc tăng quỹ giờ. Khi hoàn tất, tạo vòng học mới. Đổi cấu hình sau khi đã học cần xác nhận đặt lại tiến độ.
+
+## Đồng hồ và dữ liệu
+
+Đồng hồ dùng thời điểm kết thúc tuyệt đối, hỗ trợ tạm dừng, tải lại và tab nền. Hết phiên tự đánh dấu hoàn thành; giờ nghỉ và phiên tiếp theo cần bấm bắt đầu. Dừng giữa chừng không đánh dấu hoàn thành. Đồng hồ báo bằng giao diện và tiêu đề tab, không có âm báo.
+
+Lịch mới lưu trong `credit_study_plan_v1`, danh sách môn nhập dở trong `credit_study_draft_v1`. Có tải và khôi phục bản sao JSON trong Môn & thời gian. Dữ liệu chỉ nằm trên trình duyệt, chưa đồng bộ nhiều thiết bị; dùng một tab để tránh ghi đè tiến độ.
+
+Lần đầu chuyển từ bản cũ, app lấy tên môn và tín chỉ từ `exams_countdown_list`, kể cả môn có ngày thi đã qua. Các khóa dữ liệu cũ không bị thay đổi. Các màn lịch thi, XP, streak, analytics, thói quen và tiện ích phụ không còn được tải vào giao diện chính. Mã cũ còn trong kho để tham khảo.
+
+## Chạy và kiểm tra
+
+```sh
 npm install
 npm run dev
-```
-
-Study Together dùng WebSocket và SQLite cục bộ:
-
-```bash
-npm run dev:rooms
-```
-
-Backend mặc định chạy tại `http://localhost:8787`, tự tạo identity token ẩn danh trong 30 ngày và lưu snapshot phòng ở `server/data/study-rooms.sqlite`. Có thể cấu hình frontend bằng `VITE_STUDY_ROOM_API_URL` và `VITE_STUDY_ROOM_WS_URL`; đặt `VITE_STUDY_ROOMS_ENABLED=false` để ẩn tính năng.
-
-## Kiểm tra
-
-```bash
-npm run lint
 npm test
+npm run lint
 npm run build
 ```
 
-## Thông tin Vite
-
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
-
-Currently, two official plugins are available:
-
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+Dev server mặc định ở cổng 5174. Bản PWA cập nhật cache `credit-study-v5`.

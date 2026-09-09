@@ -146,9 +146,9 @@ function PomodoroTimer({
   useEffect(() => {
     const syncFocusTarget = (event) => {
       const target = event.detail;
-      if (!target?.examId || !target?.taskId) return;
+      if (!target?.examId) return;
       setFocusSubjectId(target.examId);
-      setFocusTaskId(target.taskId);
+      setFocusTaskId(target.taskId || 'general');
     };
     window.addEventListener('pomodoro-focus-target', syncFocusTarget);
     return () => window.removeEventListener('pomodoro-focus-target', syncFocusTarget);
