@@ -1,4 +1,12 @@
-# Cập Nhật Gần Nhất (2026-07-23)
+# Trạng thái hiện tại (2026-09-10)
+
+Đã rút gọn giao diện thành Lịch thi, Việc cần làm, Thống kê và Sổ tay. Bỏ Study Together và server WebSocket, tích hợp ngoài, workspace widget, XP/cấp độ/huy hiệu, Mock Exam, các màn kế hoạch và mục tiêu trùng lặp. Pomodoro, nhạc/âm thanh, flashcard và sao lưu vẫn là tiện ích tùy chọn.
+
+TaskList hiển thị việc chung và việc theo môn. Các nhiệm vụ hằng ngày/định kỳ đã lưu được chuyển một lần bằng `consolidateTasks`; marker `tasks_consolidated_v1` được ghi sau danh sách và đi cùng bản sao lưu. Không xóa dữ liệu nguồn cũ. Thống kê chỉ hiển thị thời gian học và số việc hoàn thành. Xem README để chạy và triển khai phiên bản hiện tại.
+
+Các ghi chép bên dưới là lịch sử, không phải danh sách tính năng cần khôi phục.
+
+# Lịch sử cập nhật (2026-07-23)
 
 - Đã sửa độ ổn định dữ liệu LocalStorage: Pomodoro tự phục hồi khi cấu hình số hoặc lịch sử học tập bị hỏng; XP và cấp độ chỉ nhận số nguyên hợp lệ.
 - Đã sửa lỗi ngày theo múi giờ địa phương cho log học tập, biểu đồ đóng góp, streak và Smart Insights; không còn lệch ngày gần nửa đêm tại Việt Nam.

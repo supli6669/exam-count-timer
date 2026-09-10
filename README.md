@@ -1,26 +1,32 @@
 # Exam Countdown Timer
 
-Ứng dụng học tập React/Vite gồm lịch thi, Focus Loop, Pomodoro/Animedoro, thống kê, không gian widget và Study Together.
+Ứng dụng React/Vite cho lịch thi, danh sách việc, Pomodoro, ghi chú và thống kê học tập cơ bản. Flashcard, nhạc và âm thanh là các tiện ích tùy chọn.
 
 ## Chạy local
 
-```bash
+Yêu cầu Node.js 22.5 trở lên.
+
+```sh
 npm install
 npm run dev
 ```
 
-Study Together dùng WebSocket và SQLite cục bộ:
+Vite chạy ở cổng 5174. Ứng dụng hoạt động trong trình duyệt, không cần máy chủ phòng học riêng.
 
-```bash
-npm run dev:rooms
-```
+## Dữ liệu
 
-Backend mặc định chạy tại `http://localhost:8787`, tự tạo identity token ẩn danh trong 30 ngày và lưu snapshot phòng ở `server/data/study-rooms.sqlite`. Có thể cấu hình frontend bằng `VITE_STUDY_ROOM_API_URL` và `VITE_STUDY_ROOM_WS_URL`; đặt `VITE_STUDY_ROOMS_ENABLED=false` để ẩn tính năng.
+Lịch thi, việc cần làm, ghi chú và lịch sử học lưu trên thiết bị. Dùng Công cụ → Sao lưu để tải bản sao JSON hoặc khôi phục dữ liệu.
 
-## Kiểm tra
+Việc chung và việc theo môn hiển thị trong cùng một danh sách. Các việc đã lưu ở mục hằng ngày và mục tiêu định kỳ được chuyển sang việc chung một lần, giữ trạng thái hoàn thành và không tự lặp lại. Dữ liệu nguồn cũ vẫn được giữ trong bản sao lưu; không tạo thêm nhiệm vụ mẫu. Khóa `tasks_consolidated_v1` giúp việc đã xóa không bị nhập lại khi tải trang.
 
-```bash
+Thống kê gồm thời gian hôm nay, bảy ngày gần nhất, thời gian theo môn và số việc hoàn thành. Lịch sử chi tiết giữ tối đa 180 ngày.
+
+## Kiểm tra và triển khai
+
+```sh
 npm run lint
 npm test
 npm run build
 ```
+
+Vercel tự triển khai từ nhánh `main`. Mỗi đợt phát hành tăng phiên bản cache trong `public/sw.js` để PWA nhận bản mới.

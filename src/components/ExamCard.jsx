@@ -1,4 +1,4 @@
-import { useState, memo } from 'react';
+import { memo } from 'react';
 import { CATEGORIES } from '../constants';
 import { downloadICalFile } from '../utils/icsExport';
 import { calculateExamReadiness } from '../utils/readinessIndex';
@@ -40,16 +40,10 @@ const ExamCountdown = memo(function ExamCountdown({ datetime }) {
   );
 });
 
-function ExamCard({ exam, onEdit, onDelete, onAddTask, onToggleTask, onDeleteTask }) {
+function ExamCard({ exam, onEdit, onDelete, onOpenTasks }) {
   // The full card is intentionally not subscribed to the one-second clock.
   // Only ExamCountdown updates each second, keeping task forms and ERI content still.
   const timeLeft = calculateTimeLeft(exam.datetime);
-  const [isTasksExpanded, setIsTasksExpanded] = useState(false);
-  const [newTaskText, setNewTaskText] = useState('');
-  const [newTaskDeadline, setNewTaskDeadline] = useState('');
-  const [newTaskEstPomodoros, setNewTaskEstPomodoros] = useState(1);
-  const [newTaskPriority, setNewTaskPriority] = useState('q2');
-
   // Get day of week in Vietnamese
   const getDayOfWeek = (dateStr) => {
     const days = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
@@ -89,47 +83,6 @@ function ExamCard({ exam, onEdit, onDelete, onAddTask, onToggleTask, onDeleteTas
     const minutes = String(date.getMinutes()).padStart(2, '0');
     const dayOfWeek = getDayOfWeek(dateStr);
     return `${dayOfWeek}, ${hours}:${minutes} - ${day}/${month}/${year}`;
-  };
-
-  // Format task deadline beautifully
-  const formatTaskDeadline = (deadlineStr) => {
-    if (!deadlineStr) return '';
-    const d = new Date(deadlineStr);
-    const now = new Date();
-    
-    const day = String(d.getDate()).padStart(2, '0');
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const hours = String(d.getHours()).padStart(2, '0');
-    const minutes = String(d.getMinutes()).padStart(2, '0');
-
-    const isSameDay = d.toDateString() === now.toDateString();
-    const tomorrow = new Date(now);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const isTomorrow = d.toDateString() === tomorrow.toDateString();
-
-    if (d < now && !isSameDay) {
-      return `Trễ: ${day}/${month} ${hours}:${minutes}`;
-    }
-    if (isSameDay) {
-      const label = d < now ? 'Trễ hôm nay' : 'Hôm nay';
-      return `${label}, ${hours}:${minutes}`;
-    }
-    if (isTomorrow) {
-      return `Ngày mai, ${hours}:${minutes}`;
-    }
-    return `${day}/${month} ${hours}:${minutes}`;
-  };
-
-  const handleAddTaskSubmit = (e) => {
-    e.preventDefault();
-    if (!newTaskText.trim()) return;
-    const urgent = newTaskPriority === 'q1' || newTaskPriority === 'q3';
-    const important = newTaskPriority === 'q1' || newTaskPriority === 'q2';
-    onAddTask(exam.id, newTaskText.trim(), newTaskDeadline, newTaskEstPomodoros, urgent, important);
-    setNewTaskText('');
-    setNewTaskDeadline('');
-    setNewTaskEstPomodoros(1);
-    setNewTaskPriority('q2');
   };
 
   const catKey = exam.category || 'other';
@@ -201,132 +154,10 @@ function ExamCard({ exam, onEdit, onDelete, onAddTask, onToggleTask, onDeleteTas
 
 
       {/* Collapsible Tasks Section */}
-      {isTasksExpanded && (
-        <div className="exam-tasks-section">
-          <h4 className="tasks-section-title">📋 Các việc cần chuẩn bị:</h4>
-          
-          {totalTasksCount > 0 ? (
-            <div className="tasks-list">
-              {tasks.map(task => {
-                const isOverdue = task.deadline && new Date(task.deadline) < new Date() && !task.completed;
-                const formattedDeadline = task.deadline ? formatTaskDeadline(task.deadline) : '';
-                
-                // Priority details
-                const urgent = task.urgent !== undefined ? task.urgent : false;
-                const important = task.important !== undefined ? task.important : true;
-                let priorityClass = 'priority-dot-q2';
-                let priorityLabel = 'Q2: Lên lịch';
-                if (urgent && important) {
-                  priorityClass = 'priority-dot-q1';
-                  priorityLabel = 'Q1: Làm ngay';
-                } else if (urgent && !important) {
-                  priorityClass = 'priority-dot-q3';
-                  priorityLabel = 'Q3: Ủy quyền/Làm nhanh';
-                } else if (!urgent && !important) {
-                  priorityClass = 'priority-dot-q4';
-                  priorityLabel = 'Q4: Loại bỏ/Hạn chế';
-                }
-
-                return (
-                  <div key={task.id} className={`task-item ${task.completed ? 'completed' : ''}`}>
-                    <label className="task-item-left">
-                      <input 
-                        type="checkbox" 
-                        checked={task.completed} 
-                        onChange={() => onToggleTask(exam.id, task.id)}
-                        className="task-checkbox"
-                      />
-                      <span className="task-text" style={{ display: 'flex', alignItems: 'center' }}>
-                        <span className={`priority-dot-indicator ${priorityClass}`} title={priorityLabel}></span>
-                        {task.text}
-                      </span>
-                    </label>
-                    <div className="task-item-right">
-                      {task.estPomodoros > 0 && (
-                        <span className="task-pomodoros-badge" title={`Dự kiến: ${task.estPomodoros} phiên Pomodoro`}>
-                          🍅 {task.estPomodoros}
-                        </span>
-                      )}
-                      {task.deadline && (
-                        <span className={`task-deadline-badge ${isOverdue ? 'overdue' : ''}`}>
-                          {formattedDeadline}
-                        </span>
-                      )}
-                      <button 
-                        className="btn-delete-task" 
-                        onClick={() => onDeleteTask(exam.id, task.id)}
-                        title="Xóa việc này"
-                        aria-label="Xóa việc cần làm"
-                      >
-                        ×
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="tasks-empty-text">Chưa có nhiệm vụ nào được thêm.</div>
-          )}
-
-          <form className="task-add-form" onSubmit={handleAddTaskSubmit}>
-            <input 
-              type="text" 
-              placeholder="Nhập việc cần làm..." 
-              value={newTaskText}
-              onChange={(e) => setNewTaskText(e.target.value)}
-              className="task-input-text"
-              required
-            />
-            <div className="task-add-form-row" style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-              <input 
-                type="datetime-local" 
-                value={newTaskDeadline}
-                onChange={(e) => setNewTaskDeadline(e.target.value)}
-                className="task-input-date"
-                title="Hạn chót"
-                style={{ flex: 1 }}
-              />
-              <div className="task-input-pomodoros-wrapper" style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', padding: '0.25rem 0.5rem', borderRadius: '8px' }}>
-                <span title="Dự kiến số phiên 🍅">🍅</span>
-                <select
-                  value={newTaskEstPomodoros}
-                  onChange={(e) => setNewTaskEstPomodoros(parseInt(e.target.value, 10))}
-                  style={{ background: 'transparent', border: 'none', color: '#fff', fontSize: '0.8rem', outline: 'none', cursor: 'pointer' }}
-                  title="Dự kiến số phiên Pomodoro"
-                >
-                  {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(n => (
-                    <option key={n} value={n} style={{ background: 'var(--bg-secondary)', color: '#fff' }}>{n}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="priority-badge-input-wrapper" style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', padding: '0.25rem 0.5rem', borderRadius: '8px' }}>
-                <span title="Độ ưu tiên">🎯</span>
-                <select
-                  value={newTaskPriority}
-                  onChange={(e) => setNewTaskPriority(e.target.value)}
-                  className="priority-select-mini"
-                  style={{ background: 'transparent', border: 'none', color: '#fff', fontSize: '0.8rem', outline: 'none', cursor: 'pointer' }}
-                  title="Độ ưu tiên (Eisenhower Matrix)"
-                >
-                  <option value="q2" style={{ background: 'var(--bg-secondary)', color: '#fff' }}>Q2: Lên lịch</option>
-                  <option value="q1" style={{ background: 'var(--bg-secondary)', color: '#fff' }}>Q1: Làm ngay</option>
-                  <option value="q3" style={{ background: 'var(--bg-secondary)', color: '#fff' }}>Q3: Ủy quyền</option>
-                  <option value="q4" style={{ background: 'var(--bg-secondary)', color: '#fff' }}>Q4: Hạn chế</option>
-                </select>
-              </div>
-              <button type="submit" className="btn btn-primary btn-add-task">
-                Thêm
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
-
       <div className="exam-card-actions">
         <button 
-          className={`btn btn-secondary btn-tasks-toggle-text ${isTasksExpanded ? 'active' : ''}`}
-          onClick={() => setIsTasksExpanded(!isTasksExpanded)}
+          className="btn btn-secondary btn-tasks-toggle-text"
+          onClick={onOpenTasks}
           title="Xem danh sách việc cần làm"
           style={{ flex: 1, padding: '0.45rem 0.75rem', fontSize: '0.8rem', justifyContent: 'center' }}
         >

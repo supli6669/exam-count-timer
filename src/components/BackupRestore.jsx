@@ -5,6 +5,7 @@ import { getLocalDateKey } from '../utils/date';
 const BACKUP_KEYS = [
   'exams_countdown_list',
   'exams_general_tasks',
+  'tasks_consolidated_v1',
   'app_global_theme',
   'notifications_enabled',
   'pomodoro_work',
@@ -32,6 +33,7 @@ const BACKUP_KEYS = [
   'pomodoro_custom_bg',
   'pomodoro_custom_theme_data',
   'app_leitner_flashcards',
+  'mock_exam_results',
   'app_study_streak_data',
   'exam_countdown_notes',
   'pomodoro_onboarding_completed',

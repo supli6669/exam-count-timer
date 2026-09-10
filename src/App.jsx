@@ -5,31 +5,20 @@ import NotificationSettings from './components/NotificationSettings';
 import BackupRestore from './components/BackupRestore';
 import { CATEGORIES } from './constants';
 import PomodoroTimer from './components/PomodoroTimer';
-import RecurringTasks from './components/RecurringTasks';
-import DailyTasks from './components/DailyTasks';
-import ContributionGraph from './components/ContributionGraph';
-import { incrementContribution, decrementContribution } from './utils/contributions';
 import ErrorBoundary from './components/ErrorBoundary';
 import { pruneOldStudyLogs, safeJsonParse } from './utils/storage';
-import { flushFocusWebhookQueue } from './utils/integrations';
 import { migrateStudyData } from './utils/focusPlanning';
-import StudyStreak from './components/StudyStreak';
 import { downloadICalFile } from './utils/icsExport';
 import FlashcardsModal from './components/FlashcardsModal';
-import MockExamModal from './components/MockExamModal';
 import Notes from './components/Notes';
+import TaskList from './components/TaskList';
+import FocusStatsTab from './components/FocusStatsTab';
+import { consolidateTasks } from './utils/tasks';
 import { calculateTimeLeft, filterActiveExams } from './utils/examTime';
 import { useCurrentTime } from './utils/clock';
 
 const CalendarView = lazy(() => import('./components/CalendarView'));
 
-const SmartInsights = lazy(() => import('./components/SmartInsights'));
-const PriorityMatrix = lazy(() => import('./components/PriorityMatrix'));
-const FocusPlanner = lazy(() => import('./components/FocusPlanner'));
-const IntegrationsPanel = lazy(() => import('./components/IntegrationsPanel'));
-const WorkspaceCanvas = lazy(() => import('./components/WorkspaceCanvas'));
-const StudyTogether = lazy(() => import('./components/StudyTogether'));
-const studyRoomsEnabled = import.meta.env.VITE_STUDY_ROOMS_ENABLED !== 'false';
 
 const ComponentLoader = () => (
   <div style={{
@@ -137,25 +126,6 @@ const getInitialMockData = () => {
   ];
 };
 
-const MAX_USER_XP = 100_000_000;
-
-const getStoredInteger = (key, fallback, min, max) => {
-  const value = Number(localStorage.getItem(key));
-  return Number.isInteger(value) && value >= min && value <= max ? value : fallback;
-};
-
-const getLevelForXP = (xp) => {
-  let level = 1;
-  let xpNeeded = level * 500;
-  let remainingXP = xp;
-  while (remainingXP >= xpNeeded) {
-    remainingXP -= xpNeeded;
-    level++;
-    xpNeeded = level * 500;
-  }
-  return level;
-};
-
 function App() {
   const [exams, setExams] = useState(() => {
     // Only show examples for a brand-new installation. An empty saved array is
@@ -176,14 +146,15 @@ function App() {
   const [notificationsEnabled, setNotificationsEnabled] = useState(() => {
     return localStorage.getItem('notifications_enabled') === 'true';
   });
-  const [viewMode, setViewMode] = useState('exams'); // exams, tasks, workspace, notes, or analytics
+  const [viewMode, setViewMode] = useState('exams'); // exams, tasks, notes, or analytics
   const [examsView, setExamsView] = useState('card'); // 'card' or 'calendar'
   const [isPomodoroOpen, setIsPomodoroOpen] = useState(false);
   const [isFlashcardsOpen, setIsFlashcardsOpen] = useState(false);
-  const [isMockExamOpen, setIsMockExamOpen] = useState(false);
+  const [taskSubject, setTaskSubject] = useState('all');
   const [generalTasks, setGeneralTasks] = useState(() => {
     const parsed = safeJsonParse('exams_general_tasks', []);
-    return migrateStudyData([], Array.isArray(parsed) ? parsed : []).generalTasks;
+    const current = migrateStudyData([], Array.isArray(parsed) ? parsed : []).generalTasks;
+    return localStorage.getItem('tasks_consolidated_v1') === 'true' ? current : consolidateTasks(current, safeJsonParse('daily_tasks_list', []), safeJsonParse('recurring_tasks_rule_of_3', {}));
   });
 
 
@@ -223,6 +194,7 @@ function App() {
 
   useEffect(() => {
     localStorage.setItem('exams_general_tasks', JSON.stringify(generalTasks));
+    localStorage.setItem('tasks_consolidated_v1', 'true');
   }, [generalTasks]);
 
   const [activeTheme, setActiveTheme] = useState(() => {
@@ -239,51 +211,17 @@ function App() {
     pruneOldStudyLogs(180);
   }, []);
 
-  useEffect(() => {
-    const flushQueue = () => {
-      void flushFocusWebhookQueue();
-    };
-    window.addEventListener('online', flushQueue);
-    flushQueue();
-    return () => window.removeEventListener('online', flushQueue);
-  }, []);
-
   const [username, setUsername] = useState(() => {
     return localStorage.getItem('pomodoro_username') || '';
   });
   const [isEditingName, setIsEditingName] = useState(false);
   const [tempName, setTempName] = useState(username);
 
-  const [userXP, setUserXP] = useState(() => {
-    return getStoredInteger('pomodoro_user_xp', 0, 0, MAX_USER_XP);
-  });
-
-  const [userLevel, setUserLevel] = useState(() => {
-    const savedXP = getStoredInteger('pomodoro_user_xp', 0, 0, MAX_USER_XP);
-    return getLevelForXP(savedXP);
-  });
-
   const getGreetingPrefix = () => {
     const hr = new Date().getHours();
     if (hr >= 5 && hr < 12) return 'Chào buổi sáng, ';
     if (hr >= 12 && hr < 18) return 'Chào buổi chiều, ';
     return 'Chào buổi tối, ';
-  };
-
-  const getXPProgress = () => {
-    let level = 1;
-    let xpNeeded = level * 500;
-    let accumulated = userXP;
-    while (accumulated >= xpNeeded) {
-      accumulated -= xpNeeded;
-      level++;
-      xpNeeded = level * 500;
-    }
-    return {
-      current: accumulated,
-      needed: xpNeeded,
-      percent: Math.min(100, Math.round((accumulated / xpNeeded) * 100))
-    };
   };
 
   const handleSaveName = () => {
@@ -304,100 +242,6 @@ function App() {
     window.addEventListener('keydown', handleGlobalKeyDown);
     return () => window.removeEventListener('keydown', handleGlobalKeyDown);
   }, [isModalOpen, isPomodoroOpen]);
-
-  const gainXP = useCallback((amount) => {
-    const validAmount = Number.isFinite(amount) && amount > 0 ? Math.floor(amount) : 0;
-    if (validAmount === 0) return;
-
-    setUserXP(prevXP => {
-      const nextXP = Math.min(MAX_USER_XP, prevXP + validAmount);
-      localStorage.setItem('pomodoro_user_xp', nextXP.toString());
-
-      const level = getLevelForXP(nextXP);
-
-      setUserLevel(prevLevel => {
-        if (level > prevLevel) {
-          localStorage.setItem('pomodoro_user_level', level.toString());
-          playLevelUpSound();
-          alert(`Chúc mừng! Bạn đã thăng cấp lên Cấp ${level}! 🏆`);
-        }
-        return level;
-      });
-
-      return nextXP;
-    });
-  }, []);
-
-  const playLevelUpSound = () => {
-    try {
-      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-      if (!AudioContextClass) return;
-      const ctx = new AudioContextClass();
-      const now = ctx.currentTime;
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-
-      osc.type = 'triangle';
-      osc.frequency.setValueAtTime(261.63, now);
-      osc.frequency.setValueAtTime(329.63, now + 0.1);
-      osc.frequency.setValueAtTime(392.00, now + 0.2);
-      osc.frequency.setValueAtTime(523.25, now + 0.3);
-
-      gain.gain.setValueAtTime(0.3, now);
-      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.6);
-
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start(now);
-      osc.stop(now + 0.6);
-
-      setTimeout(() => ctx.close().catch(() => {}), 1000);
-    } catch (e) {
-      console.warn(e);
-    }
-  };
-
-  const playSuccessChime = () => {
-    try {
-      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-      if (!AudioContextClass) return;
-      const ctx = new AudioContextClass();
-      const now = ctx.currentTime;
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(523.25, now);
-      osc.frequency.setValueAtTime(659.25, now + 0.08);
-
-      gain.gain.setValueAtTime(0.15, now);
-      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
-
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start(now);
-      osc.stop(now + 0.25);
-
-      setTimeout(() => ctx.close().catch(() => {}), 500);
-    } catch (e) {
-      console.warn(e);
-    }
-  };
-
-  // Sync XP and listen to global gain-xp events
-  useEffect(() => {
-    const handleGainXP = (e) => {
-      const amount = Number(e.detail);
-      if (Number.isFinite(amount) && amount > 0) {
-        gainXP(amount);
-        playSuccessChime();
-      }
-    };
-    window.addEventListener('gain-xp', handleGainXP);
-    return () => {
-      window.removeEventListener('gain-xp', handleGainXP);
-    };
-  }, [gainXP]);
 
   // Save notification setting
 
@@ -529,56 +373,10 @@ function App() {
     }
   }, []);
 
-  // Handle toggling sub-task completed status
   const handleToggleTask = useCallback((examId, taskId) => {
-    if (examId === 'general') {
-      setGeneralTasks(prev => {
-        const task = prev.find(t => t.id === taskId);
-        if (task) {
-          if (!task.completed) {
-            incrementContribution();
-            window.dispatchEvent(new CustomEvent('gain-xp', { detail: 50 }));
-          } else {
-            decrementContribution();
-          }
-        }
-        return prev.map(t => {
-          if (t.id === taskId) {
-            return { ...t, completed: !t.completed, completedAt: !t.completed ? Date.now() : null };
-          }
-          return t;
-        });
-      });
-    } else {
-      setExams(prev => {
-        const exam = prev.find(e => e.id === examId);
-        if (exam) {
-          const task = (exam.tasks || []).find(t => t.id === taskId);
-          if (task) {
-            if (!task.completed) {
-              incrementContribution();
-              window.dispatchEvent(new CustomEvent('gain-xp', { detail: 50 }));
-            } else {
-              decrementContribution();
-            }
-          }
-        }
-        return prev.map(exam => {
-          if (exam.id === examId) {
-            return {
-              ...exam,
-              tasks: (exam.tasks || []).map(task => {
-                if (task.id === taskId) {
-                  return { ...task, completed: !task.completed, completedAt: !task.completed ? Date.now() : null };
-                }
-                return task;
-              })
-            };
-          }
-          return exam;
-        });
-      });
-    }
+    const toggle = task => task.id === taskId ? { ...task, completed: !task.completed, completedAt: task.completed ? null : Date.now() } : task;
+    if (examId === 'general') setGeneralTasks(tasks => tasks.map(toggle));
+    else setExams(items => items.map(exam => exam.id === examId ? { ...exam, tasks: (exam.tasks || []).map(toggle) } : exam));
   }, []);
 
   // Handle deleting a sub-task
@@ -591,33 +389,6 @@ function App() {
           return {
             ...exam,
             tasks: (exam.tasks || []).filter(task => task.id !== taskId)
-          };
-        }
-        return exam;
-      }));
-    }
-  }, []);
-
-  // Handle updating a sub-task's priority
-  const handleUpdateTaskPriority = useCallback((examId, taskId, urgent, important) => {
-    if (examId === 'general') {
-      setGeneralTasks(prev => prev.map(task => {
-        if (task.id === taskId) {
-          return { ...task, urgent, important };
-        }
-        return task;
-      }));
-    } else {
-      setExams(prev => prev.map(exam => {
-        if (exam.id === examId) {
-          return {
-            ...exam,
-            tasks: (exam.tasks || []).map(task => {
-              if (task.id === taskId) {
-                return { ...task, urgent, important };
-              }
-              return task;
-            })
           };
         }
         return exam;
@@ -686,7 +457,6 @@ function App() {
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
               <h1 className="brand-title" style={{ margin: 0 }}>flocus<span className="brand-title-version">/ 02</span></h1>
-              <span className="level-badge">Cấp {userLevel}</span>
             </div>
             <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.2rem', marginTop: '0.15rem', flexWrap: 'wrap' }}>
               <span>{getGreetingPrefix()}</span>
@@ -716,25 +486,8 @@ function App() {
           </div>
         </div>
 
-        {/* Level XP Progress Bar */}
-        <div className="header-xp-container">
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.70rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
-            <span>Tiến độ kinh nghiệm</span>
-            <span>{getXPProgress().current} / {getXPProgress().needed} XP</span>
-          </div>
-          <div style={{ height: '5px', width: '100%', backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: '3px', overflow: 'hidden' }}>
-            <div style={{
-              height: '100%',
-              width: `${getXPProgress().percent}%`,
-              background: 'linear-gradient(90deg, #8b5cf6, #ec4899)',
-              borderRadius: '3px',
-              transition: 'width 0.4s ease'
-            }} />
-          </div>
-        </div>
         <div className="header-actions">
           <div className="header-quick-actions">
-            <StudyStreak userXP={userXP} />
             <details className="utility-menu">
               <summary aria-label="Mở công cụ phụ">☰ <span>Công cụ</span></summary>
               <div className="utility-menu-panel">
@@ -783,7 +536,6 @@ function App() {
                 >
                   🍅
                 </button>
-                <button className="btn-icon utility-icon" onClick={() => setIsMockExamOpen(true)} title="Mock Exam" aria-label="Mở Mock Exam">📝</button>
               </div>
             </details>
           </div>
@@ -800,37 +552,19 @@ function App() {
             <button
               className={`view-tab-btn ${viewMode === 'tasks' ? 'active' : ''}`}
               onClick={() => setViewMode('tasks')}
-              title="Kế hoạch & Thói quen học tập"
+              title="Danh sách việc cần làm"
             >
               <span style={{ fontSize: '0.9rem', display: 'inline-flex', alignItems: 'center', marginRight: '0.35rem' }}>🎯</span>
-              Kế hoạch & Thói quen
+              Việc cần làm
             </button>
             <button
               className={`view-tab-btn ${viewMode === 'analytics' ? 'active' : ''}`}
               onClick={() => setViewMode('analytics')}
-              title="Phân tích & Tiến độ học tập"
+              title="Thống kê học tập"
             >
               <span style={{ fontSize: '0.9rem', display: 'inline-flex', alignItems: 'center', marginRight: '0.35rem' }}>📊</span>
-              Phân tích & Tiến độ
+              Thống kê
             </button>
-            <button
-              className={`view-tab-btn ${viewMode === 'workspace' ? 'active' : ''}`}
-              onClick={() => setViewMode('workspace')}
-              title="Không gian học tuỳ biến"
-            >
-              <span aria-hidden="true">🪟</span>
-              Không gian
-            </button>
-            {studyRoomsEnabled && (
-              <button
-                className={`view-tab-btn ${viewMode === 'together' ? 'active' : ''}`}
-                onClick={() => setViewMode('together')}
-                title="Phòng học chung"
-              >
-                <span aria-hidden="true">👥</span>
-                Học cùng nhau
-              </button>
-            )}
             <button
               className={`view-tab-btn ${viewMode === 'notes' ? 'active' : ''}`}
               onClick={() => setViewMode('notes')}
@@ -1107,9 +841,7 @@ function App() {
                     exam={exam}
                     onEdit={handleEditOpen}
                     onDelete={handleDeleteExam}
-                    onAddTask={handleAddTask}
-                    onToggleTask={handleToggleTask}
-                    onDeleteTask={handleDeleteTask}
+                    onOpenTasks={() => { setTaskSubject(exam.id); setViewMode('tasks'); }}
                   />
                 ))
               ) : (
@@ -1150,74 +882,8 @@ function App() {
         </>
       )}
 
-      {/* TAB 2: KẾ HOẠCH & THÓI QUEN */}
-      {viewMode === 'tasks' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-          <ErrorBoundary>
-            <Suspense fallback={<ComponentLoader />}>
-              <FocusPlanner
-                exams={exams}
-                generalTasks={generalTasks}
-                onOpenPomodoro={handleOpenPomodoro}
-                onAddTask={handleAddTask}
-              />
-            </Suspense>
-          </ErrorBoundary>
-          <ErrorBoundary>
-            <Suspense fallback={<ComponentLoader />}>
-              <IntegrationsPanel onAddTask={handleAddTask} />
-            </Suspense>
-          </ErrorBoundary>
-          <ErrorBoundary>
-            <Suspense fallback={<ComponentLoader />}>
-              <PriorityMatrix
-                exams={exams}
-                generalTasks={generalTasks}
-                onAddTask={handleAddTask}
-                onToggleTask={handleToggleTask}
-                onDeleteTask={handleDeleteTask}
-                onUpdateTaskPriority={handleUpdateTaskPriority}
-              />
-            </Suspense>
-          </ErrorBoundary>
-          <div className="goals-and-daily-container">
-            <RecurringTasks />
-            <DailyTasks />
-          </div>
-        </div>
-      )}
-
-      {/* TAB 3: PHÂN TÍCH & TIẾN ĐỘ */}
-      {viewMode === 'analytics' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-          <ErrorBoundary>
-            <Suspense fallback={<ComponentLoader />}>
-              <SmartInsights exams={exams} />
-            </Suspense>
-          </ErrorBoundary>
-          <ContributionGraph />
-        </div>
-      )}
-
-      {viewMode === 'workspace' && (
-        <ErrorBoundary>
-          <Suspense fallback={<ComponentLoader />}>
-            <WorkspaceCanvas
-              exams={exams}
-              generalTasks={generalTasks}
-              onOpenPomodoro={handleOpenPomodoro}
-            />
-          </Suspense>
-        </ErrorBoundary>
-      )}
-
-      {viewMode === 'together' && studyRoomsEnabled && (
-        <ErrorBoundary>
-          <Suspense fallback={<ComponentLoader />}>
-            <StudyTogether />
-          </Suspense>
-        </ErrorBoundary>
-      )}
+      {viewMode === 'tasks' && <TaskList exams={exams} generalTasks={generalTasks} subject={taskSubject} onSubjectChange={setTaskSubject} onAddTask={handleAddTask} onToggleTask={handleToggleTask} onDeleteTask={handleDeleteTask} onStart={handleOpenPomodoro} />}
+      {viewMode === 'analytics' && <FocusStatsTab exams={exams} generalTasks={generalTasks} />}
 
       {viewMode === 'notes' && <Notes />}
 
@@ -1245,7 +911,6 @@ function App() {
         isOpen={isFlashcardsOpen}
         onClose={() => setIsFlashcardsOpen(false)}
       />
-      <MockExamModal isOpen={isMockExamOpen} onClose={() => setIsMockExamOpen(false)} exams={exams} />
     </div>
   );
 }

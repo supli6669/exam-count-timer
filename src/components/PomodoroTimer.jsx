@@ -3,7 +3,6 @@ import { createPortal } from 'react-dom';
 import SpotifyPlayer from './SpotifyPlayer';
 import ThemeParticles from './ThemeParticles';
 import AmbientSoundboard from './AmbientSoundboard';
-import { incrementContribution } from '../utils/contributions';
 import FocusStatsTab from './FocusStatsTab';
 import { playSynthAlarm, STUDY_QUOTES } from './pomodoro/audioSynthesizer';
 import TimerDisplay from './pomodoro/TimerDisplay';
@@ -18,7 +17,6 @@ import {
   getElapsedWholeSeconds,
   getStopwatchSeconds
 } from '../utils/timer';
-import { deliverFocusEvent } from '../utils/integrations';
 
 const getStoredNumber = (key, fallback, min, max) => {
   const value = Number.parseInt(localStorage.getItem(key), 10);
@@ -27,7 +25,6 @@ const getStoredNumber = (key, fallback, min, max) => {
 
 const ANIMEDORO_WORK_MINUTES = 50;
 const ANIMEDORO_BREAK_MINUTES = 20;
-const EMPTY_BREAK_LOGS = Object.freeze([]);
 
 function PomodoroTimer({
   isOpen,
@@ -187,7 +184,6 @@ function PomodoroTimer({
       return;
     }
 
-    incrementContribution();
 
     const today = getLocalDateKey();
     let subjectName = 'Học tập chung';
@@ -222,13 +218,6 @@ function PomodoroTimer({
     setStudyLogs(updatedLogs);
     localStorage.setItem('pomodoro_study_logs', JSON.stringify(updatedLogs));
     window.dispatchEvent(new Event('studyLogsUpdated'));
-    void deliverFocusEvent(newLog);
-    
-    const xpGained = Math.round((seconds / 1500) * 100);
-    if (xpGained > 0) {
-      window.dispatchEvent(new CustomEvent('gain-xp', { detail: xpGained }));
-    }
-    
     secondsStudiedRef.current = 0;
   }, [focusSubjectId, focusTaskId, exams, generalTasks, studyLogs]);
 
@@ -925,9 +914,8 @@ function PomodoroTimer({
         {activeTab === 'stats' && (
           <FocusStatsTab
             studyLogs={studyLogs}
-            breakLogs={EMPTY_BREAK_LOGS}
             exams={exams}
-            themeColor={getModeColor()}
+            generalTasks={generalTasks}
             onClearStats={handleClearStats}
           />
         )}
