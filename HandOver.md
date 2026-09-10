@@ -1,4 +1,6 @@
-# Trạng thái hiện tại (2026-09-10)
+# Trạng thái hiện tại (2026-09-11)
+
+Bỏ ERI, trường tín chỉ và BreakCoach. Ghi nhanh trong Pomodoro mở Sổ tay; `consolidateNotes` chuyển dữ liệu `focus_distractions_v1` một lần, giữ nội dung và trạng thái đã xử lý. Marker `notes_consolidated_v1` đi cùng bản sao lưu. Notes lưu ngay để chuyển tab không hủy lần lưu cuối. ExamForm giữ các trường cũ (đặc biệt là tasks) khi sửa lịch thi. Đã dọn CSS còn sót của tính năng cũ; giữ selector động `status-border-*` cho lịch.
 
 Đã rút gọn giao diện thành Lịch thi, Việc cần làm, Thống kê và Sổ tay. Bỏ Study Together và server WebSocket, tích hợp ngoài, workspace widget, XP/cấp độ/huy hiệu, Mock Exam, các màn kế hoạch và mục tiêu trùng lặp. Pomodoro, nhạc/âm thanh, flashcard và sao lưu vẫn là tiện ích tùy chọn.
 

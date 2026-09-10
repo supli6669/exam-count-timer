@@ -1,7 +1,6 @@
 import { memo } from 'react';
 import { CATEGORIES } from '../constants';
 import { downloadICalFile } from '../utils/icsExport';
-import { calculateExamReadiness } from '../utils/readinessIndex';
 import { useCurrentTime } from '../utils/clock';
 import { calculateTimeLeft } from '../utils/examTime';
 
@@ -42,7 +41,7 @@ const ExamCountdown = memo(function ExamCountdown({ datetime }) {
 
 function ExamCard({ exam, onEdit, onDelete, onOpenTasks }) {
   // The full card is intentionally not subscribed to the one-second clock.
-  // Only ExamCountdown updates each second, keeping task forms and ERI content still.
+  // Only ExamCountdown updates each second, keeping the rest of the card still.
   const timeLeft = calculateTimeLeft(exam.datetime);
   // Get day of week in Vietnamese
   const getDayOfWeek = (dateStr) => {
@@ -92,7 +91,6 @@ function ExamCard({ exam, onEdit, onDelete, onOpenTasks }) {
   const completedTasksCount = tasks.filter(t => t.completed).length;
   const totalTasksCount = tasks.length;
   const progressPercent = totalTasksCount > 0 ? Math.round((completedTasksCount / totalTasksCount) * 100) : 0;
-  const readiness = calculateExamReadiness(exam);
   return (
     <div className={`exam-card ${statusClass}`}>
       <div className="exam-card-header">
@@ -100,17 +98,6 @@ function ExamCard({ exam, onEdit, onDelete, onOpenTasks }) {
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.25rem' }}>
             <h3 className="exam-title" style={{ margin: 0 }}>{exam.subject}</h3>
             <span className={`category-tag ${catInfo.class}`}>{catInfo.name}</span>
-            <span className="credits-tag" style={{
-              fontSize: '0.7rem',
-              fontWeight: 600,
-              padding: '0.15rem 0.4rem',
-              background: 'rgba(255, 255, 255, 0.05)',
-              border: '1px solid rgba(255, 255, 255, 0.08)',
-              color: 'var(--text-secondary)',
-              borderRadius: '6px'
-            }}>
-              {exam.credits || 3} tín chỉ
-            </span>
           </div>
           <span className="exam-datetime">
             <svg viewBox="0 0 24 24">
@@ -121,20 +108,6 @@ function ExamCard({ exam, onEdit, onDelete, onOpenTasks }) {
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.35rem' }}>
           <span className={`urgency-badge ${badgeClass}`}>{badgeLabel}</span>
-          <span style={{
-            fontSize: '0.72rem',
-            fontWeight: 700,
-            padding: '0.15rem 0.5rem',
-            borderRadius: '12px',
-            background: `${readiness.color}18`,
-            color: readiness.color,
-            border: `1px solid ${readiness.color}40`,
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '0.25rem'
-          }} title={readiness.score === null ? 'Thêm task hoặc ghi nhận phiên học để tính ERI.' : `Chỉ số ERI Sẵn Sàng: ${readiness.score}%`}>
-            📊 {readiness.score === null ? readiness.label : `ERI: ${readiness.score}% (${readiness.label})`}
-          </span>
         </div>
       </div>
 

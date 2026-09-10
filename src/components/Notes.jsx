@@ -1,7 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { safeJsonParse } from '../utils/storage';
-
-const NOTES_STORAGE_KEY = 'exam_countdown_notes';
+import { consolidateNotes, NOTES_KEY, NOTES_MIGRATION_KEY } from '../utils/notes';
 
 const makeNote = () => ({
   id: `note-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
@@ -21,18 +20,19 @@ const formatUpdatedAt = (timestamp) => {
 
 function Notes() {
   const [notes, setNotes] = useState(() => {
-    const saved = safeJsonParse(NOTES_STORAGE_KEY, []);
-    return Array.isArray(saved) ? saved : [];
+    const saved = safeJsonParse(NOTES_KEY, []);
+    const current = Array.isArray(saved) ? saved : [];
+    return localStorage.getItem(NOTES_MIGRATION_KEY) === 'true'
+      ? current
+      : consolidateNotes(current, safeJsonParse('focus_distractions_v1', []));
   });
   const [selectedId, setSelectedId] = useState(null);
   const [query, setQuery] = useState('');
-  const saveTimer = useRef(null);
 
   useEffect(() => {
-    saveTimer.current = window.setTimeout(() => {
-      localStorage.setItem(NOTES_STORAGE_KEY, JSON.stringify(notes));
-    }, 300);
-    return () => window.clearTimeout(saveTimer.current);
+    // Persist immediately so switching tabs cannot cancel a pending note save.
+    localStorage.setItem(NOTES_KEY, JSON.stringify(notes));
+    localStorage.setItem(NOTES_MIGRATION_KEY, 'true');
   }, [notes]);
 
   const visibleNotes = useMemo(() => {

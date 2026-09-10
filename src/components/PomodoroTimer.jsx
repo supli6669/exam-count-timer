@@ -7,8 +7,6 @@ import FocusStatsTab from './FocusStatsTab';
 import { playSynthAlarm, STUDY_QUOTES } from './pomodoro/audioSynthesizer';
 import TimerDisplay from './pomodoro/TimerDisplay';
 import FloatingTimer from './pomodoro/FloatingTimer';
-import DistractionParkingLot from './pomodoro/DistractionParkingLot';
-import BreakCoach from './pomodoro/BreakCoach';
 import ThemeSelector from './pomodoro/ThemeSelector';
 import AlarmSoundSettings from './pomodoro/AlarmSoundSettings';
 import { getLocalDateKey } from '../utils/date';
@@ -29,6 +27,7 @@ const ANIMEDORO_BREAK_MINUTES = 20;
 function PomodoroTimer({
   isOpen,
   onClose,
+  onOpenNotes,
   exams = [],
   generalTasks = [],
   notificationsEnabled = false
@@ -871,11 +870,7 @@ function PomodoroTimer({
               </select>
             </div>
 
-            {timerType !== 'stopwatch' && mode !== 'work' && (
-              <BreakCoach mode={mode} timerType={timerType} />
-            )}
-
-            <DistractionParkingLot />
+            <button className="btn btn-secondary" onClick={onOpenNotes}>Ghi chú trong Sổ tay</button>
 
             {/* Audio & Spotify Integration */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem' }}>

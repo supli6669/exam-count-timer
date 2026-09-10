@@ -21,6 +21,8 @@ Việc chung và việc theo môn hiển thị trong cùng một danh sách. Cá
 
 Thống kê gồm thời gian hôm nay, bảy ngày gần nhất, thời gian theo môn và số việc hoàn thành. Lịch sử chi tiết giữ tối đa 180 ngày.
 
+Sổ tay nhận các ghi chú cũ từ “Bãi đỗ suy nghĩ” một lần và giữ trạng thái đã xử lý dưới dạng nhãn. Khóa `notes_consolidated_v1` đi cùng bản sao lưu để ghi chú đã xóa không xuất hiện lại. Ghi chú được lưu ngay khi sửa; Pomodoro có nút mở Sổ tay. Lịch thi không yêu cầu tín chỉ và không tự chấm mức độ sẵn sàng thi.
+
 ## Kiểm tra và triển khai
 
 ```sh

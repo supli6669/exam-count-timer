@@ -6,6 +6,7 @@ const BACKUP_KEYS = [
   'exams_countdown_list',
   'exams_general_tasks',
   'tasks_consolidated_v1',
+  'notes_consolidated_v1',
   'app_global_theme',
   'notifications_enabled',
   'pomodoro_work',

@@ -1,5 +1,5 @@
 // Bump this on each release so an installed PWA cannot keep serving old assets.
-const CACHE_NAME = 'exam-countdown-v8';
+const CACHE_NAME = 'exam-countdown-v9';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',

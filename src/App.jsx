@@ -83,7 +83,7 @@ const FocusHero = memo(function FocusHero({ exams, onStart, onCreate }) {
               <strong>{String(nextExamTimeLeft?.hours ?? 0).padStart(2, '0')}</strong><span>giờ</span>
               <strong>{String(nextExamTimeLeft?.minutes ?? 0).padStart(2, '0')}</strong><span>phút</span>
             </div>
-            <div className="next-focus-footer"><span>Thời gian còn lại</span><span>{nextExam.credits || 3} tín chỉ</span></div>
+            <div className="next-focus-footer"><span>Thời gian còn lại</span></div>
           </>
         ) : (
           <div className="next-focus-empty">Thêm kỳ thi đầu tiên để bắt đầu xây dựng nhịp học của bạn.</div>
@@ -900,6 +900,7 @@ function App() {
       <PomodoroTimer
         isOpen={isPomodoroOpen}
         onClose={() => setIsPomodoroOpen(false)}
+        onOpenNotes={() => { setIsPomodoroOpen(false); setViewMode('notes'); }}
         exams={exams}
         generalTasks={generalTasks}
         notificationsEnabled={notificationsEnabled}

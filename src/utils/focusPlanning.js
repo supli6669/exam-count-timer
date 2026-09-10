@@ -1,5 +1,3 @@
-export const DISTRACTIONS_STORAGE_KEY = 'focus_distractions_v1';
-
 export function getTaskKey(examId, taskId) {
   return `${examId}:${taskId}`;
 }

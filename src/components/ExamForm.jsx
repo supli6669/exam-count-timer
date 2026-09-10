@@ -16,7 +16,6 @@ function ExamForm({ exam, onSave, onClose }) {
   const [subject, setSubject] = useState(exam ? (exam.subject || '') : '');
   const [datetime, setDatetime] = useState(getInitialDateTime);
   const [category, setCategory] = useState(exam ? (exam.category || 'other') : 'other');
-  const [credits, setCredits] = useState(exam ? (exam.credits || 3) : 3);
   const [error, setError] = useState('');
   const [prevExam, setPrevExam] = useState(exam);
 
@@ -25,7 +24,6 @@ function ExamForm({ exam, onSave, onClose }) {
     if (exam) {
       setSubject(exam.subject || '');
       setCategory(exam.category || 'other');
-      setCredits(exam.credits || 3);
       if (exam.datetime) {
         const date = new Date(exam.datetime);
         if (!isNaN(date.getTime())) {
@@ -42,7 +40,6 @@ function ExamForm({ exam, onSave, onClose }) {
       setSubject('');
       setDatetime('');
       setCategory('other');
-      setCredits(3);
     }
     setError('');
   }
@@ -74,11 +71,11 @@ function ExamForm({ exam, onSave, onClose }) {
     }
 
     onSave({
+      ...exam,
       id: exam && exam.id ? exam.id : Date.now().toString(),
       subject: subject.trim(),
       datetime: selectedDate.toISOString(),
       category: category,
-      credits: parseInt(credits, 10) || 3,
     });
   };
 
@@ -145,22 +142,6 @@ function ExamForm({ exam, onSave, onClose }) {
               ))}
             </select>
           </div>
-
-          <div className="form-group">
-            <label className="form-label" htmlFor="credits-input">Số tín chỉ</label>
-            <input
-              id="credits-input"
-              type="number"
-              min="1"
-              max="15"
-              className="form-input"
-              placeholder="Ví dụ: 3"
-              value={credits}
-              onChange={(e) => setCredits(e.target.value)}
-            />
-          </div>
-
-
 
           <div className="form-group">
             <label className="form-label">Ngày & Giờ thi</label>
