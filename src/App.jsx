@@ -1,185 +1,1253 @@
-import { useEffect, useRef, useState } from 'react';
-import { createCreditPlan, finishTimer, isValidPlan, normalizeSubjects, PLAN_KEY, timerRemaining } from './utils/creditPlan';
-import './study.css';
+import { useState, useEffect, useCallback, useMemo, lazy, Suspense, memo } from 'react';
+import ExamCard from './components/ExamCard';
+import ExamForm from './components/ExamForm';
+import NotificationSettings from './components/NotificationSettings';
+import BackupRestore from './components/BackupRestore';
+import { CATEGORIES } from './constants';
+import PomodoroTimer from './components/PomodoroTimer';
+import RecurringTasks from './components/RecurringTasks';
+import DailyTasks from './components/DailyTasks';
+import ContributionGraph from './components/ContributionGraph';
+import { incrementContribution, decrementContribution } from './utils/contributions';
+import ErrorBoundary from './components/ErrorBoundary';
+import { pruneOldStudyLogs, safeJsonParse } from './utils/storage';
+import { flushFocusWebhookQueue } from './utils/integrations';
+import { migrateStudyData } from './utils/focusPlanning';
+import StudyStreak from './components/StudyStreak';
+import { downloadICalFile } from './utils/icsExport';
+import FlashcardsModal from './components/FlashcardsModal';
+import MockExamModal from './components/MockExamModal';
+import Notes from './components/Notes';
+import { calculateTimeLeft, filterActiveExams } from './utils/examTime';
+import { useCurrentTime } from './utils/clock';
 
-function read(key, fallback) {
-  try { return JSON.parse(localStorage.getItem(key)) ?? fallback; } catch { return fallback; }
-}
-const initialPlan = () => { const p = read(PLAN_KEY, null); return isValidPlan(p) ? p : null; };
-const draftKey = 'credit_study_draft_v1';
-const format = seconds => `${Math.floor(seconds / 60).toString().padStart(2, '0')}:${(seconds % 60).toString().padStart(2, '0')}`;
+const CalendarView = lazy(() => import('./components/CalendarView'));
 
-export default function App() {
-  const [plan, setPlan] = useState(initialPlan);
-  const [subjects, setSubjects] = useState(() => initialPlan()?.subjects || normalizeSubjects(read(draftKey, null)?.subjects || read('exams_countdown_list', [])));
-  const [config, setConfig] = useState(() => initialPlan()?.config || { days: 6, minutes: 100, session: 30 });
-  const [editing, setEditing] = useState(() => !initialPlan());
-  const [name, setName] = useState('');
-  const [credits, setCredits] = useState('3');
-  const [error, setError] = useState('');
-  const [storageError, setStorageError] = useState('');
-  const [now, setNow] = useState(() => Date.now());
-  const [day, setDay] = useState(0);
-  const nameInput = useRef(null);
-  const importInput = useRef(null);
-  const timer = plan?.timer;
-  const running = Boolean(timer?.deadline);
-  const seconds = timer ? timerRemaining(timer, now) : 0;
+const SmartInsights = lazy(() => import('./components/SmartInsights'));
+const PriorityMatrix = lazy(() => import('./components/PriorityMatrix'));
+const FocusPlanner = lazy(() => import('./components/FocusPlanner'));
+const IntegrationsPanel = lazy(() => import('./components/IntegrationsPanel'));
+const WorkspaceCanvas = lazy(() => import('./components/WorkspaceCanvas'));
+const StudyTogether = lazy(() => import('./components/StudyTogether'));
+const studyRoomsEnabled = import.meta.env.VITE_STUDY_ROOMS_ENABLED !== 'false';
 
-  useEffect(() => {
-    if (!plan) return;
-    try { localStorage.setItem(PLAN_KEY, JSON.stringify(plan)); }
-    catch {
-      // Surface an external storage failure; this only runs when a write fails.
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setStorageError('Không lưu được trên trình duyệt này. Hãy tải bản sao trong phần thiết lập.');
+const ComponentLoader = () => (
+  <div style={{
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: '3rem 1rem',
+    gap: '1rem',
+    color: 'var(--text-secondary)'
+  }}>
+    <div style={{
+      width: '36px',
+      height: '36px',
+      border: '3px solid rgba(255, 255, 255, 0.1)',
+      borderTop: '3px solid #8b5cf6',
+      borderRadius: '50%',
+      animation: 'spin 0.8s linear infinite'
+    }} />
+    <span style={{ fontSize: '0.9rem', fontWeight: 500 }}>Đang tải giao diện...</span>
+  </div>
+);
+
+const FocusHero = memo(function FocusHero({ exams, onStart, onCreate }) {
+  const now = useCurrentTime();
+  const nextExam = useMemo(() => {
+    return [...exams]
+      .filter(exam => exam?.datetime && new Date(exam.datetime).getTime() > now)
+      .sort((a, b) => new Date(a.datetime) - new Date(b.datetime))[0] || null;
+  }, [exams, now]);
+  const nextExamTimeLeft = nextExam ? calculateTimeLeft(nextExam.datetime, now) : null;
+  const nextExamDateLabel = nextExam
+    ? new Intl.DateTimeFormat('vi-VN', { weekday: 'long', day: '2-digit', month: '2-digit' }).format(new Date(nextExam.datetime))
+    : 'Chưa có lịch thi';
+
+  return (
+    <section className="focus-hero" aria-labelledby="focus-hero-title">
+      <div className="focus-hero-copy">
+        <span className="focus-eyebrow"><span className="eyebrow-dot" /> STUDY OS / TODAY</span>
+        <h2 id="focus-hero-title">Tập trung vào điều<br /><em>quan trọng nhất.</em></h2>
+        <p>Lịch thi gọn gàng, phiên học rõ ràng, tâm trí nhẹ hơn.</p>
+        <div className="focus-hero-actions">
+          <button className="btn btn-primary hero-primary-action" onClick={() => onStart(nextExam ? { examId: nextExam.id } : null)}>
+            <span className="play-glyph">▶</span>
+            Bắt đầu tập trung
+          </button>
+          <button className="hero-text-action" onClick={onCreate}>+ Thêm lịch thi</button>
+        </div>
+      </div>
+
+      <div className="next-focus-card" aria-label="Kỳ thi sắp tới">
+        <div className="next-focus-card-topline">
+          <span className="focus-eyebrow">UP NEXT</span>
+          <span className="next-focus-status"><span className="status-pulse" /> Đang theo dõi</span>
+        </div>
+        {nextExam ? (
+          <>
+            <div className="next-focus-subject">{nextExam.subject}</div>
+            <div className="next-focus-date">{nextExamDateLabel} · {new Date(nextExam.datetime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</div>
+            <div className="next-focus-countdown">
+              <strong>{nextExamTimeLeft?.days ?? 0}</strong><span>ngày</span>
+              <strong>{String(nextExamTimeLeft?.hours ?? 0).padStart(2, '0')}</strong><span>giờ</span>
+              <strong>{String(nextExamTimeLeft?.minutes ?? 0).padStart(2, '0')}</strong><span>phút</span>
+            </div>
+            <div className="next-focus-footer"><span>Thời gian còn lại</span><span>{nextExam.credits || 3} tín chỉ</span></div>
+          </>
+        ) : (
+          <div className="next-focus-empty">Thêm kỳ thi đầu tiên để bắt đầu xây dựng nhịp học của bạn.</div>
+        )}
+        <div className="orbital-orb orb-one" />
+        <div className="orbital-orb orb-two" />
+      </div>
+    </section>
+  );
+});
+
+// Initial mock data set relative to current date (June 2026)
+const getInitialMockData = () => {
+  const now = Date.now();
+  return [
+    {
+      id: 'mock-1',
+      subject: 'Cơ sở dữ liệu',
+      datetime: new Date(now + 1.25 * 24 * 60 * 60 * 1000).toISOString(), // ~30 hours from now (Urgent)
+      category: 'midterm'
+    },
+    {
+      id: 'mock-2',
+      subject: 'Cấu trúc dữ liệu & Giải thuật',
+      datetime: new Date(now + 4.5 * 24 * 60 * 60 * 1000).toISOString(), // ~4.5 days from now (Warning)
+      category: 'final'
+    },
+    {
+      id: 'mock-3',
+      subject: 'Mạng máy tính',
+      datetime: new Date(now + 10 * 24 * 60 * 60 * 1000).toISOString(), // 10 days from now (Safe)
+      category: 'quiz'
+    },
+    {
+      id: 'mock-4',
+      subject: 'Nhập môn Trí tuệ nhân tạo',
+      datetime: new Date(now + 15 * 24 * 60 * 60 * 1000).toISOString(), // 15 days from now (Safe)
+      category: 'assignment'
     }
-  }, [plan]);
+  ];
+};
+
+const MAX_USER_XP = 100_000_000;
+
+const getStoredInteger = (key, fallback, min, max) => {
+  const value = Number(localStorage.getItem(key));
+  return Number.isInteger(value) && value >= min && value <= max ? value : fallback;
+};
+
+const getLevelForXP = (xp) => {
+  let level = 1;
+  let xpNeeded = level * 500;
+  let remainingXP = xp;
+  while (remainingXP >= xpNeeded) {
+    remainingXP -= xpNeeded;
+    level++;
+    xpNeeded = level * 500;
+  }
+  return level;
+};
+
+function App() {
+  const [exams, setExams] = useState(() => {
+    // Only show examples for a brand-new installation. An empty saved array is
+    // a valid user choice after deleting every exam.
+    if (localStorage.getItem('exams_countdown_list') === null) {
+      return getInitialMockData();
+    }
+    const parsed = safeJsonParse('exams_countdown_list', []);
+    return Array.isArray(parsed) ? migrateStudyData(parsed, []).exams : getInitialMockData();
+  });
+
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingExam, setEditingExam] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [sortBy, setSortBy] = useState('date-asc'); // date-asc, date-desc, name-asc
+  const [notificationsEnabled, setNotificationsEnabled] = useState(() => {
+    return localStorage.getItem('notifications_enabled') === 'true';
+  });
+  const [viewMode, setViewMode] = useState('exams'); // exams, tasks, workspace, notes, or analytics
+  const [examsView, setExamsView] = useState('card'); // 'card' or 'calendar'
+  const [isPomodoroOpen, setIsPomodoroOpen] = useState(false);
+  const [isFlashcardsOpen, setIsFlashcardsOpen] = useState(false);
+  const [isMockExamOpen, setIsMockExamOpen] = useState(false);
+  const [generalTasks, setGeneralTasks] = useState(() => {
+    const parsed = safeJsonParse('exams_general_tasks', []);
+    return migrateStudyData([], Array.isArray(parsed) ? parsed : []).generalTasks;
+  });
+
+
+
+  const [autoDeletePassed, setAutoDeletePassed] = useState(() => {
+    const saved = localStorage.getItem('auto_delete_passed_exams');
+    return saved === null ? true : saved === 'true';
+  });
 
   useEffect(() => {
-    try { localStorage.setItem(draftKey, JSON.stringify({ subjects })); }
-    catch { /* The plan save surfaces storage failures when a schedule is created. */ }
-  }, [subjects]);
+    localStorage.setItem('auto_delete_passed_exams', autoDeletePassed.toString());
+  }, [autoDeletePassed]);
 
+  // Auto delete passed exams if enabled
   useEffect(() => {
-    if (!running) return;
-    const tick = () => {
-      const time = Date.now(); setNow(time);
-      setPlan(current => current?.timer?.deadline && time >= current.timer.deadline ? finishTimer(current) : current);
+    if (!autoDeletePassed) return;
+
+    const checkAndPrunePassed = () => {
+      setExams(prevExams => {
+        const active = filterActiveExams(prevExams, true);
+        if (active.length !== prevExams.length) {
+          return active;
+        }
+        return prevExams;
+      });
     };
-    const interval = setInterval(tick, 250);
-    window.addEventListener('focus', tick); document.addEventListener('visibilitychange', tick);
-    return () => { clearInterval(interval); window.removeEventListener('focus', tick); document.removeEventListener('visibilitychange', tick); };
-  }, [running]);
+
+    checkAndPrunePassed();
+    const interval = setInterval(checkAndPrunePassed, 5000);
+    return () => clearInterval(interval);
+  }, [autoDeletePassed]);
+
+  // Save to LocalStorage
+  useEffect(() => {
+    localStorage.setItem('exams_countdown_list', JSON.stringify(exams));
+  }, [exams]);
 
   useEffect(() => {
-    document.title = timer ? `${format(seconds)} · ${timer.kind === 'rest' ? 'Nghỉ ngắn' : 'Đang học'} — Nhịp học` : 'Nhịp học — Học theo tín chỉ';
-  }, [timer, seconds]);
+    localStorage.setItem('exams_general_tasks', JSON.stringify(generalTasks));
+  }, [generalTasks]);
 
-  const done = new Set(plan?.done || []);
-  const upcoming = plan?.sessions.find(s => s.id === plan.selected && !done.has(s.id)) || plan?.sessions.find(s => !done.has(s.id));
-  const currentSession = timer ? plan.sessions.find(s => s.id === timer.sessionId) : upcoming;
-  const total = plan?.sessions.reduce((sum, s) => sum + s.minutes, 0) || 0;
-  const learned = plan?.sessions.reduce((sum, s) => sum + (done.has(s.id) ? s.minutes : 0), 0) || 0;
-  const restTotal = plan?.sessions.reduce((sum, s) => sum + s.rest, 0) || 0;
-  const remainingCount = plan?.sessions.filter(s => !done.has(s.id)).length || 0;
+  const [activeTheme, setActiveTheme] = useState(() => {
+    return localStorage.getItem('app_global_theme') || 'focus';
+  });
 
-  function toggleTimer() {
-    const time = Date.now(); setNow(time);
-    setPlan(p => {
-      if (p.timer) {
-        const remaining = timerRemaining(p.timer, time);
-        if (remaining === 0) return finishTimer(p);
-        return { ...p, timer: { ...p.timer, remaining, deadline: p.timer.deadline ? null : time + remaining * 1000 } };
+  useEffect(() => {
+    document.body.setAttribute('data-theme', activeTheme);
+    localStorage.setItem('app_global_theme', activeTheme);
+  }, [activeTheme]);
+
+  // Prune old study history on app launch
+  useEffect(() => {
+    pruneOldStudyLogs(180);
+  }, []);
+
+  useEffect(() => {
+    const flushQueue = () => {
+      void flushFocusWebhookQueue();
+    };
+    window.addEventListener('online', flushQueue);
+    flushQueue();
+    return () => window.removeEventListener('online', flushQueue);
+  }, []);
+
+  const [username, setUsername] = useState(() => {
+    return localStorage.getItem('pomodoro_username') || '';
+  });
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [tempName, setTempName] = useState(username);
+
+  const [userXP, setUserXP] = useState(() => {
+    return getStoredInteger('pomodoro_user_xp', 0, 0, MAX_USER_XP);
+  });
+
+  const [userLevel, setUserLevel] = useState(() => {
+    const savedXP = getStoredInteger('pomodoro_user_xp', 0, 0, MAX_USER_XP);
+    return getLevelForXP(savedXP);
+  });
+
+  const getGreetingPrefix = () => {
+    const hr = new Date().getHours();
+    if (hr >= 5 && hr < 12) return 'Chào buổi sáng, ';
+    if (hr >= 12 && hr < 18) return 'Chào buổi chiều, ';
+    return 'Chào buổi tối, ';
+  };
+
+  const getXPProgress = () => {
+    let level = 1;
+    let xpNeeded = level * 500;
+    let accumulated = userXP;
+    while (accumulated >= xpNeeded) {
+      accumulated -= xpNeeded;
+      level++;
+      xpNeeded = level * 500;
+    }
+    return {
+      current: accumulated,
+      needed: xpNeeded,
+      percent: Math.min(100, Math.round((accumulated / xpNeeded) * 100))
+    };
+  };
+
+  const handleSaveName = () => {
+    const name = tempName.trim();
+    setUsername(name);
+    localStorage.setItem('pomodoro_username', name);
+    setIsEditingName(false);
+  };
+
+  // Global Escape key listener to close active modals
+  useEffect(() => {
+    const handleGlobalKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        if (isModalOpen) setIsModalOpen(false);
+        else if (isPomodoroOpen) setIsPomodoroOpen(false);
       }
-      if (!upcoming) return p;
-      return { ...p, timer: { kind: 'work', sessionId: upcoming.id, remaining: upcoming.minutes * 60, deadline: time + upcoming.minutes * 60000 } };
+    };
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, [isModalOpen, isPomodoroOpen]);
+
+  const gainXP = useCallback((amount) => {
+    const validAmount = Number.isFinite(amount) && amount > 0 ? Math.floor(amount) : 0;
+    if (validAmount === 0) return;
+
+    setUserXP(prevXP => {
+      const nextXP = Math.min(MAX_USER_XP, prevXP + validAmount);
+      localStorage.setItem('pomodoro_user_xp', nextXP.toString());
+
+      const level = getLevelForXP(nextXP);
+
+      setUserLevel(prevLevel => {
+        if (level > prevLevel) {
+          localStorage.setItem('pomodoro_user_level', level.toString());
+          playLevelUpSound();
+          alert(`Chúc mừng! Bạn đã thăng cấp lên Cấp ${level}! 🏆`);
+        }
+        return level;
+      });
+
+      return nextXP;
     });
-  }
+  }, []);
 
-  function addSubject(event) {
-    event.preventDefault();
-    if (!name.trim()) { setError('Nhập tên môn học.'); nameInput.current?.focus(); return; }
-    setSubjects(s => [...s, { id: crypto.randomUUID(), subject: name.trim(), credits: Number(credits) }]);
-    setName(''); setError(''); nameInput.current?.focus();
-  }
-
-  function generate(event) {
-    event.preventDefault();
-    if (plan?.timer) { setError('Kết thúc hoặc dừng phiên hiện tại trước khi đổi lịch.'); return; }
-    if (subjects.some(s => !s.subject.trim())) { setError('Mỗi môn cần có tên.'); return; }
-    if (plan?.done.length && !window.confirm('Tạo lịch mới và đặt lại tiến độ? Tải bản sao trước nếu muốn giữ lịch hiện tại.')) return;
+  const playLevelUpSound = () => {
     try {
-      const next = createCreditPlan(subjects, config, crypto.randomUUID());
-      setPlan(next); setEditing(false); setDay(0); setError('');
-    } catch (e) { setError(e.message); }
-  }
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContextClass) return;
+      const ctx = new AudioContextClass();
+      const now = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
 
-  function exportPlan() {
-    const snapshot = { ...plan, timer: plan.timer ? { ...plan.timer, remaining: timerRemaining(plan.timer, Date.now()), deadline: null } : null };
-    const url = URL.createObjectURL(new Blob([JSON.stringify(snapshot, null, 2)], { type: 'application/json' }));
-    const a = document.createElement('a'); a.href = url; a.download = 'nhip-hoc.json'; a.click(); URL.revokeObjectURL(url);
-  }
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(261.63, now);
+      osc.frequency.setValueAtTime(329.63, now + 0.1);
+      osc.frequency.setValueAtTime(392.00, now + 0.2);
+      osc.frequency.setValueAtTime(523.25, now + 0.3);
 
-  async function importPlan(event) {
-    const file = event.target.files?.[0]; event.target.value = '';
-    if (!file) return;
+      gain.gain.setValueAtTime(0.3, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.6);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.6);
+
+      setTimeout(() => ctx.close().catch(() => {}), 1000);
+    } catch (e) {
+      console.warn(e);
+    }
+  };
+
+  const playSuccessChime = () => {
     try {
-      if (file.size > 1000000) throw new Error('Bản sao quá lớn.');
-      const value = JSON.parse(await file.text());
-      if (!isValidPlan(value)) throw new Error('Bản sao không hợp lệ.');
-      if (plan && !window.confirm('Thay lịch hiện tại bằng bản sao này?')) return;
-      const restored = { ...value, timer: value.timer ? { ...value.timer, deadline: null } : null };
-      setPlan(restored); setSubjects(restored.subjects); setConfig(restored.config); setDay(0); setEditing(false); setError('');
-    } catch (e) { setError(e.message || 'Không đọc được bản sao.'); }
-  }
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContextClass) return;
+      const ctx = new AudioContextClass();
+      const now = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
 
-  return <div className="study-app">
-    <header className="study-header"><a href="#main" className="study-brand">nhịp học<span>Mỗi lần một môn.</span></a>
-      {plan && <button className="quiet" onClick={() => { setSubjects(plan.subjects); setConfig(plan.config); setEditing(!editing); setError(''); }}>{editing ? '← Về lịch học' : 'Môn & thời gian'}</button>}
-    </header>
-    <main id="main">
-      {storageError && <p role="alert" className="study-error">{storageError}</p>}
-      {error && <p role="alert" className="study-error">{error}</p>}
-      {editing ? <section className="setup">
-        <div className="eyebrow">THIẾT LẬP NHỊP HỌC</div><h1>Để việc chia giờ<br />nhẹ đầu hơn.</h1>
-        <p className="intro">Thêm môn và tín chỉ. Chọn thời gian rảnh. Lịch học sẽ chia thành từng phiên, không cần deadline.</p>
-        <section className="setup-section"><h2>01 / Môn đang học</h2>
-          {!subjects.length && <p className="muted">Bắt đầu với các môn m muốn dành thời gian trong tuần.</p>}
-          {subjects.map(s => <div className="subject-editor" key={s.id}>
-            <input aria-label={`Tên môn ${s.subject}`} maxLength={100} value={s.subject} onChange={e => setSubjects(list => list.map(item => item.id === s.id ? { ...item, subject: e.target.value } : item))} />
-            <label><select aria-label={`Tín chỉ ${s.subject}`} value={s.credits} onChange={e => setSubjects(list => list.map(item => item.id === s.id ? { ...item, credits: Number(e.target.value) } : item))}>{Array.from({ length: 20 }, (_, i) => <option key={i} value={i + 1}>{i + 1}</option>)}</select><span>tín chỉ</span></label>
-            <button className="quiet" aria-label={`Bỏ môn ${s.subject} khỏi lịch mới`} onClick={() => setSubjects(list => list.filter(item => item.id !== s.id))}>×</button>
-          </div>)}
-          <form className="add-subject" onSubmit={addSubject}>
-            <input ref={nameInput} aria-label="Tên môn mới" placeholder="Tên môn, ví dụ: Giải tích" value={name} maxLength={100} onChange={e => setName(e.target.value)} required />
-            <select aria-label="Tín chỉ môn mới" value={credits} onChange={e => setCredits(e.target.value)}>{Array.from({ length: 20 }, (_, i) => <option key={i} value={i + 1}>{i + 1} tín chỉ</option>)}</select>
-            <button type="submit" className="secondary">+ Thêm</button>
-          </form>
-        </section>
-        <form onSubmit={generate} className="setup-section"><h2>02 / Thời gian của m</h2>
-          <div className="settings-grid">
-            <label>Buổi mỗi tuần<select value={config.days} onChange={e => setConfig(c => ({ ...c, days: Number(e.target.value) }))}>{[1,2,3,4,5,6,7].map(n => <option key={n} value={n}>{n} buổi</option>)}</select></label>
-            <label>Phút mỗi buổi, gồm nghỉ<input type="number" min="15" max="480" required value={config.minutes} onChange={e => setConfig(c => ({ ...c, minutes: e.target.value === '' ? '' : Number(e.target.value) }))} /></label>
-            <label>Mỗi phiên tập trung<select value={config.session} onChange={e => setConfig(c => ({ ...c, session: Number(e.target.value) }))}>{[25,30,45,50].map(n => <option key={n} value={n}>{n} phút</option>)}</select></label>
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(523.25, now);
+      osc.frequency.setValueAtTime(659.25, now + 0.08);
+
+      gain.gain.setValueAtTime(0.15, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.25);
+
+      setTimeout(() => ctx.close().catch(() => {}), 500);
+    } catch (e) {
+      console.warn(e);
+    }
+  };
+
+  // Sync XP and listen to global gain-xp events
+  useEffect(() => {
+    const handleGainXP = (e) => {
+      const amount = Number(e.detail);
+      if (Number.isFinite(amount) && amount > 0) {
+        gainXP(amount);
+        playSuccessChime();
+      }
+    };
+    window.addEventListener('gain-xp', handleGainXP);
+    return () => {
+      window.removeEventListener('gain-xp', handleGainXP);
+    };
+  }, [gainXP]);
+
+  // Save notification setting
+
+  useEffect(() => {
+    localStorage.setItem('notifications_enabled', notificationsEnabled.toString());
+  }, [notificationsEnabled]);
+
+  // Check and send notifications
+  useEffect(() => {
+    if (!notificationsEnabled || !('Notification' in window) || Notification.permission !== 'granted') {
+      return;
+    }
+
+    const checkNotifications = () => {
+      const now = new Date();
+      exams.forEach(exam => {
+        const examDate = new Date(exam.datetime);
+        const diff = examDate - now;
+        const hours = diff / (1000 * 60 * 60);
+
+        // Notify if exam is within 24 hours and hasn't been notified yet
+        if (hours > 0 && hours <= 24) {
+          const notifiedKey = `notified_${exam.id}`;
+          const wasNotified = localStorage.getItem(notifiedKey);
+
+          if (!wasNotified) {
+            new Notification('Nhắc nhở kỳ thi', {
+              body: `Môn "${exam.subject}" sẽ diễn ra vào ${hours < 1 ? 'sắp tới' : Math.floor(hours) + ' giờ nữa'}`,
+              icon: '⏰',
+              tag: exam.id
+            });
+            localStorage.setItem(notifiedKey, 'true');
+          }
+        }
+      });
+    };
+
+    // Check every minute
+    const interval = setInterval(checkNotifications, 60000);
+    checkNotifications(); // Initial check
+
+    return () => clearInterval(interval);
+  }, [exams, notificationsEnabled]);
+
+  const handleCreateOpen = useCallback((defaultDate = null) => {
+    if (defaultDate && typeof defaultDate === 'string') {
+      setEditingExam({
+        id: '',
+        subject: '',
+        datetime: defaultDate,
+        category: 'other'
+      });
+    } else {
+      setEditingExam(null);
+    }
+    setIsModalOpen(true);
+  }, []);
+
+  const handleOpenPomodoro = useCallback((focusTarget = null) => {
+    if (focusTarget?.examId && focusTarget?.taskId) {
+      localStorage.setItem('pomodoro_focus_subject', focusTarget.examId);
+      localStorage.setItem('pomodoro_focus_task', focusTarget.taskId);
+      window.dispatchEvent(new CustomEvent('pomodoro-focus-target', { detail: focusTarget }));
+    }
+    setIsPomodoroOpen(true);
+  }, []);
+
+  // Handle open modal for editing
+  const handleEditOpen = useCallback((exam) => {
+    setEditingExam(exam);
+    setIsModalOpen(true);
+  }, []);
+
+  // Handle saving new/edited exam (Fixed bug where editingExam with empty id was treated as editing)
+  const handleSaveExam = useCallback((savedExam) => {
+    if (editingExam && editingExam.id) {
+      setExams(prev => prev.map(e => e.id === savedExam.id ? savedExam : e));
+    } else {
+      setExams(prev => [...prev, savedExam]);
+    }
+    setIsModalOpen(false);
+    setEditingExam(null);
+  }, [editingExam]);
+
+  // Handle delete
+  const handleDeleteExam = useCallback((id) => {
+    if (window.confirm('Bạn có chắc chắn muốn xóa lịch thi này không?')) {
+      setExams(prev => prev.filter(e => e.id !== id));
+    }
+  }, []);
+
+  const handleClearPassedExams = useCallback(() => {
+    const now = Date.now();
+    const passedCount = exams.filter(e => new Date(e.datetime).getTime() <= now).length;
+    if (passedCount === 0) {
+      alert('Không có môn thi nào đã hết giờ!');
+      return;
+    }
+    if (window.confirm(`Bạn có chắc chắn muốn xóa ${passedCount} môn thi đã hết giờ không?`)) {
+      setExams(prev => filterActiveExams(prev, true));
+    }
+  }, [exams]);
+
+  // Handle adding a sub-task for an exam or general tasks
+  const handleAddTask = useCallback((examId, text, deadline, estPomodoros = 1, urgent = false, important = true) => {
+    const newTask = {
+      id: `task-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+      text,
+      completed: false,
+      deadline: deadline || '',
+      estPomodoros: parseInt(estPomodoros, 10) || 1,
+      urgent,
+      important,
+      completedAt: null
+    };
+
+    if (examId === 'general') {
+      setGeneralTasks(prev => [...prev, newTask]);
+    } else {
+      setExams(prev => prev.map(exam => {
+        if (exam.id === examId) {
+          return {
+            ...exam,
+            tasks: [...(exam.tasks || []), newTask]
+          };
+        }
+        return exam;
+      }));
+    }
+  }, []);
+
+  // Handle toggling sub-task completed status
+  const handleToggleTask = useCallback((examId, taskId) => {
+    if (examId === 'general') {
+      setGeneralTasks(prev => {
+        const task = prev.find(t => t.id === taskId);
+        if (task) {
+          if (!task.completed) {
+            incrementContribution();
+            window.dispatchEvent(new CustomEvent('gain-xp', { detail: 50 }));
+          } else {
+            decrementContribution();
+          }
+        }
+        return prev.map(t => {
+          if (t.id === taskId) {
+            return { ...t, completed: !t.completed, completedAt: !t.completed ? Date.now() : null };
+          }
+          return t;
+        });
+      });
+    } else {
+      setExams(prev => {
+        const exam = prev.find(e => e.id === examId);
+        if (exam) {
+          const task = (exam.tasks || []).find(t => t.id === taskId);
+          if (task) {
+            if (!task.completed) {
+              incrementContribution();
+              window.dispatchEvent(new CustomEvent('gain-xp', { detail: 50 }));
+            } else {
+              decrementContribution();
+            }
+          }
+        }
+        return prev.map(exam => {
+          if (exam.id === examId) {
+            return {
+              ...exam,
+              tasks: (exam.tasks || []).map(task => {
+                if (task.id === taskId) {
+                  return { ...task, completed: !task.completed, completedAt: !task.completed ? Date.now() : null };
+                }
+                return task;
+              })
+            };
+          }
+          return exam;
+        });
+      });
+    }
+  }, []);
+
+  // Handle deleting a sub-task
+  const handleDeleteTask = useCallback((examId, taskId) => {
+    if (examId === 'general') {
+      setGeneralTasks(prev => prev.filter(task => task.id !== taskId));
+    } else {
+      setExams(prev => prev.map(exam => {
+        if (exam.id === examId) {
+          return {
+            ...exam,
+            tasks: (exam.tasks || []).filter(task => task.id !== taskId)
+          };
+        }
+        return exam;
+      }));
+    }
+  }, []);
+
+  // Handle updating a sub-task's priority
+  const handleUpdateTaskPriority = useCallback((examId, taskId, urgent, important) => {
+    if (examId === 'general') {
+      setGeneralTasks(prev => prev.map(task => {
+        if (task.id === taskId) {
+          return { ...task, urgent, important };
+        }
+        return task;
+      }));
+    } else {
+      setExams(prev => prev.map(exam => {
+        if (exam.id === examId) {
+          return {
+            ...exam,
+            tasks: (exam.tasks || []).map(task => {
+              if (task.id === taskId) {
+                return { ...task, urgent, important };
+              }
+              return task;
+            })
+          };
+        }
+        return exam;
+      }));
+    }
+  }, []);
+
+  // Dynamic status counts (Memoized)
+  const stats = useMemo(() => {
+    let urgent = 0;
+    let warning = 0;
+    let safe = 0;
+    let passed = 0;
+
+    const now = new Date();
+
+    exams.forEach(exam => {
+      const diff = new Date(exam.datetime) - now;
+      if (diff <= 0) {
+        passed++;
+      } else {
+        const days = diff / (1000 * 60 * 60 * 24);
+        if (days < 2) {
+          urgent++;
+        } else if (days < 7) {
+          warning++;
+        } else {
+          safe++;
+        }
+      }
+    });
+
+    return { total: exams.length, urgent, warning, safe, passed };
+  }, [exams]);
+
+  // Filter & Sort logic (Memoized)
+  const sortedExams = useMemo(() => {
+    const filtered = exams.filter(exam => {
+      const matchesSearch = exam.subject.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesCategory = selectedCategory === 'all' || (exam.category || 'other') === selectedCategory;
+      return matchesSearch && matchesCategory;
+    });
+
+    return [...filtered].sort((a, b) => {
+      if (sortBy === 'date-asc') {
+        return new Date(a.datetime) - new Date(b.datetime);
+      } else if (sortBy === 'date-desc') {
+        return new Date(b.datetime) - new Date(a.datetime);
+      } else if (sortBy === 'name-asc') {
+        return a.subject.localeCompare(b.subject, 'vi');
+      }
+      return 0;
+    });
+  }, [exams, searchQuery, selectedCategory, sortBy]);
+
+  return (
+    <div className="app-container">
+      {/* App Header */}
+      <header className="app-header">
+        <div className="brand-section">
+          <div className="brand-logo-container">
+            <svg viewBox="0 0 24 24">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.5-13H11v6l5.2 3.15.8-.13-4.5-2.7V7z" />
+            </svg>
           </div>
-          <p className="muted">Nghỉ 5 phút giữa các phiên. Tín chỉ quyết định tỷ lệ giờ học; thời lượng được làm tròn theo phiên. Buổi chưa học vẫn ở đó để học tiếp.</p>
-          <button className="primary" disabled={!subjects.length || Boolean(timer)}>{plan ? 'Tạo lại lịch học' : 'Chia lịch cho mình →'}</button>
-          {timer && <p className="muted">Về lịch học để kết thúc hoặc dừng phiên trước khi tạo lại lịch.</p>}
-        </form>
-        <div className="backup-actions">{plan && <button className="quiet" onClick={exportPlan}>Tải bản sao</button>}<button className="quiet" onClick={() => importInput.current?.click()} disabled={Boolean(timer)}>Khôi phục bản sao</button><input ref={importInput} type="file" accept="application/json,.json" hidden onChange={importPlan} /></div>
-      </section> : <>
-        <section className="focus-panel" aria-labelledby="focus-title">
-          <div className="eyebrow">{timer?.kind === 'rest' ? 'ĐÃ XONG MỘT PHIÊN' : remainingCount ? 'VIỆC TIẾP THEO' : 'HOÀN THÀNH LỊCH HỌC'}</div>
-          <h1 id="focus-title">{timer?.kind === 'rest' ? 'Nghỉ một chút nhé.' : currentSession?.subject || 'Tuần này, làm tốt rồi.'}</h1>
-          <p className="intro">{timer?.kind === 'rest' ? 'Rời màn hình, uống nước. Bắt đầu giờ nghỉ khi sẵn sàng.' : currentSession ? `${currentSession.minutes} phút tập trung · Buổi ${currentSession.day + 1}. Chọn một phần nhỏ của môn này để học.` : 'M có thể tạo lịch mới khi sẵn sàng cho vòng tiếp theo.'}</p>
-          {(timer || upcoming) && <><div className="study-clock" aria-label={`${timer ? seconds : upcoming.minutes * 60} giây còn lại`}>{format(timer ? seconds : upcoming.minutes * 60)}</div>
-            <div className="focus-actions"><button className="primary" onClick={toggleTimer}>{running ? 'Tạm dừng' : timer?.kind === 'rest' ? 'Bắt đầu / tiếp tục nghỉ' : timer ? 'Tiếp tục' : 'Bắt đầu học →'}</button>
-              {timer ? <button className="quiet" onClick={() => {
-                if (timer.kind === 'rest' || window.confirm('Dừng phiên này? Phiên chưa hoàn thành sẽ vẫn nằm trong lịch.')) setPlan(p => ({ ...p, timer: null }));
-              }}>{timer.kind === 'rest' ? 'Bỏ qua nghỉ' : 'Dừng phiên'}</button> : <button className="quiet" onClick={() => {
-                const open = plan.sessions.filter(s => !done.has(s.id)); const index = open.findIndex(s => s.id === upcoming.id);
-                setPlan(p => ({ ...p, selected: open[(index + 1) % open.length].id }));
-              }} disabled={remainingCount < 2}>Đổi môn / phiên</button>}
-            </div></>}
-          {!timer && !upcoming && <button className="primary" onClick={() => { setSubjects(plan.subjects); setConfig(plan.config); setEditing(true); }}>Lên lịch vòng tiếp theo →</button>}
-          <p className="timer-status" role="status">{timer ? running ? 'Đồng hồ đang chạy · tự lưu khi rời trang' : 'Đang tạm dừng' : remainingCount ? 'Hết phiên mới chuyển môn. Không cần học hết mọi môn trong một buổi.' : `${learned} phút học đã hoàn thành.`}</p>
-        </section>
-        <section className="schedule-section"><div className="section-heading"><h2>Lịch của m</h2><span>{learned} / {total} phút học</span></div>
-          <progress max={total || 1} value={learned} aria-label="Tiến độ học" />
-          <p className="muted allocation-note">{total} phút học + {restTotal} phút nghỉ / {plan.config.days * plan.config.minutes} phút đã dành. Phút dư để chuyển tiếp.</p>
-          {plan.subjects.some(s => !plan.sessions.some(item => item.subjectId === s.id)) && <p className="study-error" role="status">Quỹ thời gian chưa đủ chia lượt cho tất cả môn. Vào Môn & thời gian để tăng số buổi hoặc giảm thời lượng phiên.</p>}
-          <div className="day-buttons" aria-label="Chọn buổi học">{Array.from({ length: plan.config.days }, (_, i) => <button key={i} aria-pressed={day === i} onClick={() => setDay(i)}>Buổi {i + 1}{plan.sessions.filter(s => s.day === i).every(s => done.has(s.id)) ? ' ✓' : ''}</button>)}</div>
-          <ol className="session-list">{plan.sessions.filter(s => s.day === day).map((s, i) => <li key={s.id} className={done.has(s.id) ? 'completed' : ''}>
-            <span className="session-number">{done.has(s.id) ? '✓' : String(i + 1).padStart(2, '0')}</span><div><strong>{s.subject}</strong><small>{s.minutes} phút{s.rest ? ` · sau đó nghỉ ${s.rest} phút` : ''}</small></div>
-            <button className="quiet" disabled={Boolean(timer) || done.has(s.id)} onClick={() => { setPlan(p => ({ ...p, selected: s.id })); document.getElementById('focus-title')?.scrollIntoView({ behavior: 'smooth', block: 'center' }); }}>{done.has(s.id) ? 'Đã học' : upcoming?.id === s.id ? 'Tiếp theo' : 'Chọn'}</button>
-          </li>)}</ol>
-        </section>
-        <details className="allocation"><summary>Chia thời gian theo tín chỉ</summary>{plan.subjects.map(s => {
-          const amount = plan.sessions.filter(item => item.subjectId === s.id).reduce((sum, item) => sum + item.minutes, 0);
-          return <div key={s.id}><span>{s.subject} <small>· {s.credits} tín chỉ</small></span><strong>{amount} phút</strong></div>;
-        })}<p className="muted">Tỷ lệ được làm tròn theo phiên, không phải số phút bắt buộc. Môn chưa có lượt: tăng quỹ giờ hoặc giảm thời lượng phiên.</p></details>
-      </>}
-    </main><footer>Lưu trên thiết bị này · Không cần deadline</footer>
-  </div>;
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+              <h1 className="brand-title" style={{ margin: 0 }}>flocus<span className="brand-title-version">/ 02</span></h1>
+              <span className="level-badge">Cấp {userLevel}</span>
+            </div>
+            <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.2rem', marginTop: '0.15rem', flexWrap: 'wrap' }}>
+              <span>{getGreetingPrefix()}</span>
+              {isEditingName ? (
+                <input
+                  type="text"
+                  value={tempName}
+                  onChange={(e) => setTempName(e.target.value)}
+                  onBlur={handleSaveName}
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleSaveName(); }}
+                  autoFocus
+                  className="username-input-inline"
+                  maxLength={15}
+                  aria-label="Tên hiển thị"
+                />
+              ) : (
+                <span
+                  className="editable-username"
+                  onClick={() => { setTempName(username); setIsEditingName(true); }}
+                  title="Nhấp để đổi tên"
+                >
+                  {username || 'Người học'}
+                </span>
+              )}
+              <span>! Chúc ôn tập tốt.</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Level XP Progress Bar */}
+        <div className="header-xp-container">
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.70rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
+            <span>Tiến độ kinh nghiệm</span>
+            <span>{getXPProgress().current} / {getXPProgress().needed} XP</span>
+          </div>
+          <div style={{ height: '5px', width: '100%', backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: '3px', overflow: 'hidden' }}>
+            <div style={{
+              height: '100%',
+              width: `${getXPProgress().percent}%`,
+              background: 'linear-gradient(90deg, #8b5cf6, #ec4899)',
+              borderRadius: '3px',
+              transition: 'width 0.4s ease'
+            }} />
+          </div>
+        </div>
+        <div className="header-actions">
+          <div className="header-quick-actions">
+            <StudyStreak userXP={userXP} />
+            <details className="utility-menu">
+              <summary aria-label="Mở công cụ phụ">☰ <span>Công cụ</span></summary>
+              <div className="utility-menu-panel">
+                <label className="utility-theme-field">
+                  <span>Giao diện</span>
+                  <select
+                    value={activeTheme}
+                    onChange={(e) => setActiveTheme(e.target.value)}
+                    className="theme-selector-dropdown"
+                    title="Đổi chủ đề giao diện nghệ thuật"
+                    aria-label="Chọn chủ đề giao diện"
+                  >
+                    <option value="cyberpunk">🏙️ Cyberpunk</option>
+                    <option value="sakura">🌸 Sakura Library</option>
+                    <option value="lofi">☕ Lofi Cafe</option>
+                    <option value="focus">◐ Flocus Dusk</option>
+                    <option value="space">🌌 Space Odyssey</option>
+                    <option value="nature">🌲 Nature Cabin</option>
+                  </select>
+                </label>
+                <button
+                  className="utility-action utility-export"
+                  onClick={() => downloadICalFile(exams, 'lich-thi-exam-countdown.ics')}
+                  title="Xuất toàn bộ lịch thi ra tập tin iCalendar (.ics)"
+                >
+                  <span>↗</span> Xuất lịch
+                </button>
+                <BackupRestore />
+                <NotificationSettings
+                  enabled={notificationsEnabled}
+                  onToggle={setNotificationsEnabled}
+                />
+                <button
+                  className={`btn-icon utility-icon ${isFlashcardsOpen ? 'active' : ''}`}
+                  onClick={() => setIsFlashcardsOpen(!isFlashcardsOpen)}
+                  title="Thẻ ghi nhớ Leitner (Flashcards)"
+                  aria-label="Thẻ ghi nhớ Leitner"
+                >
+                  🗂️
+                </button>
+                <button
+                  className={`btn-icon utility-icon ${isPomodoroOpen ? 'active' : ''}`}
+                  onClick={() => setIsPomodoroOpen(!isPomodoroOpen)}
+                  title="Đồng hồ Pomodoro"
+                  aria-label="Đồng hồ Pomodoro"
+                >
+                  🍅
+                </button>
+                <button className="btn-icon utility-icon" onClick={() => setIsMockExamOpen(true)} title="Mock Exam" aria-label="Mở Mock Exam">📝</button>
+              </div>
+            </details>
+          </div>
+
+          <div className="view-mode-tabs">
+            <button
+              className={`view-tab-btn ${viewMode === 'exams' ? 'active' : ''}`}
+              onClick={() => setViewMode('exams')}
+              title="Quản lý lịch thi"
+            >
+              <span style={{ fontSize: '0.9rem', display: 'inline-flex', alignItems: 'center', marginRight: '0.35rem' }}>📅</span>
+              Lịch thi
+            </button>
+            <button
+              className={`view-tab-btn ${viewMode === 'tasks' ? 'active' : ''}`}
+              onClick={() => setViewMode('tasks')}
+              title="Kế hoạch & Thói quen học tập"
+            >
+              <span style={{ fontSize: '0.9rem', display: 'inline-flex', alignItems: 'center', marginRight: '0.35rem' }}>🎯</span>
+              Kế hoạch & Thói quen
+            </button>
+            <button
+              className={`view-tab-btn ${viewMode === 'analytics' ? 'active' : ''}`}
+              onClick={() => setViewMode('analytics')}
+              title="Phân tích & Tiến độ học tập"
+            >
+              <span style={{ fontSize: '0.9rem', display: 'inline-flex', alignItems: 'center', marginRight: '0.35rem' }}>📊</span>
+              Phân tích & Tiến độ
+            </button>
+            <button
+              className={`view-tab-btn ${viewMode === 'workspace' ? 'active' : ''}`}
+              onClick={() => setViewMode('workspace')}
+              title="Không gian học tuỳ biến"
+            >
+              <span aria-hidden="true">🪟</span>
+              Không gian
+            </button>
+            {studyRoomsEnabled && (
+              <button
+                className={`view-tab-btn ${viewMode === 'together' ? 'active' : ''}`}
+                onClick={() => setViewMode('together')}
+                title="Phòng học chung"
+              >
+                <span aria-hidden="true">👥</span>
+                Học cùng nhau
+              </button>
+            )}
+            <button
+              className={`view-tab-btn ${viewMode === 'notes' ? 'active' : ''}`}
+              onClick={() => setViewMode('notes')}
+              title="Sổ tay học tập"
+            >
+              <span aria-hidden="true">📝</span>
+              Sổ tay
+            </button>
+          </div>
+          {viewMode === 'exams' && (
+            <button className="btn btn-primary header-add-exam" onClick={handleCreateOpen}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+              Thêm môn thi
+            </button>
+          )}
+        </div>
+      </header>
+
+      {viewMode === 'exams' && (
+        <FocusHero exams={exams} onStart={handleOpenPomodoro} onCreate={handleCreateOpen} />
+      )}
+
+      {/* TAB 1: LỊCH THI */}
+      {viewMode === 'exams' && (
+        <>
+          {/* Statistics Bar */}
+          <section className="stats-bar" aria-label="Thống kê lịch thi">
+            <div className="stat-card">
+              <div className="stat-icon primary">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                  <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                </svg>
+              </div>
+              <div className="stat-details">
+                <span className="stat-value">{stats.total}</span>
+                <span className="stat-label">Tổng số môn</span>
+              </div>
+            </div>
+
+            <div className="stat-card">
+              <div className="stat-icon urgent">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="8" x2="12" y2="12"></line>
+                  <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+              </div>
+              <div className="stat-details">
+                <span className="stat-value">{stats.urgent}</span>
+                <span className="stat-label">Khẩn cấp (&lt; 2 ngày)</span>
+              </div>
+            </div>
+
+            <div className="stat-card">
+              <div className="stat-icon warning">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                  <line x1="12" y1="9" x2="12" y2="13"></line>
+                  <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                </svg>
+              </div>
+              <div className="stat-details">
+                <span className="stat-value">{stats.warning}</span>
+                <span className="stat-label">Sắp diễn ra (&lt; 7 ngày)</span>
+              </div>
+            </div>
+
+            <div className="stat-card">
+              <div className="stat-icon safe">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                  <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                </svg>
+              </div>
+              <div className="stat-details">
+                <span className="stat-value">{stats.safe}</span>
+                <span className="stat-label">Thời gian an toàn</span>
+              </div>
+            </div>
+          </section>
+
+          {/* Search, Sort & View Mode Toggle Panel */}
+          <section
+            className="filter-panel"
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              gap: '1rem',
+              flexWrap: 'wrap',
+              background: 'var(--bg-glass)',
+              border: '1px solid var(--border-glass)',
+              padding: '1rem 1.5rem',
+              borderRadius: '16px',
+              backdropFilter: 'blur(10px)',
+              WebkitBackdropFilter: 'blur(10px)'
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flex: 1, minWidth: '260px' }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+              <input
+                type="text"
+                placeholder="Tìm kiếm môn thi..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: '#fff',
+                  fontSize: '0.95rem',
+                  width: '100%',
+                  outline: 'none'
+                }}
+                aria-label="Tìm kiếm môn thi"
+              />
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Phân loại:</span>
+                <select
+                  value={selectedCategory}
+                  onChange={(e) => setSelectedCategory(e.target.value)}
+                  style={{
+                    background: 'var(--bg-secondary)',
+                    border: '1px solid var(--border-glass)',
+                    color: '#fff',
+                    borderRadius: '8px',
+                    padding: '0.4rem 0.8rem',
+                    fontSize: '0.9rem',
+                    outline: 'none',
+                    cursor: 'pointer'
+                  }}
+                  aria-label="Phân loại môn thi"
+                >
+                  <option value="all">Tất cả</option>
+                  {Object.entries(CATEGORIES).map(([key, cat]) => (
+                    <option key={key} value={key}>{cat.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Sắp xếp:</span>
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  style={{
+                    background: 'var(--bg-secondary)',
+                    border: '1px solid var(--border-glass)',
+                    color: '#fff',
+                    borderRadius: '8px',
+                    padding: '0.4rem 0.8rem',
+                    fontSize: '0.9rem',
+                    outline: 'none',
+                    cursor: 'pointer'
+                  }}
+                  aria-label="Tiêu chí sắp xếp"
+                >
+                  <option value="date-asc">Thời gian thi (gần nhất)</option>
+                  <option value="date-desc">Thời gian thi (xa nhất)</option>
+                  <option value="name-asc">Tên môn thi (A-Z)</option>
+                </select>
+              </div>
+
+              <label
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.4rem',
+                  fontSize: '0.85rem',
+                  color: 'var(--text-secondary)',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  background: 'rgba(255, 255, 255, 0.05)',
+                  padding: '0.35rem 0.65rem',
+                  borderRadius: '8px',
+                  border: '1px solid var(--border-glass)',
+                  userSelect: 'none'
+                }}
+                title="Tự động xóa môn thi khỏi danh sách ngay khi hết giờ"
+              >
+                <input
+                  type="checkbox"
+                  checked={autoDeletePassed}
+                  onChange={(e) => setAutoDeletePassed(e.target.checked)}
+                  style={{ accentColor: '#8b5cf6', cursor: 'pointer', width: '15px', height: '15px' }}
+                />
+                <span>⚡ Tự động xóa khi hết giờ</span>
+              </label>
+
+              {stats.passed > 0 && !autoDeletePassed && (
+                <button
+                  type="button"
+                  onClick={handleClearPassedExams}
+                  style={{
+                    background: 'rgba(239, 68, 68, 0.15)',
+                    border: '1px solid rgba(239, 68, 68, 0.3)',
+                    color: '#f87171',
+                    borderRadius: '8px',
+                    padding: '0.35rem 0.65rem',
+                    fontSize: '0.82rem',
+                    fontWeight: 600,
+                    cursor: 'pointer'
+                  }}
+                  title="Xóa ngay tất cả các môn đã hết giờ thi"
+                >
+                  🗑️ Dọn dẹp ({stats.passed})
+                </button>
+              )}
+
+              {/* Sub-view Toggle */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', borderLeft: '1px solid rgba(255,255,255,0.1)', paddingLeft: '0.75rem', marginLeft: '0.25rem' }}>
+                <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Xem:</span>
+                <div style={{ display: 'flex', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', padding: '2px', border: '1px solid var(--border-glass)' }}>
+                  <button
+                    type="button"
+                    onClick={() => setExamsView('card')}
+                    style={{
+                      background: examsView === 'card' ? 'linear-gradient(135deg, #3b82f6, #8b5cf6)' : 'transparent',
+                      border: 'none',
+                      color: '#fff',
+                      padding: '0.3rem 0.6rem',
+                      borderRadius: '6px',
+                      fontSize: '0.8rem',
+                      cursor: 'pointer',
+                      fontWeight: 600,
+                      transition: 'all 0.2s',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.25rem'
+                    }}
+                  >
+                    📇 Thẻ
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setExamsView('calendar')}
+                    style={{
+                      background: examsView === 'calendar' ? 'linear-gradient(135deg, #3b82f6, #8b5cf6)' : 'transparent',
+                      border: 'none',
+                      color: '#fff',
+                      padding: '0.3rem 0.6rem',
+                      borderRadius: '6px',
+                      fontSize: '0.8rem',
+                      cursor: 'pointer',
+                      fontWeight: 600,
+                      transition: 'all 0.2s',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.25rem'
+                    }}
+                  >
+                    📅 Lịch
+                  </button>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Main Exams Display */}
+          {examsView === 'card' ? (
+            <main className="exams-grid">
+              {sortedExams.length > 0 ? (
+                sortedExams.map(exam => (
+                  <ExamCard
+                    key={exam.id}
+                    exam={exam}
+                    onEdit={handleEditOpen}
+                    onDelete={handleDeleteExam}
+                    onAddTask={handleAddTask}
+                    onToggleTask={handleToggleTask}
+                    onDeleteTask={handleDeleteTask}
+                  />
+                ))
+              ) : (
+                <div className="empty-state">
+                  <div className="empty-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="12" cy="12" r="10"></circle>
+                      <line x1="12" y1="8" x2="12" y2="12"></line>
+                      <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                    </svg>
+                  </div>
+                  <h2 className="empty-text">Không tìm thấy lịch thi nào</h2>
+                  <p className="empty-subtext">
+                    {searchQuery
+                      ? 'Hãy thử tìm kiếm với từ khóa khác hoặc xóa bộ lọc.'
+                      : 'Bắt đầu bằng cách thêm một môn thi mới vào danh sách theo dõi của bạn!'}
+                  </p>
+                  {!searchQuery && (
+                    <button className="btn btn-primary" onClick={handleCreateOpen}>
+                      Thêm môn thi đầu tiên
+                    </button>
+                  )}
+                </div>
+              )}
+            </main>
+          ) : (
+            <ErrorBoundary>
+              <Suspense fallback={<ComponentLoader />}>
+                <CalendarView
+                  exams={sortedExams}
+                  onEdit={handleEditOpen}
+                  onDelete={handleDeleteExam}
+                  onCreate={handleCreateOpen}
+                />
+              </Suspense>
+            </ErrorBoundary>
+          )}
+        </>
+      )}
+
+      {/* TAB 2: KẾ HOẠCH & THÓI QUEN */}
+      {viewMode === 'tasks' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+          <ErrorBoundary>
+            <Suspense fallback={<ComponentLoader />}>
+              <FocusPlanner
+                exams={exams}
+                generalTasks={generalTasks}
+                onOpenPomodoro={handleOpenPomodoro}
+                onAddTask={handleAddTask}
+              />
+            </Suspense>
+          </ErrorBoundary>
+          <ErrorBoundary>
+            <Suspense fallback={<ComponentLoader />}>
+              <IntegrationsPanel onAddTask={handleAddTask} />
+            </Suspense>
+          </ErrorBoundary>
+          <ErrorBoundary>
+            <Suspense fallback={<ComponentLoader />}>
+              <PriorityMatrix
+                exams={exams}
+                generalTasks={generalTasks}
+                onAddTask={handleAddTask}
+                onToggleTask={handleToggleTask}
+                onDeleteTask={handleDeleteTask}
+                onUpdateTaskPriority={handleUpdateTaskPriority}
+              />
+            </Suspense>
+          </ErrorBoundary>
+          <div className="goals-and-daily-container">
+            <RecurringTasks />
+            <DailyTasks />
+          </div>
+        </div>
+      )}
+
+      {/* TAB 3: PHÂN TÍCH & TIẾN ĐỘ */}
+      {viewMode === 'analytics' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+          <ErrorBoundary>
+            <Suspense fallback={<ComponentLoader />}>
+              <SmartInsights exams={exams} />
+            </Suspense>
+          </ErrorBoundary>
+          <ContributionGraph />
+        </div>
+      )}
+
+      {viewMode === 'workspace' && (
+        <ErrorBoundary>
+          <Suspense fallback={<ComponentLoader />}>
+            <WorkspaceCanvas
+              exams={exams}
+              generalTasks={generalTasks}
+              onOpenPomodoro={handleOpenPomodoro}
+            />
+          </Suspense>
+        </ErrorBoundary>
+      )}
+
+      {viewMode === 'together' && studyRoomsEnabled && (
+        <ErrorBoundary>
+          <Suspense fallback={<ComponentLoader />}>
+            <StudyTogether />
+          </Suspense>
+        </ErrorBoundary>
+      )}
+
+      {viewMode === 'notes' && <Notes />}
+
+      {/* Add / Edit Modal Form */}
+      {isModalOpen && (
+        <ExamForm
+          exam={editingExam}
+          onSave={handleSaveExam}
+          onClose={() => setIsModalOpen(false)}
+        />
+      )}
+
+      {/* Pomodoro Timer Sidebar */}
+      <PomodoroTimer
+        isOpen={isPomodoroOpen}
+        onClose={() => setIsPomodoroOpen(false)}
+        exams={exams}
+        generalTasks={generalTasks}
+        notificationsEnabled={notificationsEnabled}
+        onToggleTask={handleToggleTask}
+      />
+
+      {/* Leitner Spaced Repetition Flashcards Modal */}
+      <FlashcardsModal
+        isOpen={isFlashcardsOpen}
+        onClose={() => setIsFlashcardsOpen(false)}
+      />
+      <MockExamModal isOpen={isMockExamOpen} onClose={() => setIsMockExamOpen(false)} exams={exams} />
+    </div>
+  );
 }
+
+export default App;

@@ -1,6 +1,6 @@
 {
-  "short_name": "Nhịp học",
-  "name": "Nhịp học — Học theo tín chỉ",
+  "short_name": "flocus / 02",
+  "name": "flocus / 02 — Focus your next move",
   "icons": [
     {
       "src": "favicon.svg",
@@ -9,9 +9,9 @@
     }
   ],
   "start_url": "./",
-  "background_color": "#131613",
-  "theme_color": "#131613",
+  "background_color": "#111317",
+  "theme_color": "#111317",
   "display": "standalone",
   "orientation": "any",
-  "description": "Chia thời gian theo tín chỉ, học từng phiên, không cần deadline."
+  "description": "Lịch thi, nhiệm vụ và Pomodoro trong một không gian tập trung tối giản."
 }
