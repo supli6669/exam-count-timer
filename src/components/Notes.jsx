@@ -26,8 +26,13 @@ function Notes() {
       ? current
       : consolidateNotes(current, safeJsonParse('focus_distractions_v1', []));
   });
-  const [selectedId, setSelectedId] = useState(null);
+  const [selectedId, setSelectedId] = useState(() => sessionStorage.getItem('notes_selected_id'));
   const [query, setQuery] = useState('');
+  const [showEditor, setShowEditor] = useState(true);
+  useEffect(() => {
+    if (selectedId) sessionStorage.setItem('notes_selected_id', selectedId);
+    else sessionStorage.removeItem('notes_selected_id');
+  }, [selectedId]);
 
   useEffect(() => {
     // Persist immediately so switching tabs cannot cancel a pending note save.
@@ -48,7 +53,9 @@ function Notes() {
   const createNote = () => {
     const note = makeNote();
     setNotes((current) => [note, ...current]);
+    setQuery('');
     setSelectedId(note.id);
+    setShowEditor(true);
   };
 
   const updateNote = (patch) => {
@@ -70,11 +77,11 @@ function Notes() {
   };
 
   return (
-    <section className="notes-workspace" aria-label="Sổ tay học tập">
+    <section className={`notes-workspace ${selectedNote && showEditor ? 'show-note-editor' : ''}`} aria-label="Sổ tay học tập">
       <aside className="notes-sidebar">
         <div className="notes-sidebar-header">
           <div>
-            <p className="section-kicker">KHÔNG GIAN HỌC</p>
+            <p className="section-kicker">Ý TƯỞNG & KIẾN THỨC</p>
             <h2>Sổ tay</h2>
             <p>Lưu nhanh ý tưởng, công thức và kế hoạch ôn tập.</p>
           </div>
@@ -94,7 +101,7 @@ function Notes() {
               className={`note-list-item ${selectedId === note.id ? 'active' : ''}`}
               key={note.id}
               type="button"
-              onClick={() => setSelectedId(note.id)}
+              onClick={() => { setSelectedId(note.id); setShowEditor(true); }}
             >
               <span className="note-list-title">{note.pinned && '📌 '}{note.title || 'Ghi chú chưa có tiêu đề'}</span>
               <span className="note-list-preview">{note.content || 'Chưa có nội dung'}</span>
@@ -108,6 +115,7 @@ function Notes() {
       </aside>
 
       <div className="note-editor" key={selectedNote?.id || 'empty'}>
+        <button type="button" className="btn btn-secondary notes-back" onClick={() => setShowEditor(false)}>← Danh sách ghi chú</button>
         {selectedNote ? (
           <>
             <div className="note-editor-toolbar">
@@ -122,7 +130,7 @@ function Notes() {
               <span>Nhãn</span>
               <input value={(selectedNote.tags || []).join(', ')} onChange={(event) => updateTags(event.target.value)} placeholder="Ví dụ: toán, công thức, tuần 1" aria-label="Nhãn, ngăn cách bằng dấu phẩy" />
             </label>
-            <textarea className="note-content-input" value={selectedNote.content} onChange={(event) => updateNote({ content: event.target.value })} placeholder="Viết điều bạn cần nhớ…\n\nMẹo: dùng nhãn để tìm nhanh ghi chú sau này." aria-label="Nội dung ghi chú" />
+            <textarea className="note-content-input" value={selectedNote.content} onChange={(event) => updateNote({ content: event.target.value })} placeholder={'Viết điều bạn cần nhớ…\n\nDùng nhãn để tìm lại ghi chú sau này.'} aria-label="Nội dung ghi chú" />
             <div className="note-editor-footer">{selectedNote.content.length.toLocaleString('vi-VN')} ký tự</div>
           </>
         ) : (

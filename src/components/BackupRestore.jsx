@@ -17,6 +17,7 @@ const BACKUP_KEYS = [
   'pomodoro_completed_sessions',
   'pomodoro_break_logs',
   'pomodoro_theme',
+  'pomodoro_timer_type',
   'pomodoro_focus_subject',
   'pomodoro_focus_task',
   'pomodoro_study_logs',

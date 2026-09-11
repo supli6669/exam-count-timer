@@ -1,10 +1,9 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import SpotifyPlayer from './SpotifyPlayer';
-import ThemeParticles from './ThemeParticles';
 import AmbientSoundboard from './AmbientSoundboard';
 import FocusStatsTab from './FocusStatsTab';
-import { playSynthAlarm, STUDY_QUOTES } from './pomodoro/audioSynthesizer';
+import { playSynthAlarm } from './pomodoro/audioSynthesizer';
 import TimerDisplay from './pomodoro/TimerDisplay';
 import FloatingTimer from './pomodoro/FloatingTimer';
 import ThemeSelector from './pomodoro/ThemeSelector';
@@ -28,6 +27,8 @@ function PomodoroTimer({
   isOpen,
   onClose,
   onOpenNotes,
+  notesOpen,
+  onToggleTask,
   exams = [],
   generalTasks = [],
   notificationsEnabled = false
@@ -58,7 +59,10 @@ function PomodoroTimer({
   const [inputAlarmVolume, setInputAlarmVolume] = useState(alarmVolume.toString());
   const [inputAlarmSound, setInputAlarmSound] = useState(alarmSound);
 
-  const [timerType, setTimerType] = useState('pomodoro'); // pomodoro, animedoro, or stopwatch
+  const [timerType, setTimerType] = useState(() => {
+    const saved = localStorage.getItem('pomodoro_timer_type');
+    return ['pomodoro', 'animedoro', 'stopwatch'].includes(saved) ? saved : 'pomodoro';
+  }); // pomodoro, animedoro, or stopwatch
   const [mode, setMode] = useState('work'); // 'work', 'shortBreak', 'longBreak'
   const [isActive, setIsActive] = useState(false);
   const [completedWorkSessions, setCompletedWorkSessions] = useState(() => {
@@ -66,7 +70,7 @@ function PomodoroTimer({
   });
 
   const [theme, setTheme] = useState(() => {
-    return localStorage.getItem('pomodoro_theme') || 'cyberpunk';
+    return localStorage.getItem('pomodoro_theme') || 'calm';
   });
 
   const [customBg, setCustomBg] = useState(() => {
@@ -74,6 +78,11 @@ function PomodoroTimer({
   });
 
   const [activeTab, setActiveTab] = useState('timer'); // 'timer', 'stats', 'settings'
+  const [previouslyOpen, setPreviouslyOpen] = useState(isOpen);
+  if (previouslyOpen !== isOpen) {
+    setPreviouslyOpen(isOpen);
+    if (isOpen) setActiveTab('timer');
+  }
   const [miniWindow, setMiniWindow] = useState(null);
 
   const getTotalSeconds = useCallback(() => {
@@ -100,14 +109,6 @@ function PomodoroTimer({
     if (focusSubjectId === 'general') return generalTasks;
     return exams.find((exam) => exam.id === focusSubjectId)?.tasks || [];
   }, [focusSubjectId, exams, generalTasks]);
-
-  // Quotes state
-  const [quoteIndex, setQuoteIndex] = useState(() => Math.floor(Math.random() * STUDY_QUOTES.length));
-
-  // Low Power Mode
-  const [lowPowerMode] = useState(() => {
-    return localStorage.getItem('pomodoro_low_power') === 'true';
-  });
 
   // Study logs history
   const [studyLogs, setStudyLogs] = useState(() => {
@@ -154,6 +155,7 @@ function PomodoroTimer({
     setIsActive(false);
     setMode(newMode);
     setTimerType(newType);
+    localStorage.setItem('pomodoro_timer_type', newType);
     const nextSeconds = calculateSecondsForMode(newMode, newType);
     deadlineAtRef.current = null;
     stopwatchStartedAtRef.current = null;
@@ -169,10 +171,9 @@ function PomodoroTimer({
     switchModeAndType(mode, newType);
   }, [mode, switchModeAndType]);
 
-  // Sync theme to localStorage & global body data-theme attribute
+  // Scene selection belongs only to the focus workspace.
   useEffect(() => {
     localStorage.setItem('pomodoro_theme', theme);
-    document.body.setAttribute('data-theme', theme);
   }, [theme]);
 
   // Study log helper
@@ -233,7 +234,7 @@ function PomodoroTimer({
 
   const playPreviewAlarmSound = useCallback((overrideSoundId = null) => {
     const soundToPlay = overrideSoundId || inputAlarmSound;
-    const volToPlay = parseInt(inputAlarmVolume, 10) || 50;
+    const volToPlay = Number.isNaN(parseInt(inputAlarmVolume, 10)) ? 50 : parseInt(inputAlarmVolume, 10);
     playSynthAlarm(soundToPlay, volToPlay);
   }, [inputAlarmSound, inputAlarmVolume]);
 
@@ -441,7 +442,7 @@ function PomodoroTimer({
     const w = Math.max(1, Math.min(120, parseInt(inputWork, 10) || 25));
     const s = Math.max(1, Math.min(60, parseInt(inputShort, 10) || 5));
     const l = Math.max(1, Math.min(60, parseInt(inputLong, 10) || 15));
-    const vol = Math.max(0, Math.min(100, parseInt(inputAlarmVolume, 10) || 50));
+    const vol = Math.max(0, Math.min(100, Number.isNaN(parseInt(inputAlarmVolume, 10)) ? 50 : parseInt(inputAlarmVolume, 10)));
     const snd = inputAlarmSound;
 
     setWorkTime(w);
@@ -464,7 +465,7 @@ function PomodoroTimer({
       setTimeLeft(updatedTime);
     }
 
-    alert('Đã lưu thiết lập thành công!');
+    setActiveTab('timer');
   }, [inputWork, inputShort, inputLong, inputAlarmVolume, inputAlarmSound, isActive, timerType, mode]);
 
   // Custom theme background upload & removal
@@ -483,7 +484,7 @@ function PomodoroTimer({
 
   const handleRemoveCustomBg = useCallback(() => {
     setCustomBg(null);
-    setTheme('cyberpunk');
+    setTheme('calm');
     localStorage.removeItem('pomodoro_custom_bg');
   }, []);
 
@@ -700,223 +701,70 @@ function PomodoroTimer({
     : null;
 
   if (!isOpen) return miniTimerPortal;
+  const selectedFocusTask = availableFocusTasks.find(task => task.id === focusTaskId);
 
   return (
     <>
-    <div className={`pomodoro-overlay ${isOpen ? 'open' : ''}`} style={{
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      zIndex: 1000,
-      background: 'rgba(5, 7, 15, 0.85)',
-      backdropFilter: 'blur(16px)',
-      WebkitBackdropFilter: 'blur(16px)',
-      display: 'flex',
-      flexDirection: 'column',
-      overflow: 'hidden'
-    }}>
-      {/* Background Particles Layer */}
-      <ThemeParticles theme={theme} lowPower={lowPowerMode} />
-
-      {/* Fullscreen Floating Close Button */}
-      <button
-        type="button"
-        onClick={onClose}
-        style={{
-          position: 'fixed',
-          top: '1.25rem',
-          right: '1.25rem',
-          zIndex: 1100,
-          background: 'rgba(255, 255, 255, 0.12)',
-          border: '1px solid rgba(255, 255, 255, 0.2)',
-          color: '#fff',
-          borderRadius: '50%',
-          width: '42px',
-          height: '42px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          cursor: 'pointer',
-          boxShadow: '0 4px 15px rgba(0,0,0,0.3)',
-          transition: 'all 0.2s'
-        }}
-        title="Đóng Pomodoro (Esc)"
-        aria-label="Đóng giao diện Pomodoro"
-      >
-        ✕
-      </button>
-
-      {/* Main Container */}
-      <div className="pomodoro-content" style={{
-        flex: 1,
-        overflowY: 'auto',
-        padding: '2rem 1.5rem',
-        maxWidth: '1100px',
-        margin: '0 auto',
-        width: '100%',
-        position: 'relative',
-        zIndex: 1050
-      }}>
-        {/* Header Navigation Tabs */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', borderBottom: '1px solid var(--border-glass)', paddingBottom: '0.75rem' }}>
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
-            <button
-              type="button"
-              className={`tab-btn ${activeTab === 'timer' ? 'active' : ''}`}
-              onClick={() => setActiveTab('timer')}
-              style={{
-                padding: '0.5rem 1rem',
-                borderRadius: '8px',
-                background: activeTab === 'timer' ? 'var(--bg-glass-hover)' : 'transparent',
-                color: activeTab === 'timer' ? '#fff' : 'var(--text-secondary)',
-                border: 'none',
-                fontWeight: 600,
-                cursor: 'pointer'
-              }}
-            >
-              ⏱️ Đồng Hồ
-            </button>
-            <button
-              type="button"
-              className={`tab-btn ${activeTab === 'stats' ? 'active' : ''}`}
-              onClick={() => setActiveTab('stats')}
-              style={{
-                padding: '0.5rem 1rem',
-                borderRadius: '8px',
-                background: activeTab === 'stats' ? 'var(--bg-glass-hover)' : 'transparent',
-                color: activeTab === 'stats' ? '#fff' : 'var(--text-secondary)',
-                border: 'none',
-                fontWeight: 600,
-                cursor: 'pointer'
-              }}
-            >
-              📊 Bảng Thống Kê
-            </button>
-          </div>
-
-          {/* Inspirational Quote Widget */}
-          <div
-            onClick={() => setQuoteIndex(prev => (prev + 1) % STUDY_QUOTES.length)}
-            style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontStyle: 'italic', cursor: 'pointer', textAlign: 'right', maxWidth: '400px' }}
-            title="Nhấp để đổi danh ngôn"
-          >
-            "{STUDY_QUOTES[quoteIndex].text}" — <strong style={{ color: 'var(--color-primary)' }}>{STUDY_QUOTES[quoteIndex].author}</strong>
-          </div>
-        </div>
-
-        {/* TAB 1: TIMER VIEW */}
-        {activeTab === 'timer' && (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1.5rem' }}>
+      <div className="pomodoro-overlay" data-scene={theme}>
+        {theme === 'custom' && customBg && <div className="focus-scene-image" style={{ backgroundImage: `url("${customBg}")` }} />}
+        <div className="pomodoro-content">
+          <header className="focus-toolbar">
+            <div><p className="section-kicker">KHÔNG GIAN TẬP TRUNG</p><h2>Nhịp học của bạn</h2></div>
+            <button className="btn btn-secondary" onClick={onClose} aria-label="Đóng giao diện Pomodoro">Về trang chính ↗</button>
+          </header>
+          <nav className="focus-tabs" aria-label="Công cụ phiên học">
+            {[['timer', 'Đồng hồ'], ['settings', 'Cài đặt'], ['space', 'Không gian & âm thanh'], ['stats', 'Thống kê']].map(([id, label]) =>
+              <button key={id} className={`tab-btn ${activeTab === id ? 'active' : ''}`} aria-pressed={activeTab === id} onClick={() => setActiveTab(id)}>{label}</button>
+            )}
+          </nav>
+          <div hidden={activeTab !== 'timer'}>
+            <div className="focus-context">
+              <div><span className="section-kicker">{isActive ? 'ĐANG HỌC' : 'SẴN SÀNG KHI BẠN MUỐN'}</span>
+                <h3>{selectedFocusTask?.text || exams.find(exam => exam.id === focusSubjectId)?.subject || 'Học tập tự do'}</h3>
+              </div>
+              {selectedFocusTask && <button className="btn btn-secondary" disabled={selectedFocusTask.completed} onClick={() => {
+                setIsActive(false);
+                if (mode === 'work') logAccumulatedStudyTime();
+                onToggleTask(focusSubjectId, selectedFocusTask.id);
+              }}>{selectedFocusTask.completed ? 'Đã hoàn thành' : 'Đánh dấu xong'}</button>}
+              <button className="btn btn-secondary" aria-expanded={notesOpen} onClick={onOpenNotes}>Ghi chú</button>
+            </div>
             <TimerDisplay
-              timerType={timerType}
-              onTimerTypeChange={handleTimerTypeChange}
-              mode={mode}
-              onModeChange={handleModeChange}
-              onSwitchModeAndType={switchModeAndType}
-              timeLeft={timeLeft}
-              isActive={isActive}
-              handleStartPause={handleStartPause}
-              handleReset={handleReset}
-              handleSkip={handleSkip}
-              onOpenMiniTimer={openMiniTimer}
-              isMiniTimerOpen={Boolean(miniTimerRoot)}
-              completedWorkSessions={completedWorkSessions}
-              getModeColor={getModeColor}
-              getModeLabel={getModeLabel}
-              getTotalSeconds={getTotalSeconds}
+              timerType={timerType} onTimerTypeChange={handleTimerTypeChange} mode={mode} onModeChange={handleModeChange}
+              onSwitchModeAndType={switchModeAndType} timeLeft={timeLeft} isActive={isActive}
+              handleStartPause={handleStartPause} handleReset={handleReset} handleSkip={handleSkip}
+              onOpenMiniTimer={openMiniTimer} isMiniTimerOpen={Boolean(miniTimerRoot)} completedWorkSessions={completedWorkSessions}
+              getModeColor={getModeColor} getModeLabel={getModeLabel} getTotalSeconds={getTotalSeconds}
             />
-
-            {/* Subject / Task Selector */}
-            <div style={{ padding: '1rem', background: 'var(--bg-glass)', borderRadius: '14px', border: '1px solid var(--border-glass)' }}>
-              <label style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)', display: 'block', marginBottom: '0.4rem' }}>
-                📚 Chọn môn thi tập trung:
-              </label>
-              <select
-                value={focusSubjectId}
-                onChange={(e) => {
-                  setFocusSubjectId(e.target.value);
-                  setFocusTaskId('general');
-                  localStorage.setItem('pomodoro_focus_subject', e.target.value);
-                  localStorage.removeItem('pomodoro_focus_task');
-                }}
-                style={{ width: '100%', padding: '0.6rem', borderRadius: '8px', background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)', color: '#fff', outline: 'none' }}
-              >
-                <option value="general">Học tập chung (Không chọn môn)</option>
-                {exams.map(exam => (
-                  <option key={exam.id} value={exam.id}>{exam.subject}</option>
-                ))}
-              </select>
-              <label style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)', display: 'block', margin: '0.8rem 0 0.4rem' }}>
-                ✅ Gắn phiên này với nhiệm vụ:
-              </label>
-              <select
-                value={focusTaskId}
-                onChange={(event) => {
-                  setFocusTaskId(event.target.value);
-                  if (event.target.value === 'general') {
-                    localStorage.removeItem('pomodoro_focus_task');
-                  } else {
-                    localStorage.setItem('pomodoro_focus_task', event.target.value);
-                  }
-                }}
-                style={{ width: '100%', padding: '0.6rem', borderRadius: '8px', background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)', color: '#fff', outline: 'none' }}
-              >
-                <option value="general">Không gắn nhiệm vụ cụ thể</option>
-                {availableFocusTasks.filter((task) => !task.completed).map((task) => (
-                  <option key={task.id} value={task.id}>{task.text} · 🍅 {task.estPomodoros || 1}</option>
-                ))}
-              </select>
-            </div>
-
-            <button className="btn btn-secondary" onClick={onOpenNotes}>Ghi chú trong Sổ tay</button>
-
-            {/* Audio & Spotify Integration */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem' }}>
-              <AmbientSoundboard />
-              <SpotifyPlayer />
-            </div>
-
-            {/* Theme Selector */}
-            <ThemeSelector
-              theme={theme}
-              setTheme={setTheme}
-              customBg={customBg}
-              onCustomThemeUpload={handleCustomThemeUpload}
-              onRemoveCustomBg={handleRemoveCustomBg}
-            />
-
-            {/* Time & Alarm Settings */}
-            <AlarmSoundSettings
-              inputWork={inputWork}
-              setInputWork={setInputWork}
-              inputShort={inputShort}
-              setInputShort={setInputShort}
-              inputLong={inputLong}
-              setInputLong={setInputLong}
-              inputAlarmVolume={inputAlarmVolume}
-              setInputAlarmVolume={setInputAlarmVolume}
-              inputAlarmSound={inputAlarmSound}
-              setInputAlarmSound={setInputAlarmSound}
-              handleSaveSettings={handleSaveSettings}
-              playPreviewAlarmSound={playPreviewAlarmSound}
-            />
+            <details className="focus-task-picker">
+              <summary>Chọn môn hoặc việc cần làm <span>Không bắt buộc</span></summary>
+              <div className="simple-filters">
+                <label>Môn học<select value={focusSubjectId} onChange={event => {
+                  setFocusSubjectId(event.target.value); setFocusTaskId('general');
+                  localStorage.setItem('pomodoro_focus_subject', event.target.value); localStorage.removeItem('pomodoro_focus_task');
+                }}><option value="general">Học tập chung</option>{exams.map(exam => <option key={exam.id} value={exam.id}>{exam.subject}</option>)}</select></label>
+                <label>Việc cần làm<select value={focusTaskId} onChange={event => {
+                  setFocusTaskId(event.target.value); localStorage.setItem('pomodoro_focus_task', event.target.value);
+                }}><option value="general">Học tự do</option>{availableFocusTasks.filter(task => !task.completed || task.id === focusTaskId).map(task => <option key={task.id} value={task.id}>{task.text}{task.completed ? ' · Đã xong' : ''}</option>)}</select></label>
+              </div>
+            </details>
           </div>
-        )}
-
-        {/* TAB 2: STATS VIEW */}
-        {activeTab === 'stats' && (
-          <FocusStatsTab
-            studyLogs={studyLogs}
-            exams={exams}
-            generalTasks={generalTasks}
-            onClearStats={handleClearStats}
-          />
-        )}
+          <section hidden={activeTab !== 'settings'} className="focus-settings-panel" aria-label="Cài đặt đồng hồ">
+            <h3>Thời gian & báo chuông</h3><p className="simple-description">Chỉnh một lần, dùng lại cho những buổi học sau.</p>
+            <AlarmSoundSettings inputWork={inputWork} setInputWork={setInputWork} inputShort={inputShort} setInputShort={setInputShort}
+              inputLong={inputLong} setInputLong={setInputLong} inputAlarmVolume={inputAlarmVolume} setInputAlarmVolume={setInputAlarmVolume}
+              inputAlarmSound={inputAlarmSound} setInputAlarmSound={setInputAlarmSound}
+              handleSaveSettings={handleSaveSettings} playPreviewAlarmSound={playPreviewAlarmSound} />
+          </section>
+          <section hidden={activeTab !== 'space'} className="focus-settings-panel" aria-label="Không gian và âm thanh">
+            <h3>Một không gian theo ý bạn</h3><p className="simple-description">Hình nền chỉ áp dụng ở đây. Âm thanh phát khi bạn chọn bật.</p>
+            <ThemeSelector theme={theme} setTheme={setTheme} customBg={customBg} onCustomThemeUpload={handleCustomThemeUpload} onRemoveCustomBg={handleRemoveCustomBg} />
+            <div className="focus-audio-grid"><AmbientSoundboard /><SpotifyPlayer /></div>
+          </section>
+          {activeTab === 'stats' && <FocusStatsTab studyLogs={studyLogs} exams={exams} generalTasks={generalTasks} onClearStats={handleClearStats} />}
+        </div>
       </div>
-    </div>
-    {miniTimerPortal}
+      {miniTimerPortal}
     </>
   );
 }

@@ -1,3 +1,4 @@
+import Icon from './Icon';
 import { memo } from 'react';
 import { CATEGORIES } from '../constants';
 import { downloadICalFile } from '../utils/icsExport';
@@ -64,7 +65,7 @@ function ExamCard({ exam, onEdit, onDelete, onOpenTasks }) {
     if (totalDays < 2) {
       statusClass = 'status-urgent';
       badgeClass = 'urgent';
-      badgeLabel = 'Khẩn cấp';
+      badgeLabel = 'Sắp thi';
     } else if (totalDays < 7) {
       statusClass = 'status-warning';
       badgeClass = 'warning';
@@ -134,7 +135,7 @@ function ExamCard({ exam, onEdit, onDelete, onOpenTasks }) {
           title="Xem danh sách việc cần làm"
           style={{ flex: 1, padding: '0.45rem 0.75rem', fontSize: '0.8rem', justifyContent: 'center' }}
         >
-          📋 {totalTasksCount > 0 ? `Nhiệm vụ (${completedTasksCount}/${totalTasksCount})` : 'Việc cần làm'}
+          <Icon name="tasks" /> {totalTasksCount > 0 ? `Nhiệm vụ (${completedTasksCount}/${totalTasksCount})` : 'Việc cần làm'}
         </button>
         
         <button 
@@ -144,7 +145,7 @@ function ExamCard({ exam, onEdit, onDelete, onOpenTasks }) {
           aria-label={`Xuất lịch thi môn ${exam.subject} ra file ics`}
           style={{ background: 'rgba(59, 130, 246, 0.12)', color: '#60a5fa', border: '1px solid rgba(59, 130, 246, 0.25)' }}
         >
-          📅
+          <Icon name="export" />
         </button>
         <button 
           className="btn-icon edit" 

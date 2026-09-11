@@ -32,7 +32,7 @@ function AlarmSoundSettings({
               max="120"
               value={inputWork}
               onChange={(e) => setInputWork(e.target.value)}
-              style={{ width: '100%', padding: '0.5rem', borderRadius: '8px', background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)', color: '#fff' }}
+              style={{ width: '100%', padding: '0.5rem', borderRadius: '8px', background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)', color: 'var(--text-primary)' }}
             />
           </div>
           <div>
@@ -43,7 +43,7 @@ function AlarmSoundSettings({
               max="60"
               value={inputShort}
               onChange={(e) => setInputShort(e.target.value)}
-              style={{ width: '100%', padding: '0.5rem', borderRadius: '8px', background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)', color: '#fff' }}
+              style={{ width: '100%', padding: '0.5rem', borderRadius: '8px', background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)', color: 'var(--text-primary)' }}
             />
           </div>
           <div>
@@ -54,15 +54,15 @@ function AlarmSoundSettings({
               max="60"
               value={inputLong}
               onChange={(e) => setInputLong(e.target.value)}
-              style={{ width: '100%', padding: '0.5rem', borderRadius: '8px', background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)', color: '#fff' }}
+              style={{ width: '100%', padding: '0.5rem', borderRadius: '8px', background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)', color: 'var(--text-primary)' }}
             />
           </div>
         </div>
 
         {/* Alarm sound selection */}
         <div>
-          <label style={{ fontSize: '0.85rem', fontWeight: 600, color: '#fff', display: 'block', marginBottom: '0.4rem' }}>
-            🔔 Kiểu Chuông Báo (Web Audio Synthesizer)
+          <label style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)', display: 'block', marginBottom: '0.4rem' }}>
+            🔔 Kiểu Chuông Báo
           </label>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '0.5rem', maxHeight: '160px', overflowY: 'auto', paddingRight: '0.2rem' }}>
             {ALARM_SOUND_OPTIONS.map(snd => (
@@ -78,7 +78,7 @@ function AlarmSoundSettings({
                   borderRadius: '8px',
                   background: inputAlarmSound === snd.id ? 'rgba(139, 92, 246, 0.25)' : 'rgba(255, 255, 255, 0.05)',
                   border: inputAlarmSound === snd.id ? '1px solid #8b5cf6' : '1px solid transparent',
-                  color: '#fff',
+                  color: 'var(--text-primary)',
                   fontSize: '0.8rem',
                   cursor: 'pointer',
                   textAlign: 'left'
@@ -96,7 +96,7 @@ function AlarmSoundSettings({
 
         {/* Alarm volume: presets are easier to scan than a second long slider. */}
         <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: '#fff', marginBottom: '0.3rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: 'var(--text-primary)', marginBottom: '0.3rem' }}>
             <span>🔊 Âm Lượng Chuông Báo:</span>
             <span style={{ fontWeight: 600, color: 'var(--color-primary)' }}>{getVolumeLevelLabel(parseInt(inputAlarmVolume, 10) || 0)}</span>
           </div>

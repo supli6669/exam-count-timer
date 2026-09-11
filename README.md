@@ -23,6 +23,12 @@ Thống kê gồm thời gian hôm nay, bảy ngày gần nhất, thời gian th
 
 Sổ tay nhận các ghi chú cũ từ “Bãi đỗ suy nghĩ” một lần và giữ trạng thái đã xử lý dưới dạng nhãn. Khóa `notes_consolidated_v1` đi cùng bản sao lưu để ghi chú đã xóa không xuất hiện lại. Ghi chú được lưu ngay khi sửa; Pomodoro có nút mở Sổ tay. Lịch thi không yêu cầu tín chỉ và không tự chấm mức độ sẵn sàng thi.
 
+## Giao diện học tập
+
+Giao diện sáng/tối dùng chung bố cục, có lựa chọn theo thiết bị trong Công cụ. Nền phiên học được chọn riêng, không đổi màu toàn bộ ứng dụng. Các chủ đề cũ tiếp tục mở ở chế độ tối; lựa chọn hình nền Pomodoro đã lưu được giữ lại.
+
+Đồng hồ mở trực tiếp từ thanh đầu trang. Thời gian, chuông báo và không gian/âm thanh nằm trong các mục riêng; chọn môn hoặc công việc là tùy chọn. Sổ tay mở cạnh đồng hồ trên máy tính, mở rộng trên điện thoại và dùng cùng dữ liệu với tab Sổ tay. Đổi tab giữ bản nháp công việc; đóng/mở Sổ tay giữ ghi chú đang chọn. Đồng hồ tiếp tục chạy khi mở ghi chú hoặc quay về trang chính trong cùng lần mở ứng dụng.
+
 ## Kiểm tra và triển khai
 
 ```sh

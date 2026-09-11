@@ -1,5 +1,6 @@
-import { useState, useEffect, useCallback, useMemo, lazy, Suspense, memo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef, lazy, Suspense, memo } from 'react';
 import ExamCard from './components/ExamCard';
+import Icon from './components/Icon';
 import ExamForm from './components/ExamForm';
 import NotificationSettings from './components/NotificationSettings';
 import BackupRestore from './components/BackupRestore';
@@ -57,13 +58,13 @@ const FocusHero = memo(function FocusHero({ exams, onStart, onCreate }) {
   return (
     <section className="focus-hero" aria-labelledby="focus-hero-title">
       <div className="focus-hero-copy">
-        <span className="focus-eyebrow"><span className="eyebrow-dot" /> STUDY OS / TODAY</span>
-        <h2 id="focus-hero-title">Tập trung vào điều<br /><em>quan trọng nhất.</em></h2>
-        <p>Lịch thi gọn gàng, phiên học rõ ràng, tâm trí nhẹ hơn.</p>
+        <span className="focus-eyebrow">KHÔNG GIAN HỌC CỦA BẠN</span>
+        <h2 id="focus-hero-title">Sẵn sàng cho buổi học.</h2>
+        <p>Mở đồng hồ, chọn một việc và bắt đầu theo nhịp của bạn.</p>
         <div className="focus-hero-actions">
-          <button className="btn btn-primary hero-primary-action" onClick={() => onStart(nextExam ? { examId: nextExam.id } : null)}>
+          <button className="btn btn-primary hero-primary-action" onClick={() => onStart()}>
             <span className="play-glyph">▶</span>
-            Bắt đầu tập trung
+            Mở đồng hồ học
           </button>
           <button className="hero-text-action" onClick={onCreate}>+ Thêm lịch thi</button>
         </div>
@@ -71,8 +72,7 @@ const FocusHero = memo(function FocusHero({ exams, onStart, onCreate }) {
 
       <div className="next-focus-card" aria-label="Kỳ thi sắp tới">
         <div className="next-focus-card-topline">
-          <span className="focus-eyebrow">UP NEXT</span>
-          <span className="next-focus-status"><span className="status-pulse" /> Đang theo dõi</span>
+          <span className="focus-eyebrow">KỲ THI GẦN NHẤT</span>
         </div>
         {nextExam ? (
           <>
@@ -88,8 +88,6 @@ const FocusHero = memo(function FocusHero({ exams, onStart, onCreate }) {
         ) : (
           <div className="next-focus-empty">Thêm kỳ thi đầu tiên để bắt đầu xây dựng nhịp học của bạn.</div>
         )}
-        <div className="orbital-orb orb-one" />
-        <div className="orbital-orb orb-two" />
       </div>
     </section>
   );
@@ -149,6 +147,36 @@ function App() {
   const [viewMode, setViewMode] = useState('exams'); // exams, tasks, notes, or analytics
   const [examsView, setExamsView] = useState('card'); // 'card' or 'calendar'
   const [isPomodoroOpen, setIsPomodoroOpen] = useState(false);
+  const [focusNotesOpen, setFocusNotesOpen] = useState(false);
+  const appRoot = useRef(null);
+  useEffect(() => {
+    if (!isPomodoroOpen) return;
+    const previous = document.activeElement;
+    const root = appRoot.current;
+    root.querySelector('.pomodoro-overlay button')?.focus();
+    const trap = event => {
+      if (event.key !== 'Tab') return;
+      const controls = [...root.querySelectorAll('.pomodoro-overlay button, .pomodoro-overlay select, .pomodoro-overlay input, .pomodoro-overlay summary, .focus-note-dock button, .focus-note-dock input, .focus-note-dock textarea')]
+        .filter(element => !element.disabled && element.getClientRects().length > 0 && (element.tagName === 'SUMMARY' || !element.closest('details:not([open])')) && !(window.matchMedia('(max-width: 760px)').matches && root.querySelector('.focus-note-dock:not([hidden])') && element.closest('.pomodoro-overlay')));
+      const first = controls[0], last = controls.at(-1);
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+    };
+    root.addEventListener('keydown', trap);
+    return () => { root.removeEventListener('keydown', trap); previous?.focus(); };
+  }, [isPomodoroOpen]);
+  useEffect(() => {
+    if (!isPomodoroOpen || !focusNotesOpen) return;
+    const previous = document.activeElement;
+    appRoot.current.querySelector('.focus-note-heading button')?.focus();
+    return () => { if (previous?.isConnected) previous.focus(); };
+  }, [isPomodoroOpen, focusNotesOpen]);
+  const viewScroll = useRef({});
+  const changeView = (next) => {
+    viewScroll.current[viewMode] = window.scrollY;
+    setViewMode(next);
+    requestAnimationFrame(() => window.scrollTo(0, viewScroll.current[next] || 0));
+  };
   const [isFlashcardsOpen, setIsFlashcardsOpen] = useState(false);
   const [taskSubject, setTaskSubject] = useState('all');
   const [generalTasks, setGeneralTasks] = useState(() => {
@@ -198,12 +226,22 @@ function App() {
   }, [generalTasks]);
 
   const [activeTheme, setActiveTheme] = useState(() => {
-    return localStorage.getItem('app_global_theme') || 'focus';
+    const saved = localStorage.getItem('app_global_theme');
+    return ['light', 'dark', 'system'].includes(saved) ? saved : saved ? 'dark' : 'system';
   });
 
   useEffect(() => {
-    document.body.setAttribute('data-theme', activeTheme);
+    const media = window.matchMedia('(prefers-color-scheme: dark)');
+    const apply = () => {
+      const theme = activeTheme === 'system' ? (media.matches ? 'dark' : 'light') : activeTheme;
+      document.documentElement.dataset.theme = theme;
+      document.documentElement.style.colorScheme = theme;
+      document.body.dataset.theme = theme;
+    };
+    apply();
+    media.addEventListener('change', apply);
     localStorage.setItem('app_global_theme', activeTheme);
+    return () => media.removeEventListener('change', apply);
   }, [activeTheme]);
 
   // Prune old study history on app launch
@@ -236,12 +274,13 @@ function App() {
     const handleGlobalKeyDown = (e) => {
       if (e.key === 'Escape') {
         if (isModalOpen) setIsModalOpen(false);
+        else if (focusNotesOpen) setFocusNotesOpen(false);
         else if (isPomodoroOpen) setIsPomodoroOpen(false);
       }
     };
     window.addEventListener('keydown', handleGlobalKeyDown);
     return () => window.removeEventListener('keydown', handleGlobalKeyDown);
-  }, [isModalOpen, isPomodoroOpen]);
+  }, [isModalOpen, isPomodoroOpen, focusNotesOpen]);
 
   // Save notification setting
 
@@ -301,9 +340,9 @@ function App() {
   }, []);
 
   const handleOpenPomodoro = useCallback((focusTarget = null) => {
-    if (focusTarget?.examId && focusTarget?.taskId) {
+    if (focusTarget?.examId) {
       localStorage.setItem('pomodoro_focus_subject', focusTarget.examId);
-      localStorage.setItem('pomodoro_focus_task', focusTarget.taskId);
+      localStorage.setItem('pomodoro_focus_task', focusTarget.taskId || 'general');
       window.dispatchEvent(new CustomEvent('pomodoro-focus-target', { detail: focusTarget }));
     }
     setIsPomodoroOpen(true);
@@ -445,7 +484,8 @@ function App() {
   }, [exams, searchQuery, selectedCategory, sortBy]);
 
   return (
-    <div className="app-container">
+    <div ref={appRoot} role={isPomodoroOpen ? 'dialog' : undefined} aria-modal={isPomodoroOpen ? true : undefined} aria-label={isPomodoroOpen ? 'Không gian học tập' : undefined} className={`app-container ${isPomodoroOpen && focusNotesOpen ? 'with-focus-notes' : ''}`}>
+      <div className="app-pages" inert={isPomodoroOpen}>
       {/* App Header */}
       <header className="app-header">
         <div className="brand-section">
@@ -456,7 +496,7 @@ function App() {
           </div>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-              <h1 className="brand-title" style={{ margin: 0 }}>flocus<span className="brand-title-version">/ 02</span></h1>
+              <h1 className="brand-title" style={{ margin: 0 }}>flocus<span className="brand-title-version">góc học</span></h1>
             </div>
             <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.2rem', marginTop: '0.15rem', flexWrap: 'wrap' }}>
               <span>{getGreetingPrefix()}</span>
@@ -473,23 +513,23 @@ function App() {
                   aria-label="Tên hiển thị"
                 />
               ) : (
-                <span
+                <button type="button"
                   className="editable-username"
                   onClick={() => { setTempName(username); setIsEditingName(true); }}
                   title="Nhấp để đổi tên"
                 >
                   {username || 'Người học'}
-                </span>
+                </button>
               )}
-              <span>! Chúc ôn tập tốt.</span>
             </div>
           </div>
         </div>
 
         <div className="header-actions">
           <div className="header-quick-actions">
+            <button className="btn btn-secondary" onClick={() => handleOpenPomodoro()}>Đồng hồ học</button>
             <details className="utility-menu">
-              <summary aria-label="Mở công cụ phụ">☰ <span>Công cụ</span></summary>
+              <summary aria-label="Mở công cụ phụ"><Icon name="menu" /> <span>Công cụ</span></summary>
               <div className="utility-menu-panel">
                 <label className="utility-theme-field">
                   <span>Giao diện</span>
@@ -497,15 +537,12 @@ function App() {
                     value={activeTheme}
                     onChange={(e) => setActiveTheme(e.target.value)}
                     className="theme-selector-dropdown"
-                    title="Đổi chủ đề giao diện nghệ thuật"
+                    title="Chọn giao diện sáng hoặc tối"
                     aria-label="Chọn chủ đề giao diện"
                   >
-                    <option value="cyberpunk">🏙️ Cyberpunk</option>
-                    <option value="sakura">🌸 Sakura Library</option>
-                    <option value="lofi">☕ Lofi Cafe</option>
-                    <option value="focus">◐ Flocus Dusk</option>
-                    <option value="space">🌌 Space Odyssey</option>
-                    <option value="nature">🌲 Nature Cabin</option>
+                    <option value="system">Theo thiết bị</option>
+                    <option value="light">Sáng · Giấy ấm</option>
+                    <option value="dark">Tối · Trầm ấm</option>
                   </select>
                 </label>
                 <button
@@ -543,34 +580,38 @@ function App() {
           <div className="view-mode-tabs">
             <button
               className={`view-tab-btn ${viewMode === 'exams' ? 'active' : ''}`}
-              onClick={() => setViewMode('exams')}
+              aria-current={viewMode === 'exams' ? 'page' : undefined}
+              onClick={() => changeView('exams')}
               title="Quản lý lịch thi"
             >
-              <span style={{ fontSize: '0.9rem', display: 'inline-flex', alignItems: 'center', marginRight: '0.35rem' }}>📅</span>
+              <Icon name="calendar" />
               Lịch thi
             </button>
             <button
               className={`view-tab-btn ${viewMode === 'tasks' ? 'active' : ''}`}
-              onClick={() => setViewMode('tasks')}
+              aria-current={viewMode === 'tasks' ? 'page' : undefined}
+              onClick={() => changeView('tasks')}
               title="Danh sách việc cần làm"
             >
-              <span style={{ fontSize: '0.9rem', display: 'inline-flex', alignItems: 'center', marginRight: '0.35rem' }}>🎯</span>
+              <Icon name="tasks" />
               Việc cần làm
             </button>
             <button
               className={`view-tab-btn ${viewMode === 'analytics' ? 'active' : ''}`}
-              onClick={() => setViewMode('analytics')}
+              aria-current={viewMode === 'analytics' ? 'page' : undefined}
+              onClick={() => changeView('analytics')}
               title="Thống kê học tập"
             >
-              <span style={{ fontSize: '0.9rem', display: 'inline-flex', alignItems: 'center', marginRight: '0.35rem' }}>📊</span>
+              <Icon name="chart" />
               Thống kê
             </button>
             <button
               className={`view-tab-btn ${viewMode === 'notes' ? 'active' : ''}`}
-              onClick={() => setViewMode('notes')}
+              aria-current={viewMode === 'notes' ? 'page' : undefined}
+              onClick={() => changeView('notes')}
               title="Sổ tay học tập"
             >
-              <span aria-hidden="true">📝</span>
+              <Icon name="note" />
               Sổ tay
             </button>
           </div>
@@ -618,7 +659,7 @@ function App() {
               </div>
               <div className="stat-details">
                 <span className="stat-value">{stats.urgent}</span>
-                <span className="stat-label">Khẩn cấp (&lt; 2 ngày)</span>
+                <span className="stat-label">Thi trong 2 ngày</span>
               </div>
             </div>
 
@@ -645,7 +686,7 @@ function App() {
               </div>
               <div className="stat-details">
                 <span className="stat-value">{stats.safe}</span>
-                <span className="stat-label">Thời gian an toàn</span>
+                <span className="stat-label">Còn hơn 7 ngày</span>
               </div>
             </div>
           </section>
@@ -680,7 +721,7 @@ function App() {
                 style={{
                   background: 'transparent',
                   border: 'none',
-                  color: '#fff',
+                  color: 'var(--text-primary)',
                   fontSize: '0.95rem',
                   width: '100%',
                   outline: 'none'
@@ -698,7 +739,7 @@ function App() {
                   style={{
                     background: 'var(--bg-secondary)',
                     border: '1px solid var(--border-glass)',
-                    color: '#fff',
+                    color: 'var(--text-primary)',
                     borderRadius: '8px',
                     padding: '0.4rem 0.8rem',
                     fontSize: '0.9rem',
@@ -721,7 +762,7 @@ function App() {
                   style={{
                     background: 'var(--bg-secondary)',
                     border: '1px solid var(--border-glass)',
-                    color: '#fff',
+                    color: 'var(--text-primary)',
                     borderRadius: '8px',
                     padding: '0.4rem 0.8rem',
                     fontSize: '0.9rem',
@@ -792,7 +833,7 @@ function App() {
                     style={{
                       background: examsView === 'card' ? 'linear-gradient(135deg, #3b82f6, #8b5cf6)' : 'transparent',
                       border: 'none',
-                      color: '#fff',
+                      color: 'var(--text-primary)',
                       padding: '0.3rem 0.6rem',
                       borderRadius: '6px',
                       fontSize: '0.8rem',
@@ -812,7 +853,7 @@ function App() {
                     style={{
                       background: examsView === 'calendar' ? 'linear-gradient(135deg, #3b82f6, #8b5cf6)' : 'transparent',
                       border: 'none',
-                      color: '#fff',
+                      color: 'var(--text-primary)',
                       padding: '0.3rem 0.6rem',
                       borderRadius: '6px',
                       fontSize: '0.8rem',
@@ -882,10 +923,13 @@ function App() {
         </>
       )}
 
-      {viewMode === 'tasks' && <TaskList exams={exams} generalTasks={generalTasks} subject={taskSubject} onSubjectChange={setTaskSubject} onAddTask={handleAddTask} onToggleTask={handleToggleTask} onDeleteTask={handleDeleteTask} onStart={handleOpenPomodoro} />}
+      <div hidden={viewMode !== 'tasks'}><TaskList exams={exams} generalTasks={generalTasks} subject={taskSubject} onSubjectChange={setTaskSubject} onAddTask={handleAddTask} onToggleTask={handleToggleTask} onDeleteTask={handleDeleteTask} onStart={handleOpenPomodoro} /></div>
       {viewMode === 'analytics' && <FocusStatsTab exams={exams} generalTasks={generalTasks} />}
-
-      {viewMode === 'notes' && <Notes />}
+      </div>
+      <div className={isPomodoroOpen ? 'focus-note-dock' : 'notes-page'} hidden={isPomodoroOpen ? !focusNotesOpen : viewMode !== 'notes'}>
+        {isPomodoroOpen && <div className="focus-note-heading"><span>Sổ tay phiên học</span><button className="btn btn-secondary" onClick={() => setFocusNotesOpen(false)}>Đóng sổ tay</button></div>}
+        <Notes />
+      </div>
 
       {/* Add / Edit Modal Form */}
       {isModalOpen && (
@@ -899,8 +943,9 @@ function App() {
       {/* Pomodoro Timer Sidebar */}
       <PomodoroTimer
         isOpen={isPomodoroOpen}
-        onClose={() => setIsPomodoroOpen(false)}
-        onOpenNotes={() => { setIsPomodoroOpen(false); setViewMode('notes'); }}
+        onClose={() => { setIsPomodoroOpen(false); setFocusNotesOpen(false); }}
+        onOpenNotes={() => setFocusNotesOpen(value => !value)}
+        notesOpen={focusNotesOpen}
         exams={exams}
         generalTasks={generalTasks}
         notificationsEnabled={notificationsEnabled}

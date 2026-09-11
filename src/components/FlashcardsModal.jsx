@@ -123,7 +123,7 @@ export default function FlashcardsModal({ isOpen, onClose }) {
 
         {/* Box Filter Selector */}
         <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '1.2rem', flexWrap: 'wrap' }}>
-          <button onClick={() => { setActiveBox('due'); setCurrentIndex(0); setIsFlipped(false); }} style={{ padding: '0.35rem 0.75rem', borderRadius: '10px', border: activeBox === 'due' ? '1px solid var(--color-primary)' : '1px solid var(--border-glass)', background: activeBox === 'due' ? 'var(--color-primary-glow)' : 'rgba(255,255,255,.04)', color: '#fff', cursor: 'pointer' }}>Đến hạn ({dueCards.length})</button>
+          <button onClick={() => { setActiveBox('due'); setCurrentIndex(0); setIsFlipped(false); }} style={{ padding: '0.35rem 0.75rem', borderRadius: '10px', border: activeBox === 'due' ? '1px solid var(--color-primary)' : '1px solid var(--border-glass)', background: activeBox === 'due' ? 'var(--color-primary-glow)' : 'rgba(255,255,255,.04)', color: 'var(--text-primary)', cursor: 'pointer' }}>Đến hạn ({dueCards.length})</button>
           <button
             onClick={() => { setActiveBox(0); setCurrentIndex(0); setIsFlipped(false); }}
             style={{
@@ -133,7 +133,7 @@ export default function FlashcardsModal({ isOpen, onClose }) {
               fontWeight: 600,
               border: activeBox === 0 ? '1px solid var(--color-primary)' : '1px solid var(--border-glass)',
               background: activeBox === 0 ? 'var(--color-primary-glow)' : 'rgba(255, 255, 255, 0.04)',
-              color: activeBox === 0 ? '#fff' : 'var(--text-secondary)',
+              color: activeBox === 0 ? 'var(--text-primary)' : 'var(--text-secondary)',
               cursor: 'pointer'
             }}
           >
@@ -152,7 +152,7 @@ export default function FlashcardsModal({ isOpen, onClose }) {
                   fontWeight: 600,
                   border: activeBox === bNum ? '1px solid var(--color-primary)' : '1px solid var(--border-glass)',
                   background: activeBox === bNum ? 'var(--color-primary-glow)' : 'rgba(255, 255, 255, 0.04)',
-                  color: activeBox === bNum ? '#fff' : 'var(--text-secondary)',
+                  color: activeBox === bNum ? 'var(--text-primary)' : 'var(--text-secondary)',
                   cursor: 'pointer'
                 }}
               >
@@ -172,7 +172,7 @@ export default function FlashcardsModal({ isOpen, onClose }) {
               fontSize: '0.82rem',
               fontWeight: 600,
               background: 'rgba(16, 185, 129, 0.15)',
-              color: '#34d399',
+              color: 'var(--color-safe)',
               border: '1px solid rgba(16, 185, 129, 0.3)',
               cursor: 'pointer'
             }}
@@ -191,7 +191,7 @@ export default function FlashcardsModal({ isOpen, onClose }) {
                 value={newQuestion}
                 onChange={e => setNewQuestion(e.target.value)}
                 placeholder="Nhập câu hỏi..."
-                style={{ width: '100%', padding: '0.5rem', borderRadius: '8px', border: '1px solid var(--border-glass)', background: 'var(--bg-primary)', color: '#fff' }}
+                style={{ width: '100%', padding: '0.5rem', borderRadius: '8px', border: '1px solid var(--border-glass)', background: 'var(--bg-primary)', color: 'var(--text-primary)' }}
               />
             </div>
             <div style={{ marginBottom: '0.8rem' }}>
@@ -201,10 +201,10 @@ export default function FlashcardsModal({ isOpen, onClose }) {
                 onChange={e => setNewAnswer(e.target.value)}
                 placeholder="Nhập câu trả lời..."
                 rows={3}
-                style={{ width: '100%', padding: '0.5rem', borderRadius: '8px', border: '1px solid var(--border-glass)', background: 'var(--bg-primary)', color: '#fff' }}
+                style={{ width: '100%', padding: '0.5rem', borderRadius: '8px', border: '1px solid var(--border-glass)', background: 'var(--bg-primary)', color: 'var(--text-primary)' }}
               />
             </div>
-            <button type="submit" style={{ padding: '0.45rem 1rem', background: '#10b981', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 600, cursor: 'pointer' }}>
+            <button type="submit" style={{ padding: '0.45rem 1rem', background: 'var(--color-primary)', color: 'var(--on-accent)', border: 'none', borderRadius: '8px', fontWeight: 600, cursor: 'pointer' }}>
               Lưu Thẻ Ghi Nhớ
             </button>
           </form>
@@ -253,7 +253,7 @@ export default function FlashcardsModal({ isOpen, onClose }) {
                   padding: '0.65rem 1rem',
                   borderRadius: '12px',
                   background: 'rgba(244, 63, 94, 0.15)',
-                  color: '#fb7185',
+                  color: 'var(--color-urgent)',
                   border: '1px solid rgba(244, 63, 94, 0.3)',
                   fontWeight: 700,
                   cursor: 'pointer',
@@ -269,7 +269,7 @@ export default function FlashcardsModal({ isOpen, onClose }) {
                   padding: '0.65rem 1rem',
                   borderRadius: '12px',
                   background: 'rgba(16, 185, 129, 0.15)',
-                  color: '#34d399',
+                  color: 'var(--color-safe)',
                   border: '1px solid rgba(16, 185, 129, 0.3)',
                   fontWeight: 700,
                   cursor: 'pointer',
