@@ -381,12 +381,13 @@ function App() {
   }, [exams]);
 
   // Handle adding a sub-task for an exam or general tasks
-  const handleAddTask = useCallback((examId, text, deadline, estPomodoros = 1, urgent = false, important = true) => {
+  const handleAddTask = useCallback((examId, text, deadline, estPomodoros = 1, urgent = false, important = true, plannedDate = '') => {
     const newTask = {
       id: `task-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
       text,
       completed: false,
       deadline: deadline || '',
+      plannedDate,
       estPomodoros: parseInt(estPomodoros, 10) || 1,
       urgent,
       important,
@@ -412,6 +413,12 @@ function App() {
     const toggle = task => task.id === taskId ? { ...task, completed: !task.completed, completedAt: task.completed ? null : Date.now() } : task;
     if (examId === 'general') setGeneralTasks(tasks => tasks.map(toggle));
     else setExams(items => items.map(exam => exam.id === examId ? { ...exam, tasks: (exam.tasks || []).map(toggle) } : exam));
+  }, []);
+
+  const handlePlanTask = useCallback((examId, taskId, plannedDate) => {
+    const update = task => task.id === taskId ? { ...task, plannedDate } : task;
+    if (examId === 'general') setGeneralTasks(tasks => tasks.map(update));
+    else setExams(items => items.map(exam => exam.id === examId ? { ...exam, tasks: (exam.tasks || []).map(update) } : exam));
   }, []);
 
   // Handle deleting a sub-task
@@ -919,7 +926,7 @@ function App() {
         </>
       )}
 
-      <div hidden={viewMode !== 'tasks'}><TaskList exams={exams} generalTasks={generalTasks} subject={taskSubject} onSubjectChange={setTaskSubject} onAddTask={handleAddTask} onToggleTask={handleToggleTask} onDeleteTask={handleDeleteTask} onStart={handleOpenPomodoro} /></div>
+      <div hidden={viewMode !== 'tasks'}><TaskList exams={exams} generalTasks={generalTasks} subject={taskSubject} onSubjectChange={setTaskSubject} onAddTask={handleAddTask} onToggleTask={handleToggleTask} onDeleteTask={handleDeleteTask} onPlanTask={handlePlanTask} onStart={handleOpenPomodoro} /></div>
       {viewMode === 'analytics' && <FocusStatsTab exams={exams} generalTasks={generalTasks} />}
       </div>
       <div className={isPomodoroOpen ? 'focus-note-dock' : 'notes-page'} hidden={isPomodoroOpen ? !focusNotesOpen : viewMode !== 'notes'}>

@@ -15,6 +15,18 @@
 .simple-task-label small { display: block; color: var(--text-secondary); font-size: .75rem; margin-top: .2rem; }
 .simple-task-label .task-done { text-decoration: line-through; color: var(--text-secondary); }
 .simple-task-actions { display: flex; flex-shrink: 0; gap: .5rem; }
+.daily-plan-controls, .daily-plan-tabs, .daily-plan-date { display: flex; flex-wrap: wrap; align-items: end; gap: .6rem; }
+.daily-plan-controls { justify-content: space-between; margin: 1.5rem 0 1rem; }
+.daily-plan-date label, .task-plan-date { display: grid; gap: .3rem; font-size: .8rem; color: var(--text-secondary); }
+.daily-plan-date input, .task-plan-date input { min-height: 44px; max-width: 100%; padding: .5rem .65rem; border: 1px solid var(--border-glass); border-radius: 10px; background: var(--bg-secondary); color: var(--text-primary); font: inherit; }
+.daily-plan-progress { display: grid; gap: .6rem; padding: 1rem; margin-bottom: 1rem; border-radius: 12px; background: var(--color-primary-glow); color: var(--text-primary); font-size: .9rem; }
+.daily-plan-progress progress { width: 100%; height: 10px; accent-color: var(--color-primary); }
+.simple-task-list .simple-task-actions { flex-wrap: wrap; align-items: end; flex-shrink: 1; justify-content: flex-end; }
+.simple-task-list .simple-task-label { flex: 1 1 200px; }
+@media (max-width: 900px) {
+  .simple-task-list > li { flex-wrap: wrap; }
+  .simple-task-list .simple-task-actions { justify-content: flex-start; }
+}
 .simple-empty { color: var(--text-secondary); text-align: center; padding: 1.5rem 0; line-height: 1.6; }
 .simple-stat-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .8rem; }
 .simple-stat-grid > div { display: grid; gap: .5rem; padding: 1rem; border-radius: 12px; background: var(--bg-secondary); border: 1px solid var(--border-glass); }
