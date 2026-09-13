@@ -227,7 +227,7 @@ function App() {
 
   const [activeTheme, setActiveTheme] = useState(() => {
     const saved = localStorage.getItem('app_global_theme');
-    return ['light', 'dark', 'system'].includes(saved) ? saved : saved ? 'dark' : 'system';
+    return ['light', 'dark', 'system'].includes(saved) ? saved : 'light';
   });
 
   useEffect(() => {
@@ -367,9 +367,7 @@ function App() {
 
   // Handle delete
   const handleDeleteExam = useCallback((id) => {
-    if (window.confirm('Bạn có chắc chắn muốn xóa lịch thi này không?')) {
-      setExams(prev => prev.filter(e => e.id !== id));
-    }
+    setExams(prev => prev.filter(e => e.id !== id));
   }, []);
 
   const handleClearPassedExams = useCallback(() => {
@@ -379,9 +377,7 @@ function App() {
       alert('Không có môn thi nào đã hết giờ!');
       return;
     }
-    if (window.confirm(`Bạn có chắc chắn muốn xóa ${passedCount} môn thi đã hết giờ không?`)) {
-      setExams(prev => filterActiveExams(prev, true));
-    }
+    setExams(prev => filterActiveExams(prev, true));
   }, [exams]);
 
   // Handle adding a sub-task for an exam or general tasks

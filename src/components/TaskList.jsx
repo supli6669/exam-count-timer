@@ -31,7 +31,7 @@ export default function TaskList({ exams, generalTasks, subject, onSubjectChange
     <ul className="simple-task-list">{visible.map(task => <li key={task.key}>
       <label className="simple-task-label"><input type="checkbox" checked={task.completed} onChange={() => onToggleTask(task.examId, task.id)} /><span className={task.completed ? 'task-done' : ''}>{task.text}<small>{task.subject}{task.deadline && !Number.isNaN(Date.parse(task.deadline)) ? ` · Hạn: ${new Date(task.deadline).toLocaleString('vi-VN')}` : ''}</small></span></label>
       <div className="simple-task-actions">{!task.completed && <button className="btn btn-secondary" aria-label={`Tập trung: ${task.text}`} onClick={() => onStart({ examId: task.examId, taskId: task.id })}>Tập trung</button>}
-        <button className="btn btn-secondary" aria-label={`Xóa việc: ${task.text}`} onClick={() => { if (window.confirm(`Xóa việc “${task.text}”?`)) onDeleteTask(task.examId, task.id); }}>Xóa</button></div>
+        <button className="btn btn-secondary" aria-label={`Xóa việc: ${task.text}`} onClick={() => onDeleteTask(task.examId, task.id)}>Xóa</button></div>
     </li>)}</ul>
     {!visible.length && <p className="simple-empty">{status === 'open' ? 'Không còn việc nào chưa xong trong mục này.' : 'Chưa có việc nào trong mục này.'}</p>}
   </section>;

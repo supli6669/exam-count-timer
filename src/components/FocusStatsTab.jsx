@@ -31,6 +31,6 @@ export default memo(function FocusStatsTab({ studyLogs, exams = [], generalTasks
     <h3>Thời gian theo môn</h3>
     {stats.subjects.length ? <ul className="simple-subject-stats">{stats.subjects.map(([subject, seconds]) => <li key={subject}><span>{subject}</span><strong>{minutes(seconds)}</strong></li>)}</ul> : <p className="simple-empty">Chưa có thời gian học được ghi nhận. Bắt đầu một phiên Pomodoro để theo dõi tại đây.</p>}
     <p className="simple-description">Lịch sử chi tiết được giữ tối đa 180 ngày.</p>
-    {onClearStats && <button className="btn btn-secondary" onClick={() => { if (window.confirm('Xóa lịch sử thời gian học đã lưu?')) onClearStats(); }}>Xóa lịch sử học</button>}
+    {onClearStats && <button className="btn btn-secondary" onClick={onClearStats}>Xóa lịch sử học</button>}
   </section>;
 });

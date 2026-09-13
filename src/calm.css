@@ -1,42 +1,42 @@
 /* Shared surfaces: calm navigation, a paper-like editor and optional focus scenes. */
 :root, :root[data-theme="light"], body[data-theme="light"] {
   color-scheme: light;
-  --bg-primary: hsl(40 23% 96%);
-  --bg-secondary: hsl(40 19% 93%);
-  --bg-glass: hsl(40 33% 99%);
-  --bg-glass-hover: hsl(40 19% 91%);
-  --border-glass: hsl(35 12% 83%);
-  --border-glass-focus: hsl(160 24% 42%);
-  --text-primary: hsl(160 12% 16%);
-  --text-secondary: hsl(150 7% 36%);
-  --text-muted: hsl(150 5% 40%);
-  --color-primary: hsl(163 35% 30%);
-  --color-primary-glow: hsl(163 35% 30% / .14);
+  --bg-primary: hsl(40 33% 98%);
+  --bg-secondary: hsl(260 40% 96%);
+  --bg-glass: hsl(0 0% 100%);
+  --bg-glass-hover: hsl(260 45% 93%);
+  --border-glass: hsl(260 22% 87%);
+  --border-glass-focus: hsl(260 48% 55%);
+  --text-primary: hsl(255 12% 19%);
+  --text-secondary: hsl(255 10% 38%);
+  --text-muted: hsl(255 9% 44%);
+  --color-primary: hsl(260 48% 48%);
+  --color-primary-glow: hsl(260 60% 65% / .12);
   --on-accent: #fff;
   --color-urgent: #ad3145;
   --color-warning: #835300;
   --color-safe: #28644c;
-  --shadow-lg: 0 8px 28px hsl(35 15% 20% / .04);
+  --shadow-lg: 0 8px 28px hsl(260 25% 30% / .06);
   --shadow-neon: none;
 }
 :root[data-theme="dark"], body[data-theme="dark"] {
   color-scheme: dark;
-  --bg-primary: hsl(165 9% 10%);
-  --bg-secondary: hsl(165 8% 14%);
-  --bg-glass: hsl(165 8% 13%);
-  --bg-glass-hover: hsl(165 8% 19%);
-  --border-glass: hsl(165 7% 25%);
-  --border-glass-focus: hsl(155 29% 68%);
+  --bg-primary: hsl(255 14% 10%);
+  --bg-secondary: hsl(255 13% 14%);
+  --bg-glass: hsl(255 13% 13%);
+  --bg-glass-hover: hsl(255 12% 19%);
+  --border-glass: hsl(255 12% 25%);
+  --border-glass-focus: hsl(260 60% 76%);
   --text-primary: hsl(40 20% 93%);
-  --text-secondary: hsl(140 5% 70%);
-  --text-muted: hsl(140 5% 65%);
-  --color-primary: hsl(155 29% 68%);
-  --color-primary-glow: hsl(155 29% 68% / .13);
-  --on-accent: hsl(165 20% 12%);
+  --text-secondary: hsl(255 8% 73%);
+  --text-muted: hsl(255 8% 67%);
+  --color-primary: hsl(260 60% 76%);
+  --color-primary-glow: hsl(260 60% 76% / .13);
+  --on-accent: hsl(255 20% 12%);
   --color-urgent: #f39aaa;
   --color-warning: #e6bb71;
   --color-safe: #9bceb3;
-  --shadow-lg: 0 8px 28px hsl(160 20% 4% / .12);
+  --shadow-lg: 0 8px 28px hsl(255 20% 4% / .12);
   --shadow-neon: none;
 }
 body[data-theme] { margin: 0; background: var(--bg-primary); color: var(--text-primary); font-size: 16px; line-height: 1.5; }

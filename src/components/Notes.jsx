@@ -66,7 +66,7 @@ function Notes() {
   };
 
   const deleteSelectedNote = () => {
-    if (!selectedNote || !window.confirm('Xóa ghi chú này?')) return;
+    if (!selectedNote) return;
     setNotes((current) => current.filter((note) => note.id !== selectedNote.id));
     setSelectedId(null);
   };
