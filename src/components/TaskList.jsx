@@ -8,7 +8,7 @@ function todayDate() {
 
 export default function TaskList({ exams, generalTasks, subject, onSubjectChange, onAddTask, onToggleTask, onDeleteTask, onPlanTask, onStart }) {
   const [text, setText] = useState('');
-  const [status, setStatus] = useState('all');
+  const [status, setStatus] = useState('open');
   const [scope, setScope] = useState('daily');
   const [date, setDate] = useState(todayDate);
   const tasks = flattenStudyTasks(exams, generalTasks);
@@ -20,7 +20,7 @@ export default function TaskList({ exams, generalTasks, subject, onSubjectChange
     if (!text.trim()) return;
     onAddTask(subject === 'all' ? 'general' : subject, text.trim(), '', 1, false, true, scope === 'daily' ? date : '');
     setText('');
-    setStatus('all');
+    setStatus('open');
   };
   return <section className="simple-panel" aria-labelledby="tasks-title">
     <h2 id="tasks-title">Việc cần làm</h2>
