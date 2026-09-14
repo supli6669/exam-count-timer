@@ -17,11 +17,11 @@ function formatICalDate(dateInput) {
  */
 function escapeICalText(text) {
   if (!text) return '';
-  return text
+  return String(text)
     .replace(/\\/g, '\\\\')
     .replace(/;/g, '\\;')
     .replace(/,/g, '\\,')
-    .replace(/\n/g, '\\n');
+    .replace(/\r\n|\r|\n/g, '\\n');
 }
 
 /**
@@ -41,6 +41,7 @@ export function generateICalContent(examsInput) {
   ];
 
   exams.forEach(exam => {
+    if (!exam) return;
     const startDate = new Date(exam.datetime);
     if (isNaN(startDate.getTime())) return;
 
@@ -56,7 +57,7 @@ export function generateICalContent(examsInput) {
 
     icsLines.push(
       'BEGIN:VEVENT',
-      `UID:exam-${exam.id || Date.now()}@examcountdowntimer`,
+      `UID:exam-${encodeURIComponent(String(exam.id || Date.now()))}@examcountdowntimer`,
       `DTSTAMP:${nowStr}`,
       `DTSTART:${startStr}`,
       `DTEND:${endStr}`,

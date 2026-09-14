@@ -1,6 +1,7 @@
+import { persistentStorage, transientStorage } from '../utils/persistence';
 import { useEffect, useMemo, useState } from 'react';
 import { safeJsonParse } from '../utils/storage';
-import { consolidateNotes, NOTES_KEY, NOTES_MIGRATION_KEY } from '../utils/notes';
+import { consolidateNotes, normalizeNotes, NOTES_KEY, NOTES_MIGRATION_KEY } from '../utils/notes';
 
 const makeNote = () => ({
   id: `note-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
@@ -21,23 +22,24 @@ const formatUpdatedAt = (timestamp) => {
 function Notes() {
   const [notes, setNotes] = useState(() => {
     const saved = safeJsonParse(NOTES_KEY, []);
-    const current = Array.isArray(saved) ? saved : [];
-    return localStorage.getItem(NOTES_MIGRATION_KEY) === 'true'
+    const current = normalizeNotes(saved);
+    return persistentStorage.getItem(NOTES_MIGRATION_KEY) === 'true'
       ? current
       : consolidateNotes(current, safeJsonParse('focus_distractions_v1', []));
   });
-  const [selectedId, setSelectedId] = useState(() => sessionStorage.getItem('notes_selected_id'));
+  const [selectedId, setSelectedId] = useState(() => transientStorage.getItem('notes_selected_id'));
   const [query, setQuery] = useState('');
   const [showEditor, setShowEditor] = useState(true);
   useEffect(() => {
-    if (selectedId) sessionStorage.setItem('notes_selected_id', selectedId);
-    else sessionStorage.removeItem('notes_selected_id');
+    if (selectedId) transientStorage.setItem('notes_selected_id', selectedId);
+    else transientStorage.removeItem('notes_selected_id');
   }, [selectedId]);
 
   useEffect(() => {
     // Persist immediately so switching tabs cannot cancel a pending note save.
-    localStorage.setItem(NOTES_KEY, JSON.stringify(notes));
-    localStorage.setItem(NOTES_MIGRATION_KEY, 'true');
+    if (persistentStorage.setItem(NOTES_KEY, JSON.stringify(notes))) {
+      persistentStorage.setItem(NOTES_MIGRATION_KEY, 'true');
+    }
   }, [notes]);
 
   const visibleNotes = useMemo(() => {

@@ -2,16 +2,11 @@
 <html lang="vi">
   <head>
     <meta charset="UTF-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; connect-src 'self'; form-action 'self'; frame-src https://open.spotify.com; img-src 'self' data: blob:; media-src 'self' https://www.soundjay.com; object-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; worker-src 'self'" />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⏱️</text></svg>" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <script>
-      try {
-        const saved = localStorage.getItem('app_global_theme');
-        const theme = saved === 'dark' || (saved === 'system' && matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
-        document.documentElement.dataset.theme = theme;
-        document.documentElement.style.colorScheme = theme;
-      } catch { /* Use the stylesheet default when storage is unavailable. */ }
-    </script>
+    <script src="/theme-init.js"></script>
     
     <!-- Primary Meta Tags -->
     <title>flocus / 02 — Focus your next move</title>

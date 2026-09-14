@@ -1,3 +1,7 @@
+import { persistentStorage } from './persistence.js';
+import { BACKUP_KEYS } from './backup.js';
+import { isSafeBackground, parseSpotifyUrl } from './urls.js';
+
 /**
  * Utility functions for local storage data validation and maintenance
  */
@@ -7,80 +11,42 @@
  * Returns { valid: boolean, error?: string }
  */
 export function validateBackupJSON(data) {
-  if (!data || typeof data !== 'object' || Array.isArray(data)) {
-    return { valid: false, error: 'Tập tin JSON không chứa cấu trúc đối tượng hợp lệ.' };
-  }
-
-  // Known valid keys that are expected in backups
-  const knownKeys = [
-    'exams_countdown_list',
-    'exams_general_tasks',
-    'app_global_theme',
-    'notifications_enabled',
-    'pomodoro_work',
-    'pomodoro_short_break',
-    'pomodoro_long_break',
-    'pomodoro_study_logs',
-    'pomodoro_user_xp',
-    'pomodoro_user_level',
-    'pomodoro_username',
-    'pomodoro_focus_task',
-    'app_leitner_flashcards',
-    'app_study_streak_data',
-    'exam_countdown_notes',
-    'daily_tasks_list',
-    'recurring_tasks_list',
-    'pomodoro_custom_bg',
-    'pomodoro_custom_theme_data',
-    'focus_planner_v1',
-    'focus_task_templates_v1',
-    'focus_distractions_v1',
-    'focus_widget_order_v1',
-    'focus_workspace_widget_order_v1',
-    'focus_workspace_scratchpad',
-    'focus_integrations_v1',
-    'study_room_display_name',
-    'study_room_blocked_ids'
-  ];
-
-  const hasAtLeastOneValidKey = Object.keys(data).some(key => knownKeys.includes(key));
-  if (!hasAtLeastOneValidKey) {
-    return { valid: false, error: 'Tập tin sao lưu không chứa bất kỳ dữ liệu cấu hình hợp lệ nào của ứng dụng.' };
-  }
-
-  // Helper to parse if value is a JSON string
-  const parseIfString = (val) => {
-    if (typeof val === 'string') {
-      try { return JSON.parse(val); } catch { return val; }
-    }
-    return val;
+  const fail = key => ({ valid: false, error: `Dữ liệu sao lưu không hợp lệ: ${key}.` });
+  if (!data || typeof data !== 'object' || Array.isArray(data)) return fail('cấu trúc JSON');
+  if (!Object.keys(data).some(key => BACKUP_KEYS.includes(key))) return fail('không có dữ liệu ứng dụng');
+  const record = value => value !== null && typeof value === 'object' && !Array.isArray(value);
+  const id = value => typeof value === 'string' && value.length > 0;
+  const text = value => typeof value === 'string';
+  const date = value => text(value) && Number.isFinite(Date.parse(value));
+  const task = value => record(value) && id(value.id) && text(value.text) &&
+    (value.completed === undefined || typeof value.completed === 'boolean');
+  const array = (value, check) => Array.isArray(value) && value.every(check);
+  const schemas = {
+    exams_countdown_list: value => array(value, exam => record(exam) && id(exam.id) && text(exam.subject) && date(exam.datetime) &&
+      (exam.tasks === undefined || array(exam.tasks, task))),
+    exams_general_tasks: value => array(value, task),
+    daily_tasks_list: value => array(value, task),
+    exam_countdown_notes: value => array(value, note => record(note) && id(note.id) && text(note.title) && text(note.content) &&
+      Number.isFinite(note.updatedAt) && Number.isFinite(new Date(note.updatedAt).getTime()) && (note.tags === undefined || array(note.tags, text))),
+    app_leitner_flashcards: value => array(value, card => record(card) && id(card.id) && text(card.question) && text(card.answer) &&
+      Number.isInteger(card.box) && card.box >= 1 && card.box <= 5 && (!card.nextReviewDate || date(card.nextReviewDate))),
+    pomodoro_study_logs: value => array(value, log => record(log) && Number.isFinite(log.timestamp) &&
+      Number.isFinite(log.seconds) && log.seconds >= 0),
+    app_global_theme: value => ['light', 'dark', 'system'].includes(value),
+    pomodoro_custom_bg: value => value === null || value === '' || isSafeBackground(value),
+    pomodoro_spotify_url: value => Boolean(parseSpotifyUrl(value)),
   };
-
-
-  // Validate exams array if present
-  if (data.exams_countdown_list) {
-    const exams = parseIfString(data.exams_countdown_list);
-    if (!Array.isArray(exams)) {
-      return { valid: false, error: 'Danh sách môn thi (exams_countdown_list) phải là một mảng.' };
+  for (const [key, raw] of Object.entries(data)) {
+    if (!BACKUP_KEYS.includes(key)) continue;
+    let value = raw;
+    if (typeof raw === 'string') {
+      try { value = JSON.parse(raw); } catch { /* Plain text preferences are valid. */ }
     }
-    for (const exam of exams) {
-      if (!exam || !exam.id || !exam.subject || !exam.datetime) {
-        return { valid: false, error: 'Phát hiện môn thi thiếu thông tin bắt buộc (id, subject, datetime).' };
-      }
-      if (isNaN(new Date(exam.datetime).getTime())) {
-        return { valid: false, error: `Thời gian thi không hợp lệ cho môn: ${exam.subject}` };
-      }
-    }
+    if (schemas[key] && !schemas[key](value)) return fail(key);
+    if (['notifications_enabled', 'auto_delete_passed_exams', 'tasks_consolidated_v1', 'notes_consolidated_v1'].includes(key) && typeof value !== 'boolean') return fail(key);
+    if (['pomodoro_work', 'pomodoro_short_break', 'pomodoro_long_break'].includes(key) &&
+        (!Number.isInteger(value) || value < 1 || value > (key === 'pomodoro_work' ? 120 : 60))) return fail(key);
   }
-
-  // Validate study logs array if present
-  if (data.pomodoro_study_logs) {
-    const logs = parseIfString(data.pomodoro_study_logs);
-    if (!Array.isArray(logs)) {
-      return { valid: false, error: 'Nhật ký học tập (pomodoro_study_logs) phải là một mảng.' };
-    }
-  }
-
   return { valid: true };
 }
 
@@ -90,16 +56,16 @@ export function validateBackupJSON(data) {
  */
 export function pruneOldStudyLogs(maxDays = 180) {
   try {
-    const raw = localStorage.getItem('pomodoro_study_logs');
+    const raw = persistentStorage.getItem('pomodoro_study_logs');
     if (!raw) return;
     const logs = JSON.parse(raw);
     if (!Array.isArray(logs) || logs.length === 0) return;
 
     const cutoffTime = Date.now() - (maxDays * 24 * 60 * 60 * 1000);
-    const filteredLogs = logs.filter(log => log.timestamp && log.timestamp >= cutoffTime);
+    const filteredLogs = logs.filter(log => log && log.timestamp && log.timestamp >= cutoffTime);
 
     if (filteredLogs.length < logs.length) {
-      localStorage.setItem('pomodoro_study_logs', JSON.stringify(filteredLogs));
+      persistentStorage.setItem('pomodoro_study_logs', JSON.stringify(filteredLogs));
       console.log(`Pruned ${logs.length - filteredLogs.length} old study logs older than ${maxDays} days.`);
     }
   } catch (err) {
@@ -112,7 +78,7 @@ export function pruneOldStudyLogs(maxDays = 180) {
  */
 export function safeJsonParse(key, fallback) {
   try {
-    const item = localStorage.getItem(key);
+    const item = persistentStorage.getItem(key);
     return item ? JSON.parse(item) : fallback;
   } catch (err) {
     console.warn(`Failed to parse LocalStorage key "${key}", using fallback:`, err);

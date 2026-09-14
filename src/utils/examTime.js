@@ -18,7 +18,10 @@ export function filterActiveExams(exams, autoDeletePassed = true, now = Date.now
   if (!autoDeletePassed) return exams;
   return exams.filter(exam => {
     if (!exam || !exam.datetime) return true;
-    return new Date(exam.datetime).getTime() > now;
+    // Keep study tasks and history even after their exam date passes.
+    if (Array.isArray(exam.tasks) && exam.tasks.length > 0) return true;
+    const timestamp = new Date(exam.datetime).getTime();
+    return !Number.isFinite(timestamp) || timestamp > now;
   });
 }
 

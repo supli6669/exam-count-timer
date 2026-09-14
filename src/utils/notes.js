@@ -21,3 +21,13 @@ export function consolidateNotes(notes, thoughts, now = Date.now()) {
   });
   return result;
 }
+
+export function normalizeNotes(notes) {
+  return (Array.isArray(notes) ? notes : []).filter(note => note && typeof note.id === 'string').map(note => ({
+    ...note,
+    title: typeof note.title === 'string' ? note.title : '',
+    content: typeof note.content === 'string' ? note.content : '',
+    tags: Array.isArray(note.tags) ? note.tags.filter(tag => typeof tag === 'string') : [],
+    updatedAt: Number.isFinite(note.updatedAt) && Number.isFinite(new Date(note.updatedAt).getTime()) ? note.updatedAt : Date.now()
+  }));
+}

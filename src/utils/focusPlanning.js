@@ -17,11 +17,12 @@ export function normalizeStudyTask(task) {
 
 export function migrateStudyData(exams = [], generalTasks = []) {
   return {
-    exams: exams.map((exam) => ({
+    exams: (Array.isArray(exams) ? exams : []).filter(exam => exam && typeof exam.id === 'string').map((exam) => ({
       ...exam,
-      tasks: Array.isArray(exam.tasks) ? exam.tasks.map(normalizeStudyTask) : []
+      subject: typeof exam.subject === 'string' ? exam.subject : 'Môn học',
+      tasks: Array.isArray(exam.tasks) ? exam.tasks.filter(task => task && typeof task.id === 'string' && typeof task.text === 'string').map(normalizeStudyTask) : []
     })),
-    generalTasks: generalTasks.map(normalizeStudyTask)
+    generalTasks: (Array.isArray(generalTasks) ? generalTasks : []).filter(task => task && typeof task.id === 'string' && typeof task.text === 'string').map(normalizeStudyTask)
   };
 }
 

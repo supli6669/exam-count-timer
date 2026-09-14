@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
 
 function DatePicker({ value, onChange }) {
+  const inputId = useId();
   const date = value ? new Date(value) : new Date();
   
   const [year, setYear] = useState(date.getFullYear());
@@ -34,7 +35,9 @@ function DatePicker({ value, onChange }) {
   const handleYearChange = (e) => {
     const newYear = parseInt(e.target.value);
     setYear(newYear);
-    updateDate(newYear, month, day, hour, minute);
+    const adjustedDay = Math.min(day, getDaysInMonth(newYear, month));
+    setDay(adjustedDay);
+    updateDate(newYear, month, adjustedDay, hour, minute);
   };
 
   const handleMonthChange = (e) => {
@@ -104,9 +107,9 @@ function DatePicker({ value, onChange }) {
     <div className="date-picker">
       <div className="date-picker-row">
         <div className="date-picker-field">
-          <label>Năm</label>
+          <label htmlFor={`${inputId}-year`}>Năm</label>
           <select
-            value={year}
+            id={`${inputId}-year`} aria-label="Năm" value={year}
             onChange={handleYearChange}
             className="date-select"
           >
@@ -117,9 +120,9 @@ function DatePicker({ value, onChange }) {
         </div>
 
         <div className="date-picker-field">
-          <label>Tháng</label>
+          <label htmlFor={`${inputId}-month`}>Tháng</label>
           <select
-            value={month}
+            id={`${inputId}-month`} aria-label="Tháng" value={month}
             onChange={handleMonthChange}
             className="date-select"
           >
@@ -130,9 +133,9 @@ function DatePicker({ value, onChange }) {
         </div>
 
         <div className="date-picker-field">
-          <label>Ngày</label>
+          <label htmlFor={`${inputId}-day`}>Ngày</label>
           <select
-            value={day}
+            id={`${inputId}-day`} aria-label="Ngày" value={day}
             onChange={handleDayChange}
             className="date-select"
           >
@@ -145,9 +148,9 @@ function DatePicker({ value, onChange }) {
 
       <div className="date-picker-row">
         <div className="date-picker-field">
-          <label>Giờ</label>
+          <label htmlFor={`${inputId}-hour`}>Giờ</label>
           <select
-            value={hour}
+            id={`${inputId}-hour`} aria-label="Giờ" value={hour}
             onChange={handleHourChange}
             className="date-select"
           >
@@ -158,9 +161,9 @@ function DatePicker({ value, onChange }) {
         </div>
 
         <div className="date-picker-field">
-          <label>Phút</label>
+          <label htmlFor={`${inputId}-minute`}>Phút</label>
           <select
-            value={minute}
+            id={`${inputId}-minute`} aria-label="Phút" value={minute}
             onChange={handleMinuteChange}
             className="date-select"
           >

@@ -1,16 +1,16 @@
-import { useState } from 'react';
+import { useState, useSyncExternalStore } from 'react';
 import { flattenStudyTasks } from '../utils/focusPlanning';
 
-function todayDate() {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-}
+import { getLocalDateKey, localDateFromKey } from '../utils/date';
+import { subscribeToLocalDay } from '../utils/dailyPlan';
 
 export default function TaskList({ exams, generalTasks, subject, onSubjectChange, onAddTask, onToggleTask, onDeleteTask, onPlanTask, onStart }) {
   const [text, setText] = useState('');
   const [status, setStatus] = useState('open');
   const [scope, setScope] = useState('daily');
-  const [date, setDate] = useState(todayDate);
+  const today = useSyncExternalStore(subscribeToLocalDay, getLocalDateKey, getLocalDateKey);
+  const [selectedDate, setDate] = useState('');
+  const date = selectedDate || today;
   const tasks = flattenStudyTasks(exams, generalTasks);
   const scoped = tasks.filter(task => (subject === 'all' || task.examId === subject) && (scope === 'all' || (scope === 'daily' ? task.plannedDate === date : !task.plannedDate)));
   const done = scoped.filter(task => task.completed).length;
@@ -24,12 +24,12 @@ export default function TaskList({ exams, generalTasks, subject, onSubjectChange
   };
   return <section className="simple-panel" aria-labelledby="tasks-title">
     <h2 id="tasks-title">Việc cần làm</h2>
-    <p className="simple-description">Lên kế hoạch từng ngày, chọn việc cần tập trung và đánh dấu khi hoàn thành.</p>
+    <p className="simple-description">Việc chưa hoàn thành sẽ tự dồn sang ngày tiếp theo. Chọn việc cần tập trung và đánh dấu khi hoàn thành.</p>
     <div className="daily-plan-controls">
       <div className="daily-plan-tabs" role="group" aria-label="Chế độ xem công việc">
         {[['daily', 'Daily Plan'], ['unplanned', 'Chưa lên lịch'], ['all', 'Tất cả việc']].map(([value, label]) => <button key={value} className={`btn ${scope === value ? 'btn-primary' : 'btn-secondary'}`} aria-pressed={scope === value} onClick={() => setScope(value)}>{label}</button>)}
       </div>
-      {scope === 'daily' && <div className="daily-plan-date"><label>Ngày kế hoạch<input type="date" value={date} onChange={event => { if (event.target.value) setDate(event.target.value); }} /></label><button className="btn btn-secondary" onClick={() => setDate(todayDate())}>Hôm nay</button></div>}
+      {scope === 'daily' && <div className="daily-plan-date"><label>Ngày kế hoạch<input type="date" value={date} onChange={event => { if (event.target.value) setDate(event.target.value === today ? '' : event.target.value); }} /></label><button className="btn btn-secondary" onClick={() => setDate('')}>Hôm nay</button></div>}
     </div>
     {scope === 'daily' && <div className="daily-plan-progress"><span role="status">{done}/{scoped.length} việc đã hoàn thành trong ngày{subject !== 'all' ? ' · Theo môn đã chọn' : ''}</span><progress aria-label="Tiến độ kế hoạch trong ngày" value={done} max={scoped.length || 1} /></div>}
     <div className="simple-filters">
@@ -45,7 +45,7 @@ export default function TaskList({ exams, generalTasks, subject, onSubjectChange
     </form>
     <p role="status" className="simple-description">{scoped.length - done} việc chưa xong trong mục này · Đang hiện {visible.length} việc</p>
     <ul className="simple-task-list">{visible.map(task => <li key={task.key}>
-      <label className="simple-task-label"><input type="checkbox" checked={task.completed} onChange={() => onToggleTask(task.examId, task.id)} /><span className={task.completed ? 'task-done' : ''}>{task.text}<small>{task.subject}{task.deadline && !Number.isNaN(Date.parse(task.deadline)) ? ` · Hạn: ${new Date(task.deadline).toLocaleString('vi-VN')}` : ''}</small></span></label>
+      <label className="simple-task-label"><input type="checkbox" checked={task.completed} onChange={() => onToggleTask(task.examId, task.id)} /><span className={task.completed ? 'task-done' : ''}>{task.text}<small>{task.subject}{task.carriedFromDate && ` · Dồn từ ngày ${localDateFromKey(task.carriedFromDate).toLocaleDateString('vi-VN')}`}{task.deadline && !Number.isNaN(Date.parse(task.deadline)) ? ` · Hạn: ${new Date(task.deadline).toLocaleString('vi-VN')}` : ''}</small></span></label>
       <div className="simple-task-actions"><label className="task-plan-date">Ngày làm<input type="date" aria-label={`Ngày làm: ${task.text}`} value={task.plannedDate || ''} onChange={event => onPlanTask(task.examId, task.id, event.target.value)} /></label>{task.plannedDate && <button className="btn btn-secondary" aria-label={`Bỏ lịch: ${task.text}`} onClick={() => onPlanTask(task.examId, task.id, '')}>Bỏ lịch</button>}{!task.completed && <button className="btn btn-secondary" aria-label={`Tập trung: ${task.text}`} onClick={() => onStart({ examId: task.examId, taskId: task.id })}>Tập trung</button>}
         <button className="btn btn-secondary" aria-label={`Xóa việc: ${task.text}`} onClick={() => onDeleteTask(task.examId, task.id)}>Xóa</button></div>
     </li>)}</ul>

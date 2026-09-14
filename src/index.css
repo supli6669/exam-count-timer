@@ -859,7 +859,6 @@ body {
   flex-direction: column;
   gap: 0.4rem;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  cursor: pointer;
   position: relative;
 }
 
@@ -899,7 +898,18 @@ body {
   color: var(--text-primary);
 }
 
+.calendar-day-action {
+  appearance: none;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+}
+
 .add-exam-hover-btn {
+  border: 0;
+  padding: 0;
   font-size: 1rem;
   color: var(--text-secondary);
   font-weight: 800;
@@ -946,6 +956,11 @@ body {
   text-overflow: ellipsis;
   transition: transform 0.1s ease;
   max-width: 100%;
+  width: 100%;
+  border: 0;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
 }
 
 .calendar-exam-badge:hover {
@@ -976,10 +991,14 @@ body {
 }
 
 .more-exams-badge {
+  border: 0;
+  background: transparent;
   font-size: 0.7rem;
   color: var(--text-secondary);
   font-weight: 700;
   padding-left: 0.2rem;
+  cursor: pointer;
+  text-align: left;
 }
 
 /* Legend Styling */
@@ -1230,9 +1249,15 @@ body {
 
 .spotify-player-header {
   display: flex;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: var(--text-primary);
+  font: inherit;
   justify-content: space-between;
   align-items: center;
   cursor: pointer;
+  text-align: left;
   user-select: none;
   padding-bottom: 0.5rem;
 }
@@ -1399,11 +1424,24 @@ body {
   justify-content: space-between;
   align-items: center;
   padding: 0.85rem 1.2rem;
-  cursor: pointer;
   user-select: none;
   background: rgba(255, 255, 255, 0.02);
   border-bottom: 1px solid rgba(255, 255, 255, 0.03);
   transition: background 0.2s ease;
+}
+
+.soundboard-toggle {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  align-items: center;
+  gap: 0.5rem;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
 }
 
 .soundboard-header:hover {

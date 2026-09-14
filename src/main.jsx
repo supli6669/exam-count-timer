@@ -4,10 +4,11 @@ import './index.css'
 import './simple.css'
 import './calm.css'
 import App from './App.jsx'
+import ErrorBoundary from './components/ErrorBoundary.jsx'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <App />
+    <ErrorBoundary><App /></ErrorBoundary>
   </StrictMode>,
 )
 

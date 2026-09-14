@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { CATEGORIES } from '../constants';
+import { useModalFocus } from '../utils/useModalFocus';
 
 function CalendarView({ exams, onEdit, onDelete, onCreate }) {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -55,6 +56,16 @@ function CalendarView({ exams, onEdit, onDelete, onCreate }) {
     const dayExams = examsByDate[dKey] || [];
     return dayExams.length > 0 ? dayExams : null;
   }, [examsByDate, selectedDateStr]);
+  const detailsModalRef = useModalFocus(Boolean(selectedDayExams));
+
+  useEffect(() => {
+    if (!selectedDayExams) return;
+    const closeOnEscape = event => {
+      if (event.key === 'Escape') setSelectedDateStr('');
+    };
+    window.addEventListener('keydown', closeOnEscape);
+    return () => window.removeEventListener('keydown', closeOnEscape);
+  }, [selectedDayExams]);
 
   const handleMonthChange = (e) => {
     setCurrentDate(new Date(year, parseInt(e.target.value), 1));
@@ -107,6 +118,12 @@ function CalendarView({ exams, onEdit, onDelete, onCreate }) {
     return `Còn ${parts.join(' ')}`;
   };
 
+  const createExamForDay = (day) => {
+    const targetDate = new Date(year, month, day, 9, 0);
+    const tzOffset = targetDate.getTimezoneOffset() * 60000;
+    onCreate(new Date(targetDate - tzOffset).toISOString().slice(0, 16));
+  };
+
   const handleDayClick = (day) => {
     const dateKey = `${year}-${month}-${day}`;
     const dayExams = examsByDate[dateKey] || [];
@@ -114,11 +131,7 @@ function CalendarView({ exams, onEdit, onDelete, onCreate }) {
     if (dayExams.length > 0) {
       setSelectedDateStr(`${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`);
     } else {
-      // Direct create on that day (defaulting to 09:00 AM)
-      const targetDate = new Date(year, month, day, 9, 0);
-      const tzOffset = targetDate.getTimezoneOffset() * 60000;
-      const localISOTime = new Date(targetDate - tzOffset).toISOString().slice(0, 16);
-      onCreate(localISOTime);
+      createExamForDay(day);
     }
   };
 
@@ -209,17 +222,15 @@ function CalendarView({ exams, onEdit, onDelete, onCreate }) {
             <div 
               key={index} 
               className={`calendar-day ${isToday ? 'today' : ''} ${dayExams.length > 0 ? 'has-exams' : ''}`}
-              onClick={() => handleDayClick(day)}
             >
               <div className="calendar-day-header">
-                <span className="day-number">{day}</span>
-                <span className="add-exam-hover-btn" title="Thêm môn thi cho ngày này" onClick={(e) => {
-                  e.stopPropagation();
-                  const targetDate = new Date(year, month, day, 9, 0);
-                  const tzOffset = targetDate.getTimezoneOffset() * 60000;
-                  const localISOTime = new Date(targetDate - tzOffset).toISOString().slice(0, 16);
-                  onCreate(localISOTime);
-                }}>+</span>
+                <button
+                  type="button"
+                  className="calendar-day-action day-number"
+                  onClick={() => handleDayClick(day)}
+                  aria-label={dayExams.length ? `Xem ${dayExams.length} môn thi ngày ${day}` : `Thêm lịch thi ngày ${day}`}
+                >{day}</button>
+                <button type="button" className="add-exam-hover-btn" aria-label={`Thêm môn thi ngày ${day}`} title="Thêm môn thi cho ngày này" onClick={() => createExamForDay(day)}>+</button>
               </div>
               <div className="day-exams-container">
                 {dayExams.slice(0, 3).map((exam) => {
@@ -227,24 +238,24 @@ function CalendarView({ exams, onEdit, onDelete, onCreate }) {
                   const status = getExamStatus(exam);
                   const examTime = new Date(exam.datetime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
                   return (
-                    <div
+                    <button
+                      type="button"
                       key={exam.id}
                       className={`calendar-exam-badge ${catInfo.class} status-border-${status}`}
+                      aria-label={`Xem lịch thi ${exam.subject}, ${examTime}`}
                       title={`${examTime} - ${exam.subject}`}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        // Open details modal
+                      onClick={() => {
                         setSelectedDateStr(`${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`);
                       }}
                     >
                       <span className={`exam-status-dot ${status}`}></span>
                       <span className="exam-badge-time">{examTime}</span>
                       <span className="exam-badge-subject">{exam.subject}</span>
-                    </div>
+                    </button>
                   );
                 })}
                 {dayExams.length > 3 && (
-                  <span className="more-exams-badge">+{dayExams.length - 3} môn khác</span>
+                  <button type="button" className="more-exams-badge" onClick={() => setSelectedDateStr(`${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`)}>+{dayExams.length - 3} môn khác</button>
                 )}
               </div>
             </div>
@@ -287,10 +298,10 @@ function CalendarView({ exams, onEdit, onDelete, onCreate }) {
       {/* Day Details Modal */}
       {selectedDayExams && (
         <div className="modal-overlay" onClick={() => { setSelectedDateStr(''); }}>
-          <div className="modal-content day-details-content" onClick={(e) => e.stopPropagation()}>
+          <div ref={detailsModalRef} className="modal-content day-details-content" role="dialog" aria-modal="true" aria-labelledby="day-details-title" tabIndex={-1} onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <div>
-                <h2 className="modal-title">Lịch thi ngày {selectedDateStr.split('-').reverse().join('/')}</h2>
+                <h2 id="day-details-title" className="modal-title">Lịch thi ngày {selectedDateStr.split('-').reverse().join('/')}</h2>
                 <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
                   Tổng số: {selectedDayExams.length} môn thi
                 </p>
@@ -334,9 +345,11 @@ function CalendarView({ exams, onEdit, onDelete, onCreate }) {
                       <button 
                         className="btn-icon edit" 
                         onClick={() => {
+                          setSelectedDateStr('');
                           onEdit(exam);
                         }} 
                         title="Sửa môn thi"
+                        aria-label={`Sửa môn thi ${exam.subject}`}
                       >
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                           <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
@@ -347,6 +360,7 @@ function CalendarView({ exams, onEdit, onDelete, onCreate }) {
                         className="btn-icon delete" 
                         onClick={() => onDelete(exam.id)} 
                         title="Xóa môn thi"
+                        aria-label={`Xóa môn thi ${exam.subject}`}
                       >
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                           <polyline points="3 6 5 6 21 6"></polyline>

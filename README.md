@@ -37,4 +37,15 @@ npm test
 npm run build
 ```
 
-Vercel tự triển khai từ nhánh `main`. Mỗi đợt phát hành tăng phiên bản cache trong `public/sw.js` để PWA nhận bản mới.
+Vercel tự triển khai từ nhánh `main`. Build tự sinh phiên bản cache và danh sách JS/CSS trong service worker. Bản mới kích hoạt khi các tab dùng bản cũ đã đóng, tránh trộn tài nguyên giữa hai bản.
+
+
+## An toàn dữ liệu và bảo mật
+
+Daily Plan tự chuyển task chưa hoàn thành từ ngày cũ sang hôm nay theo giờ địa phương, giữ ngày gốc để hiển thị nhãn. Môn thi có task không bị tự dọn khi hết giờ.
+
+Backup tối đa 5 MB, kiểm tra các danh sách chính trước khi nhập và phục hồi dữ liệu cũ nếu ghi thất bại. Khi bộ nhớ đầy/bị chặn, thay đổi vẫn nằm trong bộ nhớ của phiên đang mở và có cảnh báo yêu cầu sao lưu. Không đóng trang trước khi xuất bản sao lưu nếu có cảnh báo này.
+
+URL nhúng chỉ chấp nhận Spotify HTTPS hợp lệ. Ảnh nền chỉ chấp nhận PNG/JPEG/WebP/GIF tối đa 2 MB. Production dùng CSP chặn script inline và iframe ngoài Spotify; Vite dev bỏ CSP để Fast Refresh hoạt động. `vercel.json` bổ sung header chống nhúng trang, MIME sniffing và cache lại service worker; cần kiểm tra header thực tế sau deploy. Tham khảo [MDN CSP](https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/CSP) và [Vercel headers](https://vercel.com/docs/project-configuration/vercel-json).
+
+Đây là ứng dụng lưu dữ liệu tại trình duyệt, chưa có đồng bộ tài khoản hoặc xử lý xung đột chỉnh sửa cùng dữ liệu ở nhiều tab. CSP vẫn cho phép inline CSS vì giao diện sử dụng React style. Kiểm tra dependency bằng `npm audit`; kết quả không thay thế kiểm thử bảo mật đầy đủ.

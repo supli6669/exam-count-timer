@@ -1,3 +1,4 @@
+import { persistentStorage, useStorageFailure } from './utils/persistence';
 import { useState, useEffect, useCallback, useMemo, useRef, lazy, Suspense, memo } from 'react';
 import ExamCard from './components/ExamCard';
 import Icon from './components/Icon';
@@ -15,6 +16,8 @@ import Notes from './components/Notes';
 import TaskList from './components/TaskList';
 import FocusStatsTab from './components/FocusStatsTab';
 import { consolidateTasks } from './utils/tasks';
+import { rolloverTasks, rolloverExams, subscribeToLocalDay } from './utils/dailyPlan';
+import { getLocalDateKey } from './utils/date';
 import { calculateTimeLeft, filterActiveExams } from './utils/examTime';
 import { useCurrentTime } from './utils/clock';
 
@@ -125,14 +128,15 @@ const getInitialMockData = () => {
 };
 
 function App() {
+  const storageFailed = useStorageFailure();
   const [exams, setExams] = useState(() => {
     // Only show examples for a brand-new installation. An empty saved array is
     // a valid user choice after deleting every exam.
-    if (localStorage.getItem('exams_countdown_list') === null) {
+    if (persistentStorage.getItem('exams_countdown_list') === null) {
       return getInitialMockData();
     }
     const parsed = safeJsonParse('exams_countdown_list', []);
-    return Array.isArray(parsed) ? migrateStudyData(parsed, []).exams : getInitialMockData();
+    return Array.isArray(parsed) ? rolloverExams(migrateStudyData(parsed, []).exams) : getInitialMockData();
   });
 
 
@@ -142,7 +146,7 @@ function App() {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [sortBy, setSortBy] = useState('date-asc'); // date-asc, date-desc, name-asc
   const [notificationsEnabled, setNotificationsEnabled] = useState(() => {
-    return localStorage.getItem('notifications_enabled') === 'true';
+    return persistentStorage.getItem('notifications_enabled') === 'true';
   });
   const [viewMode, setViewMode] = useState('exams'); // exams, tasks, notes, or analytics
   const [examsView, setExamsView] = useState('card'); // 'card' or 'calendar'
@@ -182,21 +186,28 @@ function App() {
   const [generalTasks, setGeneralTasks] = useState(() => {
     const parsed = safeJsonParse('exams_general_tasks', []);
     const current = migrateStudyData([], Array.isArray(parsed) ? parsed : []).generalTasks;
-    return localStorage.getItem('tasks_consolidated_v1') === 'true' ? current : consolidateTasks(current, safeJsonParse('daily_tasks_list', []), safeJsonParse('recurring_tasks_rule_of_3', {}));
+    return rolloverTasks(persistentStorage.getItem('tasks_consolidated_v1') === 'true' ? current : consolidateTasks(current, safeJsonParse('daily_tasks_list', []), safeJsonParse('recurring_tasks_rule_of_3', {})));
   });
 
 
 
+  useEffect(() => subscribeToLocalDay(() => {
+    const today = getLocalDateKey();
+    setGeneralTasks(tasks => rolloverTasks(tasks, today));
+    setExams(items => rolloverExams(items, today));
+  }), []);
+
   const [autoDeletePassed, setAutoDeletePassed] = useState(() => {
-    const saved = localStorage.getItem('auto_delete_passed_exams');
+    const saved = persistentStorage.getItem('auto_delete_passed_exams');
     return saved === null ? true : saved === 'true';
   });
 
   useEffect(() => {
-    localStorage.setItem('auto_delete_passed_exams', autoDeletePassed.toString());
+    persistentStorage.setItem('auto_delete_passed_exams', autoDeletePassed.toString());
   }, [autoDeletePassed]);
 
-  // Auto delete passed exams if enabled
+  // Remove only task-less exams when they pass. Schedule the next actual expiry
+  // instead of rechecking the full list every five seconds.
   useEffect(() => {
     if (!autoDeletePassed) return;
 
@@ -211,22 +222,37 @@ function App() {
     };
 
     checkAndPrunePassed();
-    const interval = setInterval(checkAndPrunePassed, 5000);
-    return () => clearInterval(interval);
-  }, [autoDeletePassed]);
+    const nextExpiry = exams.reduce((soonest, exam) => {
+      if (Array.isArray(exam?.tasks) && exam.tasks.length > 0) return soonest;
+      const timestamp = new Date(exam?.datetime).getTime();
+      return Number.isFinite(timestamp) && timestamp > Date.now()
+        ? Math.min(soonest, timestamp)
+        : soonest;
+    }, Infinity);
+    const maxTimeout = 2_147_483_647;
+    const timeout = Number.isFinite(nextExpiry)
+      ? window.setTimeout(checkAndPrunePassed, Math.min(Math.max(0, nextExpiry - Date.now()) + 100, maxTimeout))
+      : null;
+    window.addEventListener('focus', checkAndPrunePassed);
+    return () => {
+      if (timeout !== null) window.clearTimeout(timeout);
+      window.removeEventListener('focus', checkAndPrunePassed);
+    };
+  }, [autoDeletePassed, exams]);
 
   // Save to LocalStorage
   useEffect(() => {
-    localStorage.setItem('exams_countdown_list', JSON.stringify(exams));
+    persistentStorage.setItem('exams_countdown_list', JSON.stringify(exams));
   }, [exams]);
 
   useEffect(() => {
-    localStorage.setItem('exams_general_tasks', JSON.stringify(generalTasks));
-    localStorage.setItem('tasks_consolidated_v1', 'true');
+    if (persistentStorage.setItem('exams_general_tasks', JSON.stringify(generalTasks))) {
+      persistentStorage.setItem('tasks_consolidated_v1', 'true');
+    }
   }, [generalTasks]);
 
   const [activeTheme, setActiveTheme] = useState(() => {
-    const saved = localStorage.getItem('app_global_theme');
+    const saved = persistentStorage.getItem('app_global_theme');
     return ['light', 'dark', 'system'].includes(saved) ? saved : 'light';
   });
 
@@ -240,7 +266,7 @@ function App() {
     };
     apply();
     media.addEventListener('change', apply);
-    localStorage.setItem('app_global_theme', activeTheme);
+    persistentStorage.setItem('app_global_theme', activeTheme);
     return () => media.removeEventListener('change', apply);
   }, [activeTheme]);
 
@@ -250,7 +276,7 @@ function App() {
   }, []);
 
   const [username, setUsername] = useState(() => {
-    return localStorage.getItem('pomodoro_username') || '';
+    return persistentStorage.getItem('pomodoro_username') || '';
   });
   const [isEditingName, setIsEditingName] = useState(false);
   const [tempName, setTempName] = useState(username);
@@ -265,7 +291,7 @@ function App() {
   const handleSaveName = () => {
     const name = tempName.trim();
     setUsername(name);
-    localStorage.setItem('pomodoro_username', name);
+    persistentStorage.setItem('pomodoro_username', name);
     setIsEditingName(false);
   };
 
@@ -273,19 +299,20 @@ function App() {
   useEffect(() => {
     const handleGlobalKeyDown = (e) => {
       if (e.key === 'Escape') {
-        if (isModalOpen) setIsModalOpen(false);
+        if (isFlashcardsOpen) setIsFlashcardsOpen(false);
+        else if (isModalOpen) setIsModalOpen(false);
         else if (focusNotesOpen) setFocusNotesOpen(false);
         else if (isPomodoroOpen) setIsPomodoroOpen(false);
       }
     };
     window.addEventListener('keydown', handleGlobalKeyDown);
     return () => window.removeEventListener('keydown', handleGlobalKeyDown);
-  }, [isModalOpen, isPomodoroOpen, focusNotesOpen]);
+  }, [isModalOpen, isPomodoroOpen, focusNotesOpen, isFlashcardsOpen]);
 
   // Save notification setting
 
   useEffect(() => {
-    localStorage.setItem('notifications_enabled', notificationsEnabled.toString());
+    persistentStorage.setItem('notifications_enabled', notificationsEnabled.toString());
   }, [notificationsEnabled]);
 
   // Check and send notifications
@@ -304,7 +331,7 @@ function App() {
         // Notify if exam is within 24 hours and hasn't been notified yet
         if (hours > 0 && hours <= 24) {
           const notifiedKey = `notified_${exam.id}`;
-          const wasNotified = localStorage.getItem(notifiedKey);
+          const wasNotified = persistentStorage.getItem(notifiedKey);
 
           if (!wasNotified) {
             new Notification('Nhắc nhở kỳ thi', {
@@ -312,7 +339,7 @@ function App() {
               icon: '⏰',
               tag: exam.id
             });
-            localStorage.setItem(notifiedKey, 'true');
+            persistentStorage.setItem(notifiedKey, 'true');
           }
         }
       });
@@ -341,8 +368,8 @@ function App() {
 
   const handleOpenPomodoro = useCallback((focusTarget = null) => {
     if (focusTarget?.examId) {
-      localStorage.setItem('pomodoro_focus_subject', focusTarget.examId);
-      localStorage.setItem('pomodoro_focus_task', focusTarget.taskId || 'general');
+      persistentStorage.setItem('pomodoro_focus_subject', focusTarget.examId);
+      persistentStorage.setItem('pomodoro_focus_task', focusTarget.taskId || 'general');
       window.dispatchEvent(new CustomEvent('pomodoro-focus-target', { detail: focusTarget }));
     }
     setIsPomodoroOpen(true);
@@ -416,7 +443,7 @@ function App() {
   }, []);
 
   const handlePlanTask = useCallback((examId, taskId, plannedDate) => {
-    const update = task => task.id === taskId ? { ...task, plannedDate } : task;
+    const update = task => task.id === taskId ? { ...task, plannedDate, carriedFromDate: undefined } : task;
     if (examId === 'general') setGeneralTasks(tasks => tasks.map(update));
     else setExams(items => items.map(exam => exam.id === examId ? { ...exam, tasks: (exam.tasks || []).map(update) } : exam));
   }, []);
@@ -488,6 +515,7 @@ function App() {
 
   return (
     <div ref={appRoot} role={isPomodoroOpen ? 'dialog' : undefined} aria-modal={isPomodoroOpen ? true : undefined} aria-label={isPomodoroOpen ? 'Không gian học tập' : undefined} className={`app-container ${isPomodoroOpen && focusNotesOpen ? 'with-focus-notes' : ''}`}>
+      {storageFailed && <div role="alert" className="storage-warning">Không lưu được dữ liệu trên thiết bị. Mở Công cụ → Sao lưu dữ liệu trước khi đóng hoặc tải lại trang.</div>}
       <div className="app-pages" inert={isPomodoroOpen}>
       {/* App Header */}
       <header className="app-header">
@@ -795,7 +823,7 @@ function App() {
                   border: '1px solid var(--border-glass)',
                   userSelect: 'none'
                 }}
-                title="Tự động xóa môn thi khỏi danh sách ngay khi hết giờ"
+                title="Tự động xóa môn hết giờ nếu không có task; môn có task được giữ lại"
               >
                 <input
                   type="checkbox"
@@ -803,7 +831,7 @@ function App() {
                   onChange={(e) => setAutoDeletePassed(e.target.checked)}
                   style={{ accentColor: '#8b5cf6', cursor: 'pointer', width: '15px', height: '15px' }}
                 />
-                <span>⚡ Tự động xóa khi hết giờ</span>
+                <span>⚡ Dọn môn hết giờ không có task</span>
               </label>
 
               {stats.passed > 0 && !autoDeletePassed && (
@@ -820,7 +848,7 @@ function App() {
                     fontWeight: 600,
                     cursor: 'pointer'
                   }}
-                  title="Xóa ngay tất cả các môn đã hết giờ thi"
+                  title="Xóa các môn hết giờ không có task"
                 >
                   🗑️ Dọn dẹp ({stats.passed})
                 </button>

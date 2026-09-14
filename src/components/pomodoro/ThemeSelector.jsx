@@ -23,7 +23,7 @@ function ThemeSelector({ theme, setTheme, customBg, onCustomThemeUpload, onRemov
       <div><strong>Ảnh của bạn</strong><p className="simple-description">Dùng ảnh tĩnh làm nền cho phiên học.</p></div>
       <div><button className="btn btn-secondary" onClick={() => fileInput.current?.click()}>Tải ảnh lên</button>
         {customBg && <button className="btn btn-secondary" onClick={onRemoveCustomBg}>Xóa ảnh</button>}</div>
-      <input ref={fileInput} type="file" accept="image/*" hidden onChange={onCustomThemeUpload} aria-label="Chọn ảnh nền" />
+      <input ref={fileInput} type="file" accept="image/png,image/jpeg,image/webp,image/gif" hidden onChange={onCustomThemeUpload} aria-label="Chọn ảnh nền" />
     </div>
   </section>;
 }

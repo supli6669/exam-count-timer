@@ -1,4 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useModalFocus } from '../utils/useModalFocus';
+import { persistentStorage } from '../utils/persistence';
+import { useState, useEffect, useId } from 'react';
 import { getDueFlashcards, getNextReviewDate } from '../utils/studyPlanner';
 
 const INITIAL_CARDS = [
@@ -8,10 +10,14 @@ const INITIAL_CARDS = [
 ];
 
 export default function FlashcardsModal({ isOpen, onClose }) {
+  const modalRef = useModalFocus(isOpen);
+  const questionInputId = useId();
+  const answerInputId = useId();
   const [cards, setCards] = useState(() => {
     try {
-      const saved = localStorage.getItem('app_leitner_flashcards');
-      return saved ? JSON.parse(saved) : INITIAL_CARDS;
+      const saved = persistentStorage.getItem('app_leitner_flashcards');
+      const parsed = saved ? JSON.parse(saved) : INITIAL_CARDS;
+      return Array.isArray(parsed) ? parsed.filter(card => card && typeof card.question === 'string' && typeof card.answer === 'string').map(card => ({ ...card, box: Number.isInteger(card.box) && card.box >= 1 && card.box <= 5 ? card.box : 1 })) : [];
     } catch (e) {
       console.warn('Could not parse flashcards:', e);
       return INITIAL_CARDS;
@@ -26,18 +32,13 @@ export default function FlashcardsModal({ isOpen, onClose }) {
   const [newAnswer, setNewAnswer] = useState('');
 
   useEffect(() => {
-    localStorage.setItem('app_leitner_flashcards', JSON.stringify(cards));
+    persistentStorage.setItem('app_leitner_flashcards', JSON.stringify(cards));
     window.dispatchEvent(new Event('flashcards-updated'));
   }, [cards]);
 
   const dueCards = getDueFlashcards(cards);
   const filteredCards = activeBox === 'due' ? dueCards : activeBox === 0 ? cards : cards.filter(c => c.box === activeBox);
   const currentCard = filteredCards[currentIndex] || null;
-
-  const handleNext = () => {
-    setIsFlipped(false);
-    setCurrentIndex(prev => (prev + 1) % Math.max(1, filteredCards.length));
-  };
 
   const handleAnswer = (isCorrect) => {
     if (!currentCard) return;
@@ -50,7 +51,11 @@ export default function FlashcardsModal({ isOpen, onClose }) {
       return c;
     }));
 
-    handleNext();
+    // In a filtered queue the answered card disappears; its successor takes this index.
+    setIsFlipped(false);
+    const { nextBox } = getNextReviewDate(currentCard.box, isCorrect);
+    const leavesQueue = activeBox === 'due' || (activeBox !== 0 && nextBox !== activeBox);
+    setCurrentIndex(prev => leavesQueue ? prev % Math.max(1, filteredCards.length - 1) : (prev + 1) % Math.max(1, filteredCards.length));
   };
 
   const handleCreateCard = (e) => {
@@ -90,6 +95,11 @@ export default function FlashcardsModal({ isOpen, onClose }) {
       }}
     >
       <div
+        ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Thẻ ghi nhớ"
+        tabIndex={-1}
         className="modal-content glass-panel"
         onClick={(e) => e.stopPropagation()}
         style={{
@@ -114,6 +124,7 @@ export default function FlashcardsModal({ isOpen, onClose }) {
             </p>
           </div>
           <button
+            aria-label="Đóng thẻ ghi nhớ"
             onClick={onClose}
             style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', fontSize: '1.5rem', cursor: 'pointer' }}
           >
@@ -185,22 +196,26 @@ export default function FlashcardsModal({ isOpen, onClose }) {
         {isCreating && (
           <form onSubmit={handleCreateCard} style={{ background: 'rgba(255, 255, 255, 0.03)', padding: '1rem', borderRadius: '12px', marginBottom: '1.2rem', border: '1px solid var(--border-glass)' }}>
             <div style={{ marginBottom: '0.8rem' }}>
-              <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.3rem' }}>Mặt trước (Câu hỏi/Khái niệm):</label>
+              <label htmlFor={questionInputId} style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.3rem' }}>Mặt trước (Câu hỏi/Khái niệm):</label>
               <input
+                id={questionInputId}
                 type="text"
                 value={newQuestion}
                 onChange={e => setNewQuestion(e.target.value)}
                 placeholder="Nhập câu hỏi..."
+                required
                 style={{ width: '100%', padding: '0.5rem', borderRadius: '8px', border: '1px solid var(--border-glass)', background: 'var(--bg-primary)', color: 'var(--text-primary)' }}
               />
             </div>
             <div style={{ marginBottom: '0.8rem' }}>
-              <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.3rem' }}>Mặt sau (Đáp án/Giải thích):</label>
+              <label htmlFor={answerInputId} style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.3rem' }}>Mặt sau (Đáp án/Giải thích):</label>
               <textarea
+                id={answerInputId}
                 value={newAnswer}
                 onChange={e => setNewAnswer(e.target.value)}
                 placeholder="Nhập câu trả lời..."
                 rows={3}
+                required
                 style={{ width: '100%', padding: '0.5rem', borderRadius: '8px', border: '1px solid var(--border-glass)', background: 'var(--bg-primary)', color: 'var(--text-primary)' }}
               />
             </div>
@@ -213,9 +228,13 @@ export default function FlashcardsModal({ isOpen, onClose }) {
         {/* Flashcard 3D Card Display */}
         {filteredCards.length > 0 && currentCard ? (
           <div style={{ perspective: '1000px', margin: '1rem 0 1.5rem' }}>
-            <div
+            <button
+              type="button"
+              aria-pressed={isFlipped}
+              aria-label={isFlipped ? 'Úp thẻ để xem câu hỏi' : 'Lật thẻ để xem đáp án'}
               onClick={() => setIsFlipped(!isFlipped)}
               style={{
+                width: '100%',
                 minHeight: '200px',
                 borderRadius: '16px',
                 background: isFlipped ? 'linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(168, 85, 247, 0.15))' : 'rgba(255, 255, 255, 0.05)',
@@ -229,20 +248,21 @@ export default function FlashcardsModal({ isOpen, onClose }) {
                 cursor: 'pointer',
                 transition: 'transform 0.4s ease, background 0.3s ease',
                 transform: isFlipped ? 'rotateX(360deg)' : 'none',
-                position: 'relative'
+                position: 'relative',
+                font: 'inherit'
               }}
             >
-              <div style={{ position: 'absolute', top: '12px', left: '16px', fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>
+              <span style={{ position: 'absolute', top: '12px', left: '16px', fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>
                 Hộp Leitner #{currentCard.box}
-              </div>
-              <div style={{ position: 'absolute', top: '12px', right: '16px', fontSize: '0.75rem', color: 'var(--color-primary)', fontWeight: 600 }}>
-                {isFlipped ? '💡 ĐÁP ÁN' : '❓ CÂU HỎI'} (Nhấp để lật)
-              </div>
+              </span>
+              <span style={{ position: 'absolute', top: '12px', right: '16px', fontSize: '0.75rem', color: 'var(--color-primary)', fontWeight: 600 }}>
+                {isFlipped ? '💡 ĐÁP ÁN' : '❓ CÂU HỎI'} (Nhấp hoặc nhấn Enter để lật)
+              </span>
 
-              <div style={{ fontSize: '1.15rem', fontWeight: 600, color: 'var(--text-primary)', lineHeight: '1.5' }}>
+              <span style={{ display: 'block', fontSize: '1.15rem', fontWeight: 600, color: 'var(--text-primary)', lineHeight: '1.5' }}>
                 {isFlipped ? currentCard.answer : currentCard.question}
-              </div>
-            </div>
+              </span>
+            </button>
 
             {/* Answer Controls */}
             <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', marginTop: '1rem' }}>

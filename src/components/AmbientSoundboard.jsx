@@ -1,3 +1,4 @@
+import { persistentStorage } from '../utils/persistence';
 import React, { useState, useEffect, useRef } from 'react';
 
 const SOUNDS = [
@@ -179,7 +180,7 @@ const createDefaultMix = (sounds, volume) => Object.fromEntries(
 const loadMix = (storageKey, sounds, defaultVolume) => {
   const defaults = createDefaultMix(sounds, defaultVolume);
   try {
-    const saved = localStorage.getItem(storageKey);
+    const saved = persistentStorage.getItem(storageKey);
     if (!saved) return defaults;
     const parsed = JSON.parse(saved);
     if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return defaults;
@@ -203,7 +204,7 @@ function AmbientSoundboard() {
   
   // Master volume state
   const [masterVolume, setMasterVolume] = useState(() => {
-    const saved = Number.parseFloat(localStorage.getItem('pomodoro_ambient_master'));
+    const saved = Number.parseFloat(persistentStorage.getItem('pomodoro_ambient_master'));
     return Number.isFinite(saved) ? Math.min(1, Math.max(0, saved)) : 1;
   });
 
@@ -223,15 +224,15 @@ function AmbientSoundboard() {
 
   // Sync state to localStorage
   useEffect(() => {
-    localStorage.setItem('pomodoro_ambient_master', masterVolume.toString());
+    persistentStorage.setItem('pomodoro_ambient_master', masterVolume.toString());
   }, [masterVolume]);
 
   useEffect(() => {
-    localStorage.setItem('pomodoro_ambient_mix', JSON.stringify(soundMix));
+    persistentStorage.setItem('pomodoro_ambient_mix', JSON.stringify(soundMix));
   }, [soundMix]);
 
   useEffect(() => {
-    localStorage.setItem('pomodoro_synth_mix', JSON.stringify(synthMix));
+    persistentStorage.setItem('pomodoro_synth_mix', JSON.stringify(synthMix));
   }, [synthMix]);
 
   // Handle standard audio instances playing & volume changes
@@ -549,28 +550,34 @@ function AmbientSoundboard() {
 
   return (
     <div className="soundboard-container">
-      <div className="soundboard-header" onClick={() => setIsOpen(!isOpen)}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+      <div className="soundboard-header">
+        <button
+          type="button"
+          className="soundboard-toggle"
+          aria-expanded={isOpen}
+          aria-controls="soundboard-content"
+          onClick={() => setIsOpen(!isOpen)}
+        >
           <span style={{ fontSize: '1.1rem' }}>🎧</span>
           <span className="soundboard-title">Âm Thanh Môi Trường & Sóng Não</span>
-        </div>
+        </button>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           {isAnyPlaying && (
             <button 
               type="button" 
               className="soundboard-mute-all-btn" 
-              onClick={(e) => {
-                e.stopPropagation();
-                handleMuteAll();
-              }}
+              onClick={handleMuteAll}
               title="Tắt tất cả âm thanh"
             >
               Mute All
             </button>
           )}
-          <button 
-            className="btn-collapse" 
-            aria-label={isOpen ? "Thu gọn" : "Mở rộng"}
+          <button
+            className="btn-collapse"
+            aria-label={isOpen ? "Thu gọn âm thanh" : "Mở rộng âm thanh"}
+            aria-expanded={isOpen}
+            aria-controls="soundboard-content"
+            onClick={() => setIsOpen(!isOpen)}
             type="button"
           >
             <svg 
@@ -592,7 +599,7 @@ function AmbientSoundboard() {
       </div>
 
       {isOpen && (
-        <div className="soundboard-content">
+        <div id="soundboard-content" className="soundboard-content">
           {/* Master Volume Control */}
           <div className="soundboard-master-volume">
             <span className="master-vol-label">🔊 Âm lượng tổng:</span>

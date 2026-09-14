@@ -43,3 +43,5 @@
   .simple-task-form { flex-wrap: wrap; }
   .simple-task-form .btn { width: 100%; }
 }
+
+.storage-warning { position: fixed; inset: auto 1rem 1rem; z-index: 20000; max-width: min(30rem, calc(100vw - 2rem)); padding: 1rem; border: 2px solid #b45309; border-radius: 12px; background: #fffbeb; color: #78350f; font-size: .9rem; box-shadow: 0 4px 20px #0002; pointer-events: none; }

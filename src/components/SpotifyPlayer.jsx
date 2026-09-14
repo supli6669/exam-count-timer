@@ -1,3 +1,5 @@
+import { persistentStorage } from '../utils/persistence';
+import { parseSpotifyUrl } from '../utils/urls';
 import React, { useState, useEffect } from 'react';
 
 const PRESETS = [
@@ -33,8 +35,8 @@ const PRESETS = [
 
 function SpotifyPlayer() {
   const [currentUrl, setCurrentUrl] = useState(() => {
-    const saved = localStorage.getItem('pomodoro_spotify_url');
-    return saved || PRESETS[0].url;
+    const saved = persistentStorage.getItem('pomodoro_spotify_url');
+    return parseSpotifyUrl(saved) || PRESETS[0].url;
   });
 
   const [customInput, setCustomInput] = useState('');
@@ -60,39 +62,8 @@ function SpotifyPlayer() {
   }, [showSpotifyVolWarning]);
 
   useEffect(() => {
-    localStorage.setItem('pomodoro_spotify_url', currentUrl);
+    persistentStorage.setItem('pomodoro_spotify_url', currentUrl);
   }, [currentUrl]);
-
-  const parseSpotifyUrl = (url) => {
-    if (!url) return '';
-    const trimmed = url.trim();
-
-    // If it's already an iframe or direct embed url
-    if (trimmed.includes('spotify.com/embed/')) {
-      return trimmed;
-    }
-
-    const playlistRegex = /spotify\.com\/playlist\/([a-zA-Z0-9]+)/;
-    const albumRegex = /spotify\.com\/album\/([a-zA-Z0-9]+)/;
-    const trackRegex = /spotify\.com\/track\/([a-zA-Z0-9]+)/;
-
-    let match = trimmed.match(playlistRegex);
-    if (match) {
-      return `https://open.spotify.com/embed/playlist/${match[1]}?utm_source=generator&theme=0`;
-    }
-
-    match = trimmed.match(albumRegex);
-    if (match) {
-      return `https://open.spotify.com/embed/album/${match[1]}?utm_source=generator&theme=0`;
-    }
-
-    match = trimmed.match(trackRegex);
-    if (match) {
-      return `https://open.spotify.com/embed/track/${match[1]}?utm_source=generator&theme=0`;
-    }
-
-    return '';
-  };
 
   const handleApplyCustomUrl = (e) => {
     e.preventDefault();
@@ -117,16 +88,18 @@ function SpotifyPlayer() {
 
   return (
     <div className="spotify-player-container">
-      <div className="spotify-player-header" onClick={() => setIsOpen(!isOpen)}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+      <button
+        type="button"
+        className="spotify-player-header"
+        aria-expanded={isOpen}
+        aria-controls="spotify-player-content"
+        onClick={() => setIsOpen(!isOpen)}
+      >
+        <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           <span style={{ fontSize: '1.1rem' }}>🎵</span>
           <span className="spotify-player-title">Nhạc Tập Trung (Spotify)</span>
-        </div>
-        <button 
-          className="btn-collapse" 
-          aria-label={isOpen ? "Thu gọn" : "Mở rộng"}
-          type="button"
-        >
+        </span>
+        <span className="btn-collapse" aria-hidden="true">
           <svg 
             viewBox="0 0 24 24" 
             fill="none" 
@@ -141,11 +114,11 @@ function SpotifyPlayer() {
           >
             <polyline points="6 9 12 15 18 9"></polyline>
           </svg>
-        </button>
-      </div>
+        </span>
+      </button>
 
       {isOpen && (
-        <div className="spotify-player-content">
+        <div id="spotify-player-content" className="spotify-player-content">
           {/* Preset Buttons Grid */}
           <div className="spotify-presets-grid">
             {PRESETS.map((preset) => (

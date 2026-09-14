@@ -1,4 +1,5 @@
 import { Component } from 'react';
+import BackupRestore from './BackupRestore';
 
 class ErrorBoundary extends Component {
   constructor(props) {
@@ -30,15 +31,16 @@ class ErrorBoundary extends Component {
           backdropFilter: 'blur(16px)',
           border: '1px solid rgba(255, 100, 100, 0.3)',
           borderRadius: '16px',
-          color: '#ffffff',
+          color: 'var(--text-primary)' ,
           textAlign: 'center',
           boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)'
         }}>
           <div style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>⚠️</div>
           <h3 style={{ margin: '0.5rem 0', color: '#ff7b7b' }}>Đã xảy ra lỗi ngoài ý muốn</h3>
           <p style={{ fontSize: '0.9rem', opacity: 0.8, marginBottom: '1.5rem' }}>
-            Ứng dụng gặp sự cố khi xử lý dữ liệu. Vui lòng tải lại hoặc thử khôi phục dữ liệu ban đầu.
+            Ứng dụng gặp sự cố khi xử lý dữ liệu. Bạn có thể sao lưu dữ liệu hiện tại hoặc nhập một bản sao lưu hợp lệ.
           </p>
+          <BackupRestore />
           <button
             onClick={this.handleReload}
             style={{

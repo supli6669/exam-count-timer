@@ -1,4 +1,29 @@
-# Trạng thái hiện tại (2026-09-11)
+# Trạng thái hiện tại (2026-09-14)
+
+## Thay đổi mới nhất
+
+- **Ổn định Daily Plan và dữ liệu**: việc chưa hoàn thành tự dồn sang ngày địa phương kế tiếp khi qua nửa đêm, quay lại tab hoặc mở lại ứng dụng; giữ ngày gốc trong `carriedFromDate`. Lịch thi đã qua chỉ tự dọn khi không còn task, không còn polling 5 giây. Lưu trữ cục bộ có lớp dự phòng khi bị chặn/quá quota và hiển thị cảnh báo để người dùng sao lưu trước khi đóng trang.
+- **Sao lưu và đầu vào an toàn**: import JSON giới hạn 5 MB, xác minh schema và hoàn tác toàn bộ nếu ghi dở dang; URL Spotify chỉ chấp nhận resource HTTPS hợp lệ, ảnh nền chỉ nhận định dạng dữ liệu an toàn, iCal loại bỏ CRLF injection.
+- **PWA, header và khả năng truy cập**: service worker dùng cache theo build chính xác, chỉ phục vụ asset cùng origin và chỉ xóa cache của ứng dụng. CSP/header Vercel giới hạn script, frame, kết nối, media và quyền trình duyệt. Modal giữ focus; lịch, Spotify, âm thanh và flashcard dùng control bàn phím hợp lệ; form lịch thi đồng bộ ngày mặc định đang hiển thị với dữ liệu lưu.
+- **Kiểm tra của đợt này**: thêm test cho rollover, storage/backup, CSP/input, iCal và service worker. `npm run lint`, `npm test` (25/25), `npm run build`, `npm audit --omit=dev` và `git diff --check` đều đạt. Bản production được kiểm tra trực tiếp: thêm lịch thi với ngày mặc định, dialog lịch đóng bằng Escape và focus quay lại control mở; Pomodoro/panel âm thanh không có lỗi console.
+- **Git**: thay đổi của đợt này đang ở `main`, chờ commit và push.
+
+- **Nghiên cứu phương pháp học tập**: thêm `docs/learning-methods-research.md` về tự truy hồi, ôn cách quãng, tự giải thích, ví dụ mẫu, luyện xen kẽ, phản hồi/sổ lỗi, Cornell và Pomodoro. Phân biệt bằng chứng với tên phương pháp phổ biến; đề xuất nối flashcard Leitner hiện có với Daily Plan/Sổ tay, rồi bổ sung lịch sử lần thử và luyện lại. Chưa sửa chức năng, chưa push tài liệu.
+
+- **Nghiên cứu bổ sung về kế hoạch linh hoạt**: mở rộng `docs/planning-research.md` với nguồn nghiên cứu chia nhỏ việc, kế hoạch nếu–thì, lập ngược, luyện xen kẽ; đối chiếu tài liệu Sunsama, Reclaim, Amazing Marvin và Kanban. Bổ sung đề xuất giờ học tùy chọn, mục tiêu tuần gắn task, xử lý việc tồn, phân biệt ước lượng/phiên/thực tế và tiêu chí đánh giá. Vẫn chỉ thay đổi tài liệu, chưa triển khai tính năng hoặc push.
+
+- **Nghiên cứu kế hoạch học tập (2026-09-13)**: xem `docs/planning-research.md` để đối chiếu các phương pháp, nguồn tham khảo, luồng giao diện và lộ trình ba đợt: Daily Plan thực dụng → lịch phiên học → gợi ý ôn thi. Đây là đề xuất; chưa triển khai chức năng hoặc push tài liệu. Ưu tiên việc tồn, quỹ thời gian, ghim việc và góc nhìn tuần; khi hỗ trợ nhiều buổi/task cần bản ghi phiên riêng.
+
+- **Giao diện sáng lavender**: đổi nền sang trắng ngà, thẻ trắng, điểm nhấn tím và chữ xám than trong `src/calm.css`; bảng màu tối cũng dùng tím đồng bộ. Mặc định sáng nếu chưa có lựa chọn hợp lệ; vẫn tôn trọng lựa chọn light/dark/system đã lưu. Logic khởi tạo trong `index.html` và `src/App.jsx` thống nhất để tránh nháy sai theme.
+- **Xóa ngay**: bỏ hộp xác nhận khi xóa lịch thi, dọn lịch thi hết giờ, xóa công việc, ghi chú và lịch sử học. Xác nhận nhập bản sao lưu thay thế dữ liệu vẫn còn.
+- **Daily Plan trong Việc cần làm**: có ba chế độ Daily Plan, Chưa lên lịch và Tất cả việc. Chọn ngày hoặc quay về Hôm nay; thêm việc vào ngày đang chọn, đổi ngày làm hoặc bỏ lịch cho từng việc. Việc chưa xong tự dồn sang ngày địa phương kế tiếp, còn task đã hoàn thành, việc tương lai và việc chưa lên lịch được giữ nguyên. Bộ lọc môn/trạng thái và nút Tập trung tiếp tục hoạt động. Thanh tiến độ đếm việc hoàn thành trên tổng việc của ngày và môn đã chọn, không phụ thuộc bộ lọc trạng thái.
+- **Dữ liệu kế hoạch**: trường `plannedDate` dạng `YYYY-MM-DD` được lưu cùng task chung/task môn thi qua cơ chế lưu hiện có. Ngày mặc định lấy theo múi giờ địa phương. Task cũ thiếu trường này nằm trong Chưa lên lịch; bỏ lịch đặt giá trị rỗng. `carriedFromDate` lưu ngày gốc của việc dồn; thao tác đặt ngày thủ công xóa nhãn này.
+- **File triển khai Daily Plan**: `src/App.jsx` thêm callback cập nhật ngày và tham số ngày khi tạo task; `src/components/TaskList.jsx` chứa giao diện/bộ lọc; `src/simple.css` bổ sung bố cục co giãn cho màn hình nhỏ.
+- **Kiểm tra**: `npm run build`, `npm run lint` và 14 test hiện có từ `npm test` đều đạt sau thay đổi Daily Plan. Chưa xác minh tương tác Daily Plan trực tiếp trên trình duyệt; các test hiện có chưa bao phủ riêng luồng UI mới.
+- **Git**: hai commit chức năng đã push lên `origin/main`: `5f45269` — Use light lavender theme and remove delete confirmations; `c6f50ba` — Add daily planning to task list.
+- **Quy ước bàn giao**: cập nhật `HandOver.md` cùng mỗi đợt thay đổi, ghi hành vi mới, file liên quan, kiểm tra đã chạy và trạng thái commit/push.
+
+## Nền tảng hiện tại
 
 Bỏ ERI, trường tín chỉ và BreakCoach. Ghi nhanh trong Pomodoro mở Sổ tay; `consolidateNotes` chuyển dữ liệu `focus_distractions_v1` một lần, giữ nội dung và trạng thái đã xử lý. Marker `notes_consolidated_v1` đi cùng bản sao lưu. Notes lưu ngay để chuyển tab không hủy lần lưu cuối. ExamForm giữ các trường cũ (đặc biệt là tasks) khi sửa lịch thi. Đã dọn CSS còn sót của tính năng cũ; giữ selector động `status-border-*` cho lịch.
 

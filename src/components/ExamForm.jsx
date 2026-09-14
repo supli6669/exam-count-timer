@@ -1,8 +1,10 @@
+import { useModalFocus } from '../utils/useModalFocus';
 import { useState } from 'react';
 import DatePicker from './DatePicker';
 import { CATEGORIES } from '../constants';
 
 function ExamForm({ exam, onSave, onClose }) {
+  const modalRef = useModalFocus(true);
   const getInitialDateTime = () => {
     if (exam && exam.datetime) {
       const date = new Date(exam.datetime);
@@ -10,7 +12,9 @@ function ExamForm({ exam, onSave, onClose }) {
       const tzOffset = date.getTimezoneOffset() * 60000;
       return new Date(date - tzOffset).toISOString().slice(0, 16);
     }
-    return '';
+    // DatePicker already presents the local current date for a new exam. Keep
+    // the form value aligned with that visible default so a valid submit works.
+    return new Date().toISOString();
   };
 
   const [subject, setSubject] = useState(exam ? (exam.subject || '') : '');
@@ -81,9 +85,9 @@ function ExamForm({ exam, onSave, onClose }) {
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+      <div ref={modalRef} role="dialog" aria-modal="true" aria-labelledby="exam-form-title" tabIndex={-1} className="modal-content" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h2 className="modal-title">
+          <h2 id="exam-form-title" className="modal-title">
             {exam && exam.id ? 'Chỉnh sửa lịch thi' : 'Thêm lịch thi mới'}
           </h2>
           <button className="btn-icon" onClick={onClose} aria-label="Đóng modal">
@@ -96,7 +100,7 @@ function ExamForm({ exam, onSave, onClose }) {
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
           {error && (
-            <div style={{ 
+            <div role="alert" style={{
               color: '#ef4444', 
               background: 'rgba(239, 68, 68, 0.1)', 
               border: '1px solid rgba(239, 68, 68, 0.2)', 
@@ -119,7 +123,6 @@ function ExamForm({ exam, onSave, onClose }) {
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
               maxLength="50"
-              autoFocus
             />
           </div>
 

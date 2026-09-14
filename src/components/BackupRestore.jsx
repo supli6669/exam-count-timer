@@ -1,54 +1,9 @@
+import { persistentStorage } from '../utils/persistence';
 import { useRef } from 'react';
 import { validateBackupJSON } from '../utils/storage';
 import { getLocalDateKey } from '../utils/date';
 
-const BACKUP_KEYS = [
-  'exams_countdown_list',
-  'exams_general_tasks',
-  'tasks_consolidated_v1',
-  'notes_consolidated_v1',
-  'app_global_theme',
-  'notifications_enabled',
-  'pomodoro_work',
-  'pomodoro_short_break',
-  'pomodoro_long_break',
-  'pomodoro_alarm_volume',
-  'pomodoro_alarm_sound',
-  'pomodoro_completed_sessions',
-  'pomodoro_break_logs',
-  'pomodoro_theme',
-  'pomodoro_timer_type',
-  'pomodoro_focus_subject',
-  'pomodoro_focus_task',
-  'pomodoro_study_logs',
-  'pomodoro_user_xp',
-  'pomodoro_user_level',
-  'pomodoro_username',
-  'pomodoro_ambient_master',
-  'pomodoro_ambient_mix',
-  'pomodoro_synth_mix',
-  'productivity_contributions',
-  'recurring_tasks_rule_of_3',
-  'pomodoro_low_power',
-  'daily_tasks_list',
-  'daily_tasks_last_reset',
-  'pomodoro_custom_bg',
-  'pomodoro_custom_theme_data',
-  'app_leitner_flashcards',
-  'mock_exam_results',
-  'app_study_streak_data',
-  'exam_countdown_notes',
-  'pomodoro_onboarding_completed',
-  'focus_planner_v1',
-  'focus_task_templates_v1',
-  'focus_distractions_v1',
-  'focus_widget_order_v1',
-  'focus_workspace_widget_order_v1',
-  'focus_workspace_scratchpad',
-  'focus_integrations_v1',
-  'study_room_display_name',
-  'study_room_blocked_ids'
-];
+import { BACKUP_KEYS, restoreBackup } from '../utils/backup';
 
 function BackupRestore() {
   const fileInputRef = useRef(null);
@@ -57,7 +12,7 @@ function BackupRestore() {
     try {
       const backupData = {};
       BACKUP_KEYS.forEach(key => {
-        const val = localStorage.getItem(key);
+        const val = persistentStorage.getItem(key);
         if (val !== null) {
           backupData[key] = val;
         }
@@ -81,6 +36,11 @@ function BackupRestore() {
   const handleImport = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Tệp sao lưu quá lớn. Giới hạn là 5 MB.');
+      e.target.value = '';
+      return;
+    }
 
     const reader = new FileReader();
     reader.onload = (event) => {
@@ -96,16 +56,7 @@ function BackupRestore() {
         const confirmImport = window.confirm('Nhập dữ liệu mới sẽ thay thế toàn bộ dữ liệu hiện tại của bạn. Bạn có muốn tiếp tục?');
         if (!confirmImport) return;
 
-        // An import is a complete application snapshot. Remove app keys that
-        // are absent from the selected backup so stale data cannot survive.
-        BACKUP_KEYS.forEach(key => localStorage.removeItem(key));
-
-        Object.entries(backupData).forEach(([key, val]) => {
-          if (!BACKUP_KEYS.includes(key)) return;
-          const stringVal = typeof val === 'string' ? val : JSON.stringify(val);
-          localStorage.setItem(key, stringVal);
-        });
-
+        restoreBackup(backupData, window.localStorage);
 
         alert('Nhập dữ liệu thành công! Ứng dụng sẽ tự động tải lại.');
         window.location.reload();

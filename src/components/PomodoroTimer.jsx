@@ -1,3 +1,5 @@
+import { isSafeBackground } from '../utils/urls';
+import { persistentStorage } from '../utils/persistence';
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import SpotifyPlayer from './SpotifyPlayer';
@@ -16,7 +18,7 @@ import {
 } from '../utils/timer';
 
 const getStoredNumber = (key, fallback, min, max) => {
-  const value = Number.parseInt(localStorage.getItem(key), 10);
+  const value = Number.parseInt(persistentStorage.getItem(key), 10);
   return Number.isFinite(value) && value >= min && value <= max ? value : fallback;
 };
 
@@ -49,7 +51,7 @@ function PomodoroTimer({
   });
 
   const [alarmSound, setAlarmSound] = useState(() => {
-    return localStorage.getItem('pomodoro_alarm_sound') || 'sparkle';
+    return persistentStorage.getItem('pomodoro_alarm_sound') || 'sparkle';
   });
 
   // Settings inputs state
@@ -60,7 +62,7 @@ function PomodoroTimer({
   const [inputAlarmSound, setInputAlarmSound] = useState(alarmSound);
 
   const [timerType, setTimerType] = useState(() => {
-    const saved = localStorage.getItem('pomodoro_timer_type');
+    const saved = persistentStorage.getItem('pomodoro_timer_type');
     return ['pomodoro', 'animedoro', 'stopwatch'].includes(saved) ? saved : 'pomodoro';
   }); // pomodoro, animedoro, or stopwatch
   const [mode, setMode] = useState('work'); // 'work', 'shortBreak', 'longBreak'
@@ -70,11 +72,12 @@ function PomodoroTimer({
   });
 
   const [theme, setTheme] = useState(() => {
-    return localStorage.getItem('pomodoro_theme') || 'calm';
+    return persistentStorage.getItem('pomodoro_theme') || 'calm';
   });
 
   const [customBg, setCustomBg] = useState(() => {
-    return localStorage.getItem('pomodoro_custom_bg') || null;
+    const saved = persistentStorage.getItem('pomodoro_custom_bg');
+    return isSafeBackground(saved) ? saved : null;
   });
 
   const [activeTab, setActiveTab] = useState('timer'); // 'timer', 'stats', 'settings'
@@ -100,10 +103,10 @@ function PomodoroTimer({
 
   // Focus Task & Subject State
   const [focusSubjectId, setFocusSubjectId] = useState(() => {
-    return localStorage.getItem('pomodoro_focus_subject') || 'general';
+    return persistentStorage.getItem('pomodoro_focus_subject') || 'general';
   });
   const [focusTaskId, setFocusTaskId] = useState(() => {
-    return localStorage.getItem('pomodoro_focus_task') || 'general';
+    return persistentStorage.getItem('pomodoro_focus_task') || 'general';
   });
   const availableFocusTasks = useMemo(() => {
     if (focusSubjectId === 'general') return generalTasks;
@@ -113,7 +116,7 @@ function PomodoroTimer({
   // Study logs history
   const [studyLogs, setStudyLogs] = useState(() => {
     try {
-      const saved = localStorage.getItem('pomodoro_study_logs');
+      const saved = persistentStorage.getItem('pomodoro_study_logs');
       const logs = saved ? JSON.parse(saved) : [];
       return Array.isArray(logs) ? logs : [];
     } catch {
@@ -155,7 +158,7 @@ function PomodoroTimer({
     setIsActive(false);
     setMode(newMode);
     setTimerType(newType);
-    localStorage.setItem('pomodoro_timer_type', newType);
+    persistentStorage.setItem('pomodoro_timer_type', newType);
     const nextSeconds = calculateSecondsForMode(newMode, newType);
     deadlineAtRef.current = null;
     stopwatchStartedAtRef.current = null;
@@ -173,7 +176,7 @@ function PomodoroTimer({
 
   // Scene selection belongs only to the focus workspace.
   useEffect(() => {
-    localStorage.setItem('pomodoro_theme', theme);
+    persistentStorage.setItem('pomodoro_theme', theme);
   }, [theme]);
 
   // Study log helper
@@ -216,7 +219,7 @@ function PomodoroTimer({
 
     const updatedLogs = [...studyLogs, newLog];
     setStudyLogs(updatedLogs);
-    localStorage.setItem('pomodoro_study_logs', JSON.stringify(updatedLogs));
+    persistentStorage.setItem('pomodoro_study_logs', JSON.stringify(updatedLogs));
     window.dispatchEvent(new Event('studyLogsUpdated'));
     secondsStudiedRef.current = 0;
   }, [focusSubjectId, focusTaskId, exams, generalTasks, studyLogs]);
@@ -282,15 +285,15 @@ function PomodoroTimer({
       if (timerType === 'animedoro') {
         const normalizedCount = nextCount >= 4 ? 0 : nextCount;
         setCompletedWorkSessions(normalizedCount);
-        localStorage.setItem('pomodoro_completed_sessions', normalizedCount.toString());
+        persistentStorage.setItem('pomodoro_completed_sessions', normalizedCount.toString());
         targetMode = 'shortBreak';
       } else if (nextCount >= 4) {
         setCompletedWorkSessions(0);
-        localStorage.setItem('pomodoro_completed_sessions', '0');
+        persistentStorage.setItem('pomodoro_completed_sessions', '0');
         targetMode = 'longBreak';
       } else {
         setCompletedWorkSessions(nextCount);
-        localStorage.setItem('pomodoro_completed_sessions', nextCount.toString());
+        persistentStorage.setItem('pomodoro_completed_sessions', nextCount.toString());
         targetMode = 'shortBreak';
       }
     }
@@ -416,15 +419,15 @@ function PomodoroTimer({
       if (timerType === 'animedoro') {
         const normalizedCount = nextCount >= 4 ? 0 : nextCount;
         setCompletedWorkSessions(normalizedCount);
-        localStorage.setItem('pomodoro_completed_sessions', normalizedCount.toString());
+        persistentStorage.setItem('pomodoro_completed_sessions', normalizedCount.toString());
         targetMode = 'shortBreak';
       } else if (nextCount >= 4) {
         setCompletedWorkSessions(0);
-        localStorage.setItem('pomodoro_completed_sessions', '0');
+        persistentStorage.setItem('pomodoro_completed_sessions', '0');
         targetMode = 'longBreak';
       } else {
         setCompletedWorkSessions(nextCount);
-        localStorage.setItem('pomodoro_completed_sessions', nextCount.toString());
+        persistentStorage.setItem('pomodoro_completed_sessions', nextCount.toString());
         targetMode = 'shortBreak';
       }
     }
@@ -451,11 +454,11 @@ function PomodoroTimer({
     setAlarmVolume(vol);
     setAlarmSound(snd);
 
-    localStorage.setItem('pomodoro_work', w.toString());
-    localStorage.setItem('pomodoro_short_break', s.toString());
-    localStorage.setItem('pomodoro_long_break', l.toString());
-    localStorage.setItem('pomodoro_alarm_volume', vol.toString());
-    localStorage.setItem('pomodoro_alarm_sound', snd);
+    persistentStorage.setItem('pomodoro_work', w.toString());
+    persistentStorage.setItem('pomodoro_short_break', s.toString());
+    persistentStorage.setItem('pomodoro_long_break', l.toString());
+    persistentStorage.setItem('pomodoro_alarm_volume', vol.toString());
+    persistentStorage.setItem('pomodoro_alarm_sound', snd);
 
     if (!isActive && timerType === 'pomodoro') {
       let updatedTime = w * 60;
@@ -472,25 +475,33 @@ function PomodoroTimer({
   const handleCustomThemeUpload = useCallback((e) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    if (!['image/png', 'image/jpeg', 'image/webp', 'image/gif'].includes(file.type) || file.size > 2 * 1024 * 1024) {
+      alert('Chọn ảnh PNG, JPEG, WebP hoặc GIF tối đa 2 MB.');
+      e.target.value = '';
+      return;
+    }
     const reader = new FileReader();
     reader.onload = (event) => {
       const base64 = event.target.result;
+      if (!isSafeBackground(base64)) return;
       setCustomBg(base64);
       setTheme('custom');
-      localStorage.setItem('pomodoro_custom_bg', base64);
+      persistentStorage.setItem('pomodoro_custom_bg', base64);
     };
+    reader.onerror = () => alert('Không thể đọc ảnh. Vui lòng thử lại.');
     reader.readAsDataURL(file);
+    e.target.value = '';
   }, []);
 
   const handleRemoveCustomBg = useCallback(() => {
     setCustomBg(null);
     setTheme('calm');
-    localStorage.removeItem('pomodoro_custom_bg');
+    persistentStorage.removeItem('pomodoro_custom_bg');
   }, []);
 
   const handleClearStats = useCallback(() => {
     setStudyLogs([]);
-    localStorage.removeItem('pomodoro_study_logs');
+    persistentStorage.removeItem('pomodoro_study_logs');
     window.dispatchEvent(new Event('studyLogsUpdated'));
   }, []);
 
@@ -741,10 +752,10 @@ function PomodoroTimer({
               <div className="simple-filters">
                 <label>Môn học<select value={focusSubjectId} onChange={event => {
                   setFocusSubjectId(event.target.value); setFocusTaskId('general');
-                  localStorage.setItem('pomodoro_focus_subject', event.target.value); localStorage.removeItem('pomodoro_focus_task');
+                  persistentStorage.setItem('pomodoro_focus_subject', event.target.value); persistentStorage.removeItem('pomodoro_focus_task');
                 }}><option value="general">Học tập chung</option>{exams.map(exam => <option key={exam.id} value={exam.id}>{exam.subject}</option>)}</select></label>
                 <label>Việc cần làm<select value={focusTaskId} onChange={event => {
-                  setFocusTaskId(event.target.value); localStorage.setItem('pomodoro_focus_task', event.target.value);
+                  setFocusTaskId(event.target.value); persistentStorage.setItem('pomodoro_focus_task', event.target.value);
                 }}><option value="general">Học tự do</option>{availableFocusTasks.filter(task => !task.completed || task.id === focusTaskId).map(task => <option key={task.id} value={task.id}>{task.text}{task.completed ? ' · Đã xong' : ''}</option>)}</select></label>
               </div>
             </details>
